@@ -10,15 +10,13 @@ Binding. Every version here is checked live by `/check-versions` and dated. A ro
 | pnpm (`packageManager`) | `pnpm@12.20.0+sha512.6ccc74997ccef4e67999788e18dbfbfa583e2a849668668db4707b6a8306662f47156e650232a985bd3ec24cf9364c1aa154d37e51ed7aac62c1cd1e3afc80c3` | 2026-11-12 | `npm view pnpm` | 2026-11-20 |
 | TypeScript | 7.0.2 | 2026-07-08 | `npm view typescript` | 2026-11-20 |
 | Lit | 3.3.3 | 2026-05-14 | `npm view lit` | 2026-11-20 |
-| Bundler candidate: Vite | 8.3.8 | 2026-11-11 | `npm view vite` | 2026-11-20 |
-| Bundler candidate: Rollup | 4.68.3 | 2026-11-13 | `npm view rollup` | 2026-11-20 |
+| Bundler: Vite (Rolldown via `~1.2.18`, resolved to 1.2.19 of 2026-11-11 on 2026-11-20; the lockfile pins it) | 8.3.8 | 2026-11-11 | `npm view vite`, `npm view vite@8.3.8 dependencies.rolldown` | 2026-11-20 |
 | Vitest | 5.1.0 | 2026-11-02 | `npm view vitest` | 2026-11-20 |
 | `@vitest/coverage-v8` | 5.1.0 | 2026-11-02 | `npm view @vitest/coverage-v8` | 2026-11-20 |
-| DOM environment candidate: happy-dom | 21.0.4 | 2026-10-20 | `npm view happy-dom` | 2026-11-20 |
-| DOM environment candidate: jsdom | 31.0.1 | 2026-11-13 | `npm view jsdom` | 2026-11-20 |
+| DOM environment: happy-dom | 21.0.4 | 2026-10-20 | `npm view happy-dom` | 2026-11-20 |
 | Biome | 2.6.7 | 2026-11-11 | `npm view @biomejs/biome` | 2026-11-20 |
 
-The bundler and the DOM environment are chosen in the bootstrap issue (ADR 0001); only the chosen ones are pinned.
+Bundler and DOM environment chosen in ADR 0001 (measurements there). No bundler plugin is needed.
 
 ### GitHub Actions
 
@@ -35,14 +33,12 @@ The bundler and the DOM environment are chosen in the bootstrap issue (ADR 0001)
 | Package | Newest | Released | Adopted instead |
 |---|---|---|---|
 | pnpm | 12.21.0 (`latest`), 12.22.0 | 2026-11-13, 2026-11-17 | 12.20.0 |
-| Rollup | 4.68.7 | 2026-11-18 | 4.68.3 |
 | Vitest, `@vitest/coverage-v8` | 5.1.1 | 2026-11-18 | 5.1.0 |
 | Biome | 2.6.8 | 2026-11-15 | 2.6.7 |
 
 ### Maintenance notes
 
 - Lit 3.3.3 is the latest release, published 2026-05-14: just over six months ago. Lit is the stack decision (ADR 0001); re-check at the next `/check-versions`.
-- `@rollup/plugin-node-resolve` (16.0.3, 2025-10-13) has had no release in over a year. It weighs against Rollup if the bundler needs it.
 
 ## Home Assistant support
 
