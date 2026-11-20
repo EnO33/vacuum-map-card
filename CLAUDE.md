@@ -30,6 +30,7 @@ pnpm run lint        # Biome lint + format check
 pnpm run typecheck   # tsc --noEmit, strict
 pnpm run test        # Vitest with coverage
 pnpm run build       # single ES module in dist/, size reported
+node --test scripts/test-hooks.mjs   # guard rules (also run by CI)
 ```
 
 - Coverage floor: 90 % lines and branches on `domain` and `app`.
