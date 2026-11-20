@@ -20,13 +20,15 @@ Bundler and DOM environment chosen in ADR 0001 (measurements there). No bundler 
 
 ### GitHub Actions
 
+Releases are created with the `gh` CLI preinstalled on GitHub-hosted runners, not with a third-party action.
+
 | Action | Version | Commit SHA | Released | Checked |
 |---|---|---|---|---|
 | `actions/checkout` | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` | 2026-07-20 | 2026-11-20 |
 | `actions/setup-node` | v7.1.0 | `949feb2413d6458794dcd2491c4babbbce0c15c1` | 2026-10-08 | 2026-11-20 |
 | `pnpm/action-setup` | v6.1.1 | `73e46992e05b19abd31f2f3c20e0e7370d762115` | 2026-11-03 | 2026-11-20 |
 | `actions/upload-artifact` | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | 2026-10-07 | 2026-11-20 |
-| `softprops/action-gh-release` | v3.0.4 | `8a0cd651e5b2365bd640854a3fa5dfc70e4875f3` | 2026-11-05 | 2026-11-20 |
+| `actions/download-artifact` | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` | 2026-10-07 | 2026-11-20 |
 
 ### Maintenance notes
 
