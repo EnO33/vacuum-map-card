@@ -7,14 +7,14 @@ Binding. Every version here is checked live by `/check-versions` and dated. A ro
 | Tool | Version | Released | Source | Checked |
 |---|---|---|---|---|
 | Node.js (LTS « Lithium », tooling only) | 26.13.1 | 2026-11-10 | nodejs.org/dist/index.json | 2026-11-20 |
-| pnpm (`packageManager`) | `pnpm@12.20.0+sha512.6ccc74997ccef4e67999788e18dbfbfa583e2a849668668db4707b6a8306662f47156e650232a985bd3ec24cf9364c1aa154d37e51ed7aac62c1cd1e3afc80c3` | 2026-11-12 | `npm view pnpm` | 2026-11-20 |
+| pnpm (`packageManager`, `latest` dist-tag) | `pnpm@12.21.0+sha512.66fd8278ee28935ce951792d34367ff3af5c432a2756445823029533835b8da529bbe0be5130afd56ed0713fb8789e47bad82d93bd5ae2fe54b15562d6276ef0` | 2026-11-13 | `npm view pnpm` | 2026-11-20 |
 | TypeScript | 7.0.2 | 2026-07-08 | `npm view typescript` | 2026-11-20 |
 | Lit | 3.3.3 | 2026-05-14 | `npm view lit` | 2026-11-20 |
 | Bundler: Vite (Rolldown via `~1.2.18`, resolved to 1.2.19 of 2026-11-11 on 2026-11-20; the lockfile pins it) | 8.3.8 | 2026-11-11 | `npm view vite`, `npm view vite@8.3.8 dependencies.rolldown` | 2026-11-20 |
-| Vitest | 5.1.0 | 2026-11-02 | `npm view vitest` | 2026-11-20 |
-| `@vitest/coverage-v8` | 5.1.0 | 2026-11-02 | `npm view @vitest/coverage-v8` | 2026-11-20 |
+| Vitest | 5.1.1 | 2026-11-18 | `npm view vitest` | 2026-11-20 |
+| `@vitest/coverage-v8` | 5.1.1 | 2026-11-18 | `npm view @vitest/coverage-v8` | 2026-11-20 |
 | DOM environment: happy-dom | 21.0.4 | 2026-10-20 | `npm view happy-dom` | 2026-11-20 |
-| Biome | 2.6.7 | 2026-11-11 | `npm view @biomejs/biome` | 2026-11-20 |
+| Biome | 2.6.8 | 2026-11-15 | `npm view @biomejs/biome` | 2026-11-20 |
 
 Bundler and DOM environment chosen in ADR 0001 (measurements there). No bundler plugin is needed.
 
@@ -28,14 +28,6 @@ Bundler and DOM environment chosen in ADR 0001 (measurements there). No bundler 
 | `actions/upload-artifact` | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | 2026-10-07 | 2026-11-20 |
 | `softprops/action-gh-release` | v3.0.4 | `8a0cd651e5b2365bd640854a3fa5dfc70e4875f3` | 2026-11-05 | 2026-11-20 |
 
-### Held back (supply-chain cooldown, 2026-11-20)
-
-| Package | Newest | Released | Adopted instead |
-|---|---|---|---|
-| pnpm | 12.21.0 (`latest`), 12.22.0 | 2026-11-13, 2026-11-17 | 12.20.0 |
-| Vitest, `@vitest/coverage-v8` | 5.1.1 | 2026-11-18 | 5.1.0 |
-| Biome | 2.6.8 | 2026-11-15 | 2.6.7 |
-
 ### Maintenance notes
 
 - Lit 3.3.3 is the latest release, published 2026-05-14: just over six months ago. Lit is the stack decision (ADR 0001); re-check at the next `/check-versions`.
@@ -48,7 +40,8 @@ Bundler and DOM environment chosen in ADR 0001 (measurements there). No bundler 
 
 ## Supply chain
 
-- A release younger than 7 days is noted, not adopted, unless it is a security fix.
+- Owner decision (2026-11-20): the project uses the latest stable release of every tool, as published under the package's `latest` dist-tag (or the project's latest GitHub release), with no waiting period. Pre-releases and other dist-tags (`next`, `beta`, `rc`) are not adopted.
+- Dependency build scripts stay blocked unless approved (pnpm's default).
 - Actions pinned by full commit SHA with the version in a comment.
 - Lockfile committed; `pnpm install --frozen-lockfile` in CI.
 

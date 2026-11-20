@@ -22,7 +22,7 @@ Imports point inwards (`ui` → `app` → `domain`; `adapters` implement `app` p
 
 ## Checks
 
-Run before every push (exact scripts defined by the bootstrap issue, « à vérifier » until then):
+Run before every push:
 
 ```
 pnpm install --frozen-lockfile
