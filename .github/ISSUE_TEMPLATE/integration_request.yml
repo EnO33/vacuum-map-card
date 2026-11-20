@@ -1,0 +1,23 @@
+name: Integration request
+description: Ask for support of another vacuum integration.
+labels: ["type:integration"]
+body:
+  - type: input
+    id: integration
+    attributes:
+      label: Integration
+      description: Name, repository link and version.
+    validations:
+      required: true
+  - type: textarea
+    id: entities
+    attributes:
+      label: Map and room entities
+      description: Which entities show the map, and which attributes or actions carry rooms. Developer tools > States helps. Replace real names and coordinates.
+    validations:
+      required: true
+  - type: textarea
+    id: clean-room
+    attributes:
+      label: How to clean one room
+      description: The action and its fields, if you know them.

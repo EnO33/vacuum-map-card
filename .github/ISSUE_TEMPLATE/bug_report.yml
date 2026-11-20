@@ -1,0 +1,44 @@
+name: Bug report
+description: Something does not work as expected.
+labels: ["type:bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not paste anything private (addresses, IP addresses, real floor plans). You can write in English or French.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you saw.
+    validations:
+      required: true
+  - type: input
+    id: card-version
+    attributes:
+      label: Card version
+    validations:
+      required: true
+  - type: input
+    id: ha-version
+    attributes:
+      label: Home Assistant version
+    validations:
+      required: true
+  - type: input
+    id: integration
+    attributes:
+      label: Vacuum integration and version
+      placeholder: "Roomba+ 4.6.3"
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Card configuration (YAML)
+      render: yaml
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console errors
+      render: text

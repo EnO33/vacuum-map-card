@@ -1,0 +1,33 @@
+# Project agent config is tracked, even when a global ignore excludes it
+!CLAUDE.md
+!.claude/
+
+# Local context and agent temp files
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/private-patterns.local.txt
+.tmp/
+.worktrees/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.pnpm-store/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
