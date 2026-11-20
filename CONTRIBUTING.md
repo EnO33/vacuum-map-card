@@ -17,7 +17,7 @@ Thanks for helping. This file is binding for every contribution, human or automa
 
 You need Node.js and pnpm at the versions in `docs/standards.md`. The Node.js version is read from `engines.node` in `package.json`, and pnpm from its `packageManager` field: install any recent pnpm (pnpm.io/installation) and it switches to that version by itself.
 
-All green before you push:
+All green before you push. CI runs the same commands on every pull request as the `checks` job:
 
 ```
 pnpm install --frozen-lockfile
@@ -25,6 +25,7 @@ pnpm run lint
 pnpm run typecheck
 pnpm run test
 pnpm run build
+node --test scripts/test-hooks.mjs
 ```
 
 ## Versioning
