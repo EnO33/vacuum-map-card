@@ -158,7 +158,7 @@ Read 2026-11-20; every page carries the banner « HACS is built into Home Assist
 
 ## Gaps for this card
 
-Current state: public MIT repository; the build writes exactly one file `dist/vacuum-map-card.js`; `dist/` is Git-ignored, so the tree never holds the card file and both the Marketplace and the HACS action can **only** find it as a release asset.
+Current state: public MIT repository; the build writes exactly `dist/vacuum-map-card.js` and its source map `dist/vacuum-map-card.js.map` (owner decision, #9); `dist/` is Git-ignored, so the tree never holds the card file and both the Marketplace and the HACS action can **only** find it as a release asset.
 
 ### Order of work
 

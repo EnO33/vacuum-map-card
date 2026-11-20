@@ -1,0 +1,149 @@
+name: Release
+
+# A pushed tag vX.Y.Z on main builds the card and publishes a GitHub release with
+# vacuum-map-card.js and its source map. A manual run (workflow_dispatch) is a dry run:
+# same checks and build, the files are uploaded as a workflow artifact, nothing is published.
+# Rules: docs/research/marketplace.md (« What #9 must do »).
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag to check against package.json, for example v0.1.0 (dry run, nothing is published)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      prerelease: ${{ steps.check.outputs.prerelease }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Before installing anything: only git, the runner's Node.js and the gh CLI are needed.
+      - name: Check tag, version, branch and release prerequisites
+        id: check
+        env:
+          TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+          EVENT: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::The tag is not of the form vX.Y.Z or vX.Y.Z-suffix (for example v1.2.0-beta.1)."
+            exit 1
+          fi
+          version="$(node -p 'require("./package.json").version')"
+          if [ "$TAG" != "v$version" ]; then
+            echo "::error::Tag $TAG does not match package.json version v$version."
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::The commit being built is not on main."
+            exit 1
+          fi
+          case "$TAG" in
+            *-*) prerelease=true ;;
+            *) prerelease=false ;;
+          esac
+          if [ "$EVENT" = "push" ]; then
+            # The Marketplace reads hacs.json at the release tag.
+            if [ ! -f hacs.json ]; then
+              echo "::error::hacs.json is missing at this tag: the Marketplace could not install the release."
+              exit 1
+            fi
+            # With only pre-releases, the Marketplace falls back to the default branch, which has no built card.
+            if [ "$prerelease" = true ] && ! gh api "repos/$REPO/releases/latest" --silent 2>/dev/null; then
+              echo "::error::The first release must be stable: publish vX.Y.Z before any pre-release."
+              exit 1
+            fi
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+      - name: Set up toolchain
+        uses: ./.github/actions/setup
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Test with coverage
+        run: pnpm run test
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Upload the card files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vacuum-map-card
+          path: |
+            dist/vacuum-map-card.js
+            dist/vacuum-map-card.js.map
+          if-no-files-found: error
+
+  publish:
+    name: publish
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Download the card files
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: vacuum-map-card
+          path: dist
+
+      # Draft first, then attach, then publish: a published release without its card file
+      # would break every Marketplace install (docs/research/marketplace.md).
+      - name: Create the draft release with its files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+          PRERELEASE: ${{ needs.build.outputs.prerelease }}
+          BUILT_SHA: ${{ github.sha }}
+        run: |
+          tagged_sha="$(gh api "repos/$REPO/commits/$TAG" --jq .sha)"
+          if [ "$tagged_sha" != "$BUILT_SHA" ]; then
+            echo "::error::The tag moved after the build started: nothing is published."
+            exit 1
+          fi
+          gh release create "$TAG" dist/vacuum-map-card.js dist/vacuum-map-card.js.map \
+            --repo "$REPO" --draft --verify-tag --generate-notes --prerelease="$PRERELEASE"
+
+      - name: Check the attached files, then publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ needs.build.outputs.tag }}
+        run: |
+          assets="$(gh release view "$TAG" --repo "$REPO" --json assets --jq '[.assets[].name] | sort | join(" ")')"
+          if [ "$assets" != "vacuum-map-card.js vacuum-map-card.js.map" ]; then
+            echo "::error::The draft release has unexpected files: $assets. It stays a draft."
+            exit 1
+          fi
+          gh release edit "$TAG" --repo "$REPO" --draft=false

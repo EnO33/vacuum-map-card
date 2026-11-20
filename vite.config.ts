@@ -16,6 +16,8 @@ export default defineConfig({
     outDir: "dist",
     emptyOutDir: true,
     minify: true,
+    // Shipped as a release asset next to the card (owner decision, docs/research/marketplace.md).
+    sourcemap: true,
     rolldownOptions: {
       output: {
         minify: true,

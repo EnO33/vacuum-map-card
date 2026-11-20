@@ -1,4 +1,4 @@
-// Checks that the build wrote exactly one JavaScript file and prints its raw and gzip size.
+// Checks that the build wrote exactly the card file and its source map, and prints the card's raw and gzip size.
 // In GitHub Actions, the size also goes to the job summary.
 // Node.js standard library only. Run after `vite build` (see the "build" script).
 import { appendFileSync, readdirSync, readFileSync } from "node:fs";
@@ -7,24 +7,26 @@ import { gzipSync } from "node:zlib";
 
 const outDir = "dist";
 const { name } = JSON.parse(readFileSync("package.json", "utf8"));
-const expected = `${name}.js`;
+const card = join(outDir, `${name}.js`);
+const expected = [card, `${card}.map`];
 const files = readdirSync(outDir, { recursive: true, withFileTypes: true })
   .filter((entry) => entry.isFile())
-  .map((entry) => join(entry.parentPath, entry.name));
+  .map((entry) => join(entry.parentPath, entry.name))
+  .sort();
 
-if (files.length !== 1 || files[0] !== join(outDir, expected)) {
-  console.error(`Expected only ${join(outDir, expected)} in ${outDir}/, found: ${files.join(", ") || "nothing"}`);
+if (files.join("\n") !== expected.join("\n")) {
+  console.error(`Expected only ${expected.join(" and ")} in ${outDir}/, found: ${files.join(", ") || "nothing"}`);
   process.exit(1);
 }
 
-const content = readFileSync(files[0]);
+const content = readFileSync(card);
 const gzip = gzipSync(content, { level: 9 });
-console.log(`${files[0]}: ${content.length} B raw, ${gzip.length} B gzip`);
+console.log(`${card}: ${content.length} B raw, ${gzip.length} B gzip`);
 
 const summary = process.env.GITHUB_STEP_SUMMARY;
 if (summary) {
   appendFileSync(
     summary,
-    `### Bundle size\n\n| File | Raw | Gzip |\n|---|---|---|\n| \`${expected}\` | ${content.length} B | ${gzip.length} B |\n`,
+    `### Bundle size\n\n| File | Raw | Gzip |\n|---|---|---|\n| \`${name}.js\` | ${content.length} B | ${gzip.length} B |\n`,
   );
 }
