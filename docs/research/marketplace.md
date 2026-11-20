@@ -126,7 +126,7 @@ Checks the action runs for category `plugin` (`custom_components/hacs/validate/*
 |---|---|
 | `archived` | Repository not archived |
 | `description` | GitHub repository description set |
-| `topics` | At least one topic **not** in HACS's `TOPIC_FILTER` (filtered out: `home-assistant`, `homeassistant`, `hacs`, `lovelace`, `lovelace-ui`, `custom-card`, `custom-cards`, `plugin`, `smart-home`, `home-automation`, ...; full list in `custom_components/hacs/repositories/base.py` L57-102). The Marketplace applies an almost identical filter before showing topics (`repositories/base.py` L88-131, L371-374 in core) |
+| `topics` | At least one topic. In action mode the topics are **not** filtered (`custom_components/hacs/repositories/base.py` L207-208 filters `TOPIC_FILTER` only when not running as the action; `action/action.py` sets it), so any topic passes. `TOPIC_FILTER` (`home-assistant`, `homeassistant`, `hacs`, `lovelace`, `lovelace-ui`, `custom-card`, `custom-cards`, `plugin`, `smart-home`, `home-automation`, ...; full list L57-102) only hides topics from what is displayed; the Marketplace applies an almost identical filter before showing topics (`repositories/base.py` L88-131, L371-374 in core). Corrected in #11 |
 | `issues` | Issues enabled |
 | `information` | A `README`, `README.md`, `info` or `info.md` in the tree |
 | `images` | The README has a line with `<img` or `![` that is not a shield (`-shield`, `img.shields.io`) or `buymeacoffee.com` |
@@ -203,7 +203,8 @@ Proposed amendment to #11: move its manual « Add from link » check after the f
    - Owner decision: pin it by commit SHA, knowing the image is always `ghcr.io/hacs/action:main`.
    - It goes green only after the first release (see « Order of work »).
 4. The `images` check needs a non-badge image in the README, and #11 currently lists README changes as out of scope.
-   - Owner decision: generate an anonymised demo image (made-up data, nothing from a real home) and add it to the README in #11. This changes #11's scope; its issue body must say so.
+   - Owner decision: an image of the card in the README, added in #11. While the card only shows its title, it is a capture of the current card (nothing from a real home), with a visible caption saying so. Epic 6 replaces it with a capture of the working card built from anonymised fixture data, in the default theme, at 2x.
+   - The Marketplace frontend keeps a relative `src`/`srcset` only with a `./` prefix (`src/resources/markdown-worker.ts`, xss `safeAttrValue`, frontend `20261028.6`) and rewrites it to the repository's raw URL at the version (`src/panels/marketplace/tools/markdown.ts`): use `./docs/...` paths.
    - The README install instructions stay in Epic 6.
 
 ### Owner decisions (2026-11-20)
@@ -215,7 +216,7 @@ Proposed amendment to #11: move its manual « Add from link » check after the f
 | `filename` in `hacs.json` | Set explicitly |
 | HACS action pinning | Pin by commit SHA |
 | Repository topics | Open: proposal in #11, set by the owner |
-| README demo image | Generated, anonymised, in #11 |
+| README image | Capture of the current card in #11 (2026-11-20 follow-up decision); real card from fixture data in Epic 6 |
 | Source map as a release asset | Yes |
 | Catalog submission (Epic 6) | When the card is ready. PR to `hacs/default` from the owner's personal account with « Allow edits by maintainers », after a release made once the action is green |
 

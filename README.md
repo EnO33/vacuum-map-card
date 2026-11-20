@@ -6,6 +6,13 @@ A Home Assistant dashboard card to clean any room of your home with any of your 
 
 [Lire en français](README.fr.md)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/card-dark.png">
+  <img alt="Empty Home Assistant card titled Vacuum Map Card" src="./docs/images/card-light.png" width="463">
+</picture>
+
+*The card today: only its title. Floor plans and rooms come next.*
+
 ## Why
 
 Vacuum map cards usually show one robot on one map. Homes have several floors and often several robots (a vacuum and a mop, one robot per floor). This card starts from your home instead of from a robot:

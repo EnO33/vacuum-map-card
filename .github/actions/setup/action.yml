@@ -1,8 +1,15 @@
 name: Setup
 description: >-
   Installs pnpm from the packageManager field and Node.js from engines.node in package.json,
-  with the pnpm store cached, then installs dependencies from the frozen lockfile.
+  with the pnpm store cached unless disabled, then installs dependencies from the frozen lockfile.
   Run actions/checkout first: a local action is only available once the repository is checked out.
+inputs:
+  cache:
+    description: >-
+      Package manager cache for actions/setup-node: "pnpm" (default) or "" for none.
+      Release builds pass "": any job running on main can write the main cache scope that tag runs restore.
+    required: false
+    default: pnpm
 runs:
   using: composite
   steps:
@@ -13,7 +20,7 @@ runs:
       uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version-file: package.json
-        cache: pnpm
+        cache: ${{ inputs.cache }}
 
     - name: Install dependencies
       shell: bash
