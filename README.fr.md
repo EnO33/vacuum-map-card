@@ -6,6 +6,13 @@ Une carte de tableau de bord Home Assistant pour nettoyer n'importe quelle pièc
 
 [Read in English](README.md)
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/card-dark.png">
+  <img alt="Carte Home Assistant vide intitulée Vacuum Map Card" src="./docs/images/card-light.png" width="463">
+</picture>
+
+*La carte pour l'instant : seulement son titre. Les plans et les pièces arrivent ensuite.*
+
 ## Pourquoi
 
 Les cartes d'aspirateur montrent en général un robot sur un plan. Une maison a souvent plusieurs étages et plusieurs robots (un aspirateur et un laveur, un robot par étage). Cette carte part de la maison plutôt que du robot :

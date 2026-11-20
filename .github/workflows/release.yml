@@ -78,8 +78,11 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
+      # No restored cache: the published file is built from the registry and the lockfile only.
       - name: Set up toolchain
         uses: ./.github/actions/setup
+        with:
+          cache: ""
 
       - name: Lint
         run: pnpm run lint
