@@ -4,6 +4,8 @@ Ideas to turn into issues with `/plan-epic`. Order is the intended delivery orde
 
 ## Epic 1: Bootstrap (owner-only decisions first)
 
+Planned as epic #2 (issues #3 to #11). The list below is the original idea; the epic is the source of truth.
+
 - Owner decisions: final name (check it is free in the Marketplace), GitHub repository creation and settings. Licence decided: MIT (2026-11-20).
 - `/check-versions` fills `docs/standards.md`; scaffold `package.json`, TypeScript strict config, Biome, Vitest, bundler, `src/index.ts` registering an empty card that renders « Vacuum Map Card » in an `ha-card`.
 - CI workflow: install, lint, typecheck, test with coverage, build with size report; actions pinned by SHA.
