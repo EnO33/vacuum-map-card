@@ -41,7 +41,10 @@ La carte n'est pas encore dans le catalogue du Marketplace. Ajoutez-la comme dé
 
 1. Dans Home Assistant, ouvrez **Paramètres > Marketplace > Ajouter grâce à un lien**.
 2. Saisissez `EnO33/vacuum-map-card` et choisissez le type **Tableau de bord** si la question est posée.
-3. Installez le dépôt, puis ajoutez à un tableau de bord une carte `type: custom:vacuum-map-card`.
+3. Installez le dépôt et rechargez la page du navigateur.
+4. Sur un tableau de bord, ajoutez une carte **Manuel** avec `type: custom:vacuum-map-card`.
+
+Le Marketplace crée aussi une entité de mise à jour nommée « Vacuum Map Card ». Une tuile qui affiche « À jour » sous ce nom est cette entité, pas la carte.
 
 ## Configuration
 
