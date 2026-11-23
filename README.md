@@ -41,7 +41,10 @@ The card is not in the Marketplace catalog yet. Add it as a custom repository:
 
 1. In Home Assistant, go to **Settings > Marketplace > Add from link**.
 2. Enter `EnO33/vacuum-map-card` and choose the **Dashboard** type if asked.
-3. Install the repository, then add a card with `type: custom:vacuum-map-card` to a dashboard.
+3. Install the repository and reload the browser page.
+4. On a dashboard, add a **Manual** card with `type: custom:vacuum-map-card`.
+
+The Marketplace also creates an update entity named « Vacuum Map Card ». A tile showing « Up-to-date » under that name is the update entity, not the card.
 
 ## Configuration
 
