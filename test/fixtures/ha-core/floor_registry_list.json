@@ -1,0 +1,20 @@
+[
+  {
+    "aliases": [],
+    "created_at": 1767225660,
+    "floor_id": "ground_floor",
+    "icon": null,
+    "level": 0,
+    "name": "Ground floor",
+    "modified_at": 1767225720
+  },
+  {
+    "aliases": [],
+    "created_at": 1767225780,
+    "floor_id": "upper_floor",
+    "icon": null,
+    "level": 1,
+    "name": "Upper floor",
+    "modified_at": 1767225840
+  }
+]

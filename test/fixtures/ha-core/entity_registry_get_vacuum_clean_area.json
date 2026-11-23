@@ -1,0 +1,79 @@
+{
+  "area_id": null,
+  "categories": {},
+  "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+  "config_subentry_id": null,
+  "created_at": 1767227100,
+  "device_id": "01010101010101010101010101010101",
+  "disabled_by": null,
+  "entity_category": null,
+  "entity_id": "vacuum.robot_one",
+  "hidden_by": null,
+  "icon": null,
+  "id": "03030303030303030303030303030303",
+  "labels": [],
+  "modified_at": 1767227160,
+  "name": null,
+  "next_name_part": "device",
+  "options": {
+    "conversation": {
+      "should_expose": true
+    },
+    "vacuum": {
+      "area_mapping": {
+        "library": ["MapA_q1W2e3_1"],
+        "workshop": ["MapA_q1W2e3_zid_2"],
+        "music_room": ["MapB_z9X8c7_3"],
+        "studio": ["MapB_z9X8c7_2"]
+      },
+      "last_seen_segments": [
+        {
+          "id": "MapA_q1W2e3_1",
+          "name": "Library",
+          "group": null
+        },
+        {
+          "id": "MapB_z9X8c7_1",
+          "name": "Gallery",
+          "group": null
+        },
+        {
+          "id": "MapB_z9X8c7_3",
+          "name": "Music corner",
+          "group": null
+        },
+        {
+          "id": "MapB_z9X8c7_2",
+          "name": "Studio",
+          "group": null
+        },
+        {
+          "id": "MapA_q1W2e3_zid_0",
+          "name": "Reading table ",
+          "group": "Furniture"
+        },
+        {
+          "id": "MapA_q1W2e3_zid_1",
+          "name": "Mat",
+          "group": "Flooring"
+        },
+        {
+          "id": "MapA_q1W2e3_zid_2",
+          "name": "Workshop",
+          "group": "Other"
+        }
+      ]
+    }
+  },
+  "original_name": null,
+  "platform": "roomba_plus",
+  "translation_key": null,
+  "unique_id": "roomba_plus_ROBOTBLID0001",
+  "aliases": [null],
+  "capabilities": {
+    "fan_speed_list": ["automatic", "eco", "performance"]
+  },
+  "device_class": null,
+  "original_device_class": null,
+  "original_icon": null
+}

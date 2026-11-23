@@ -1,0 +1,710 @@
+[
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767227100,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "vacuum.robot_one",
+    "hidden_by": null,
+    "icon": null,
+    "id": "03030303030303030303030303030303",
+    "labels": [],
+    "modified_at": 1767227160,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": true
+      },
+      "vacuum": {
+        "area_mapping": {
+          "library": ["MapA_q1W2e3_1"],
+          "workshop": ["MapA_q1W2e3_zid_2"],
+          "music_room": ["MapB_z9X8c7_3"],
+          "studio": ["MapB_z9X8c7_2"]
+        },
+        "last_seen_segments": [
+          {
+            "id": "MapA_q1W2e3_1",
+            "name": "Library",
+            "group": null
+          },
+          {
+            "id": "MapB_z9X8c7_1",
+            "name": "Gallery",
+            "group": null
+          },
+          {
+            "id": "MapB_z9X8c7_3",
+            "name": "Music corner",
+            "group": null
+          },
+          {
+            "id": "MapB_z9X8c7_2",
+            "name": "Studio",
+            "group": null
+          },
+          {
+            "id": "MapA_q1W2e3_zid_0",
+            "name": "Reading table ",
+            "group": "Furniture"
+          },
+          {
+            "id": "MapA_q1W2e3_zid_1",
+            "name": "Mat",
+            "group": "Flooring"
+          },
+          {
+            "id": "MapA_q1W2e3_zid_2",
+            "name": "Workshop",
+            "group": "Other"
+          }
+        ]
+      }
+    },
+    "original_name": null,
+    "platform": "roomba_plus",
+    "translation_key": null,
+    "unique_id": "roomba_plus_ROBOTBLID0001"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767227220,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": "config",
+    "entity_id": "select.robot_one_cleaning_passes",
+    "hidden_by": null,
+    "icon": null,
+    "id": "04040404040404040404040404040404",
+    "labels": [],
+    "modified_at": 1767227280,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Paramètre – Passes de nettoyage",
+    "platform": "roomba_plus",
+    "translation_key": "cleaning_passes",
+    "unique_id": "roomba_plus_ROBOTBLID0001_cleaning_passes"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767227340,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": "config",
+    "entity_id": "select.robot_one_carpet_boost_select",
+    "hidden_by": null,
+    "icon": null,
+    "id": "05050505050505050505050505050505",
+    "labels": [],
+    "modified_at": 1767227400,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Boost tapis",
+    "platform": "roomba_plus",
+    "translation_key": "carpet_boost_select",
+    "unique_id": "roomba_plus_ROBOTBLID0001_carpet_boost_select"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767227460,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "select.robot_one_smart_zone_select",
+    "hidden_by": null,
+    "icon": null,
+    "id": "06060606060606060606060606060606",
+    "labels": [],
+    "modified_at": 1767227520,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Sélectionner une zone Smart Map",
+    "platform": "roomba_plus",
+    "translation_key": "smart_zone_select",
+    "unique_id": "roomba_plus_ROBOTBLID0001_smart_zone_select"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767227580,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_one_map",
+    "hidden_by": null,
+    "icon": null,
+    "id": "07070707070707070707070707070707",
+    "labels": [],
+    "modified_at": 1767227640,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Trajet de nettoyage",
+    "platform": "roomba_plus",
+    "translation_key": "map",
+    "unique_id": "roomba_plus_ROBOTBLID0001_map"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767227700,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "image.robot_one_coverage_map",
+    "hidden_by": null,
+    "icon": null,
+    "id": "08080808080808080808080808080808",
+    "labels": [],
+    "modified_at": 1767227760,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Carte thermique de couverture",
+    "platform": "roomba_plus",
+    "translation_key": "coverage_map",
+    "unique_id": "roomba_plus_ROBOTBLID0001_coverage_map"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767227820,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_one_rooms_map",
+    "hidden_by": null,
+    "icon": null,
+    "id": "09090909090909090909090909090909",
+    "labels": [],
+    "modified_at": 1767227880,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Carte des pièces",
+    "platform": "roomba_plus",
+    "translation_key": "rooms_map",
+    "unique_id": "roomba_plus_ROBOTBLID0001_rooms_map"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767227940,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "vacuum.robot_two",
+    "hidden_by": null,
+    "icon": null,
+    "id": "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+    "labels": [],
+    "modified_at": 1767228000,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": true
+      }
+    },
+    "original_name": null,
+    "platform": "roomba_plus",
+    "translation_key": null,
+    "unique_id": "roomba_plus_ROBOTBLID0002"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228060,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": "config",
+    "entity_id": "select.robot_two_cleaning_passes",
+    "hidden_by": null,
+    "icon": null,
+    "id": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+    "labels": [],
+    "modified_at": 1767228120,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Paramètre – Passes de nettoyage",
+    "platform": "roomba_plus",
+    "translation_key": "cleaning_passes",
+    "unique_id": "roomba_plus_ROBOTBLID0002_cleaning_passes"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228180,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "select.robot_two_smart_zone_select",
+    "hidden_by": null,
+    "icon": null,
+    "id": "0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c0c",
+    "labels": [],
+    "modified_at": 1767228240,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Sélectionner une zone Smart Map",
+    "platform": "roomba_plus",
+    "translation_key": "smart_zone_select",
+    "unique_id": "roomba_plus_ROBOTBLID0002_smart_zone_select"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228300,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": "config",
+    "entity_id": "select.robot_two_disposable_pad_wetness",
+    "hidden_by": null,
+    "icon": null,
+    "id": "0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d0d",
+    "labels": [],
+    "modified_at": 1767228360,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Humidité pad jetable",
+    "platform": "roomba_plus",
+    "translation_key": "disposable_pad_wetness",
+    "unique_id": "roomba_plus_ROBOTBLID0002_disposable_pad_wetness"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228420,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": "config",
+    "entity_id": "select.robot_two_reusable_pad_wetness",
+    "hidden_by": null,
+    "icon": null,
+    "id": "0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+    "labels": [],
+    "modified_at": 1767228480,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Humidité pad réutilisable",
+    "platform": "roomba_plus",
+    "translation_key": "reusable_pad_wetness",
+    "unique_id": "roomba_plus_ROBOTBLID0002_reusable_pad_wetness"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228540,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": "config",
+    "entity_id": "select.robot_two_prime_cleaning_mode",
+    "hidden_by": null,
+    "icon": null,
+    "id": "0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f",
+    "labels": [],
+    "modified_at": 1767228600,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Mode de nettoyage",
+    "platform": "roomba_plus",
+    "translation_key": "prime_cleaning_mode",
+    "unique_id": "roomba_plus_ROBOTBLID0002_prime_cleaning_mode"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228660,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_two_map",
+    "hidden_by": null,
+    "icon": null,
+    "id": "10101010101010101010101010101010",
+    "labels": [],
+    "modified_at": 1767228720,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Trajet de nettoyage",
+    "platform": "roomba_plus",
+    "translation_key": "map",
+    "unique_id": "roomba_plus_ROBOTBLID0002_map"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228780,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": "diagnostic",
+    "entity_id": "image.robot_two_coverage_map",
+    "hidden_by": null,
+    "icon": null,
+    "id": "11111111111111111111111111111111",
+    "labels": [],
+    "modified_at": 1767228840,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Carte thermique de couverture",
+    "platform": "roomba_plus",
+    "translation_key": "coverage_map",
+    "unique_id": "roomba_plus_ROBOTBLID0002_coverage_map"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767228900,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_two_rooms_map",
+    "hidden_by": null,
+    "icon": null,
+    "id": "12121212121212121212121212121212",
+    "labels": [],
+    "modified_at": 1767228960,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Carte des pièces",
+    "platform": "roomba_plus",
+    "translation_key": "rooms_map",
+    "unique_id": "roomba_plus_ROBOTBLID0002_rooms_map"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767229020,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "select.robot_two_cloud_zone_mapc_k4l5m6",
+    "hidden_by": null,
+    "icon": null,
+    "id": "13131313131313131313131313131313",
+    "labels": [],
+    "modified_at": 1767229080,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Sélectionner une zone (cloud)",
+    "platform": "roomba_plus",
+    "translation_key": "cloud_smart_zone_select",
+    "unique_id": "roomba_plus_ROBOTBLID0002_cloud_zone_MapC_k4L5m6"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767229140,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": "integration",
+    "entity_category": null,
+    "entity_id": "select.robot_two_cloud_zone_mapd_r7t8y9",
+    "hidden_by": null,
+    "icon": null,
+    "id": "14141414141414141414141414141414",
+    "labels": [],
+    "modified_at": 1767229200,
+    "name": null,
+    "next_name_part": "device",
+    "options": {},
+    "original_name": "Sélectionner une zone (cloud)",
+    "platform": "roomba_plus",
+    "translation_key": "cloud_smart_zone_select",
+    "unique_id": "roomba_plus_ROBOTBLID0002_cloud_zone_MapD_r7T8y9"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767229260,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_two_floor_plan_mapc_k4l5m6",
+    "hidden_by": null,
+    "icon": null,
+    "id": "15151515151515151515151515151515",
+    "labels": [],
+    "modified_at": 1767229320,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Plan Ground floor",
+    "platform": "roomba_plus",
+    "translation_key": "floor_plan",
+    "unique_id": "roomba_plus_ROBOTBLID0002_floor_plan_MapC_k4L5m6"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "created_at": 1767229380,
+    "device_id": "02020202020202020202020202020202",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_two_floor_plan_mapd_r7t8y9",
+    "hidden_by": null,
+    "icon": null,
+    "id": "16161616161616161616161616161616",
+    "labels": [],
+    "modified_at": 1767229440,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Plan Upper level",
+    "platform": "roomba_plus",
+    "translation_key": "floor_plan",
+    "unique_id": "roomba_plus_ROBOTBLID0002_floor_plan_MapD_r7T8y9"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767229500,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "select.robot_one_cloud_zone_mapa_q1w2e3",
+    "hidden_by": null,
+    "icon": null,
+    "id": "17171717171717171717171717171717",
+    "labels": [],
+    "modified_at": 1767229560,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Sélectionner une zone (cloud)",
+    "platform": "roomba_plus",
+    "translation_key": "cloud_smart_zone_select",
+    "unique_id": "roomba_plus_ROBOTBLID0001_cloud_zone_MapA_q1W2e3"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767229620,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": "integration",
+    "entity_category": null,
+    "entity_id": "select.robot_one_cloud_zone_mapb_z9x8c7",
+    "hidden_by": null,
+    "icon": null,
+    "id": "18181818181818181818181818181818",
+    "labels": [],
+    "modified_at": 1767229680,
+    "name": null,
+    "next_name_part": "device",
+    "options": {},
+    "original_name": "Sélectionner une zone (cloud)",
+    "platform": "roomba_plus",
+    "translation_key": "cloud_smart_zone_select",
+    "unique_id": "roomba_plus_ROBOTBLID0001_cloud_zone_MapB_z9X8c7"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767229740,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_one_floor_plan_mapa_q1w2e3",
+    "hidden_by": null,
+    "icon": null,
+    "id": "19191919191919191919191919191919",
+    "labels": [],
+    "modified_at": 1767229800,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Plan Ground floor",
+    "platform": "roomba_plus",
+    "translation_key": "floor_plan",
+    "unique_id": "roomba_plus_ROBOTBLID0001_floor_plan_MapA_q1W2e3"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767229860,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": null,
+    "entity_category": null,
+    "entity_id": "image.robot_one_floor_plan_mapb_z9x8c7",
+    "hidden_by": null,
+    "icon": null,
+    "id": "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a",
+    "labels": [],
+    "modified_at": 1767229920,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Plan Upper floor",
+    "platform": "roomba_plus",
+    "translation_key": "floor_plan",
+    "unique_id": "roomba_plus_ROBOTBLID0001_floor_plan_MapB_z9X8c7"
+  },
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767229980,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": "integration",
+    "entity_category": "diagnostic",
+    "entity_id": "sensor.robot_one_battery_cycle_count_bms",
+    "hidden_by": null,
+    "icon": null,
+    "id": "1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b",
+    "labels": [],
+    "modified_at": 1767230040,
+    "name": null,
+    "next_name_part": "device",
+    "options": {},
+    "original_name": "Cycles batterie (BMS)",
+    "platform": "roomba_plus",
+    "translation_key": "battery_cycle_count_bms",
+    "unique_id": "roomba_plus_ROBOTBLID0001_battery_cycle_count_bms"
+  }
+]

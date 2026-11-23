@@ -1,0 +1,34 @@
+{
+  "area_id": null,
+  "categories": {},
+  "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+  "config_subentry_id": null,
+  "created_at": 1767227100,
+  "device_id": "01010101010101010101010101010101",
+  "disabled_by": null,
+  "entity_category": null,
+  "entity_id": "vacuum.robot_one",
+  "hidden_by": null,
+  "icon": null,
+  "id": "03030303030303030303030303030303",
+  "labels": [],
+  "modified_at": 1767227160,
+  "name": null,
+  "next_name_part": "device",
+  "options": {
+    "conversation": {
+      "should_expose": true
+    }
+  },
+  "original_name": null,
+  "platform": "roomba_plus",
+  "translation_key": null,
+  "unique_id": "roomba_plus_ROBOTBLID0001",
+  "aliases": [null],
+  "capabilities": {
+    "fan_speed_list": ["automatic", "eco", "performance"]
+  },
+  "device_class": null,
+  "original_device_class": null,
+  "original_icon": null
+}
