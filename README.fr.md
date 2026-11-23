@@ -24,7 +24,7 @@ Les cartes d'aspirateur montrent en général un robot sur un plan. Une maison a
 
 ## Fonctionnement
 
-1. **Les étages et les pièces** viennent de Home Assistant : étages et pièces, et l'association entre les segments de l'aspirateur et vos pièces (réglages de l'entité aspirateur ; la version minimale de Home Assistant pour cela n'est pas encore vérifiée).
+1. **Les étages et les pièces** viennent de Home Assistant : étages et pièces, et l'association entre les segments de l'aspirateur et vos pièces (réglages de l'entité aspirateur, disponibles depuis Home Assistant 2026.3).
 2. **Les contours des pièces** viennent d'un *adaptateur de source de pièces* propre à l'intégration de l'aspirateur. Le premier prend en charge [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). D'autres adaptateurs peuvent s'ajouter sans toucher au reste de la carte.
 3. **Le nettoyage** passe par l'action `vacuum.clean_area` de Home Assistant quand la pièce est associée à une pièce Home Assistant, sinon par l'action de l'intégration.
 
@@ -65,6 +65,7 @@ Un éditeur visuel est prévu.
 
 ## Prérequis
 
+- Home Assistant 2026.3.0 ou plus récent pour la carte elle-même, par exemple avec une ressource de tableau de bord ajoutée à la main.
 - Home Assistant 2026.11 ou plus récent, pour l'installation depuis le Marketplace.
 - Une intégration d'aspirateur prise en charge (voir plus haut).
 

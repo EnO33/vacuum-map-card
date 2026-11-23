@@ -154,7 +154,7 @@ Read 2026-11-20; every page carries the banner « HACS is built into Home Assist
 | Effect of `hide_default_branch` in the 2026.11 frontend | Frontend grep at a later tag, or an install of a repository that sets it |
 | Review time and reviewers of `hacs/default` submissions | Official statement or `hacs/default` contributing docs |
 | The release post's « a GitHub connection will be required in the future » for manually added repositories (secondary summary) versus the doc page's « Custom repositories require a GitHub connection » | Re-read the release post section in full |
-| Minimum Home Assistant version of this card | Epic 2 |
+| Minimum Home Assistant version of this card | Resolved 2026-11-23 (#28): 2026.3.0, see `docs/standards.md` |
 
 ## Gaps for this card
 
@@ -196,7 +196,7 @@ Proposed amendment to #11: move its manual « Add from link » check after the f
 1. Add `hacs.json` at the repository root, with only keys of the action's schema (extra keys fail it):
    - `name` (required by the HACS action);
    - `filename: "vacuum-map-card.js"` (owner decision);
-   - `homeassistant` once the minimum version is confirmed (see below).
+   - `homeassistant`: set to `2026.3.0` in #28 (see `docs/standards.md`).
    - Do **not** set `content_in_root` (it disables the release lookup) or `zip_release`. `render_readme` is ignored by the Marketplace; leave it out.
 2. Repository settings (owner, not a file): description; topics with at least one outside the filter list; issues enabled. The MIT licence is already detectable.
 3. Add a workflow running `hacs/action` with `category: plugin` on push, pull request and a schedule, and no `ignore`.
@@ -212,7 +212,7 @@ Proposed amendment to #11: move its manual « Add from link » check after the f
 | Question | Decision |
 |---|---|
 | `v` prefix in tags | Keep it (`v0.1.0`) |
-| Minimum Home Assistant version | « 2025 », read as `2025.1.0`, to confirm by the owner and by Epic 2: the card must then fall back to the integration's room action where `vacuum.clean_area` does not exist yet, and every Home Assistant API it uses must exist in 2025.1. Note: the Marketplace itself exists from 2026.11; older versions install through HACS. |
+| Minimum Home Assistant version | **Superseded on 2026-11-23 by #28: 2026.3.0** (`docs/standards.md`). Original note: « 2025 », read as `2025.1.0`, to confirm by the owner and by Epic 2: the card must then fall back to the integration's room action where `vacuum.clean_area` does not exist yet, and every Home Assistant API it uses must exist in 2025.1. Note: the Marketplace itself exists from 2026.11; older versions install through HACS. |
 | `filename` in `hacs.json` | Set explicitly |
 | HACS action pinning | Pin by commit SHA |
 | Repository topics | Open: proposal in #11, set by the owner |
