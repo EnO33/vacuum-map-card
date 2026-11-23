@@ -205,7 +205,7 @@ Before 2025.12.0 there is no reorder command: list order was creation order and 
 
 ## Anonymised examples
 
-Numbers and names are made up; only the shape is real. Shapes are built from the source cited above; #26 replaces them with live captures.
+Numbers and names are made up; only the shape is real. Shapes are built from the source cited above; the live shapes captured on 2026-11-23 are in `test/fixtures/ha-core/` (#26).
 
 `config/floor_registry/list` (order = Home Assistant floor order; note `level` does not follow it after a reorder):
 
@@ -243,7 +243,7 @@ Numbers and names are made up; only the shape is real. Shapes are built from the
 ]
 ```
 
-`config/entity_registry/get` adds to the same object: `"aliases": [], "capabilities": null, "device_class": null, "original_device_class": null, "original_icon": null`. `config/entity_registry/get_entries` with `{"entity_ids": ["image.robot_one_floor_plan_map_b", "image.does_not_exist"]}`:
+`config/entity_registry/get` adds to the same object: `"aliases": [null], "capabilities": null, "device_class": null, "original_device_class": null, "original_icon": null`. Entity `aliases` is `(string | null)[]`: `null` stands for the entity's computed name (`COMPUTED_NAME`, [C: helpers/entity_registry.py#L105-L123](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/helpers/entity_registry.py#L105-L123), serialised at [L435](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/helpers/entity_registry.py#L435)); the live capture of 2026-11-23 (#26) shows `[null]` for entities without user aliases, where this example first showed `[]`. Floor and area `aliases` stay `string[]`. `config/entity_registry/get_entries` with `{"entity_ids": ["image.robot_one_floor_plan_map_b", "image.does_not_exist"]}`:
 
 ```json
 { "image.robot_one_floor_plan_map_b": { "entity_id": "image.robot_one_floor_plan_map_b", "platform": "example_vacuum", "disabled_by": "integration", "...": "same fields as get" }, "image.does_not_exist": null }
@@ -281,13 +281,13 @@ On a re-enable `changes` holds `disabled_by` with its old value, as above (sourc
 
 | Claim | What would confirm it |
 |---|---|
-| All JSON shapes above match a live 2026.11.2 instance | Live capture with `hass.callWS` (#26) |
-| A non-admin user can call every read command and subscribe to the four `*_registry_updated` events | Same capture with a non-admin user (#26) |
+| All JSON shapes above match a live 2026.11.2 instance | **Confirmed** on 2026-11-23 by the live capture in `test/fixtures/ha-core/` (#26) for floors, areas, main devices, `hass.entities`, `config/entity_registry/list` and `get`; one difference, entity `aliases` is `[null]`, fixed above. `hass.floors`, `hass.areas` and `hass.devices` (main devices) were byte-identical to their list commands, same order. `get_entries` and `list_for_display` shapes were not captured |
+| A non-admin user can call every read command and subscribe to the four `*_registry_updated` events | Capture with a non-admin user (not done in #26: the capture used an administrator) |
 | Floor order shown by the frontend before core 2025.12.0 | Frontend source at the version pinned by core 2025.11.0 |
-| Whether a vacuum integration (Roomba+ first) puts some entities on child devices, so grouping must climb `parent_device_id` | Roomba+ device list capture (#26) |
-| Size and latency of `config/entity_registry/list` on a large installation | Measure in #26 |
+| Whether a vacuum integration (Roomba+ first) puts some entities on child devices, so grouping must climb `parent_device_id` | Roomba+ 4.6.5: **no**, every Roomba+ entity sits on one main device per robot, `parent_device_id` null (live capture, 2026-11-23, #26). Other integrations: still to check |
+| Size and latency of `config/entity_registry/list` on a large installation | Measured on 2026-11-23 (#26) on an installation of about 1,000 entities (about 300 disabled): about 650 KB of JSON, 16 to 28 ms per call from a desktop browser on the local network; `list_for_display` 12 ms. Larger installations not measured |
 
-Capture rule for #26 (security): capture only the robots' devices and entities. Replace `serial_number`, `connections`, `configuration_url`, `identifiers`, `unique_id`, `id`, `config_entry_id`, `device_id` and `context.user_id` with made-up values of the same shape. `unique_id` and `identifiers` are set by the integration and can embed a robot identifier; for some integrations that identifier also serves as a login, so treat it as a secret (whether it does for Roomba+ is « à vérifier » against its source, see `docs/research/roomba-plus.md`).
+Capture rule (security, applied in #26): capture only the robots' devices and entities. Replace `serial_number`, `connections`, `configuration_url`, `identifiers`, `unique_id`, `id`, `config_entry_id`, `device_id` and `context.user_id` with made-up values of the same shape, and also the whole entity id (prefix, robot and map-id suffix), `friendly_name`, entity and device `name` / `name_by_user`, floor and area ids and names, models, firmware versions, map names and every timestamp. `unique_id` and `identifiers` are set by the integration and can embed a robot identifier; for some integrations that identifier also serves as a login, so treat it as a secret (whether it does for Roomba+ is « à vérifier » against its source, see `docs/research/roomba-plus.md`).
 
 ## Gaps for this card
 

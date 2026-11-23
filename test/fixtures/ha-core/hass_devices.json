@@ -1,0 +1,62 @@
+{
+  "01010101010101010101010101010101": {
+    "area_id": "library",
+    "configuration_url": null,
+    "config_entries": ["01JAAAAAAAAAAAAAAAAAAAAA01"],
+    "config_entries_subentries": {
+      "01JAAAAAAAAAAAAAAAAAAAAA01": [null]
+    },
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "connections": [["mac", "00:00:5e:00:53:01"]],
+    "created_at": 1767226860,
+    "disabled_by": null,
+    "entry_type": null,
+    "hw_version": "",
+    "id": "01010101010101010101010101010101",
+    "identifiers": [["roomba_plus", "roomba_plus_ROBOTBLID0001"]],
+    "labels": [],
+    "manufacturer": "Example Robotics",
+    "model": "EXV0001",
+    "model_id": "EXV0001",
+    "modified_at": 1767226920,
+    "name_by_user": null,
+    "name": "Robot One",
+    "next_name_part": "area",
+    "parent_device_id": null,
+    "primary_config_entry": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "serial_number": "SERIAL0001",
+    "sw_version": "1.0.0+example",
+    "via_device_id": null
+  },
+  "02020202020202020202020202020202": {
+    "area_id": "library",
+    "configuration_url": null,
+    "config_entries": ["01JAAAAAAAAAAAAAAAAAAAAA02"],
+    "config_entries_subentries": {
+      "01JAAAAAAAAAAAAAAAAAAAAA02": [null]
+    },
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "config_subentry_id": null,
+    "connections": [["mac", "00:00:5e:00:53:02"]],
+    "created_at": 1767226980,
+    "disabled_by": null,
+    "entry_type": null,
+    "hw_version": "",
+    "id": "02020202020202020202020202020202",
+    "identifiers": [["roomba_plus", "roomba_plus_ROBOTBLID0002"]],
+    "labels": [],
+    "manufacturer": "Example Robotics",
+    "model": "EXM0001",
+    "model_id": "EXM0001",
+    "modified_at": 1767227040,
+    "name_by_user": null,
+    "name": "Robot Two",
+    "next_name_part": "area",
+    "parent_device_id": null,
+    "primary_config_entry": "01JAAAAAAAAAAAAAAAAAAAAA02",
+    "serial_number": "SERIAL0002",
+    "sw_version": "1.0.0+example",
+    "via_device_id": null
+  }
+}

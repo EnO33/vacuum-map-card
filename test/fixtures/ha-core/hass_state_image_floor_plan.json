@@ -1,0 +1,16 @@
+{
+  "entity_id": "image.robot_one_floor_plan_mapa_q1w2e3",
+  "state": "2026-01-01T08:04:00.123456+00:00",
+  "attributes": {
+    "access_token": "0000000000000000000000000000000000000000000000000000000000000001",
+    "entity_picture": "/api/image_proxy/image.robot_one_floor_plan_mapa_q1w2e3?token=0000000000000000000000000000000000000000000000000000000000000001",
+    "friendly_name": "Robot One Plan Ground floor"
+  },
+  "context": {
+    "id": "01JAAAAAAAAAAAAAAAAAAAAA05",
+    "parent_id": null,
+    "user_id": null
+  },
+  "last_changed": "2026-01-01T08:05:00.000Z",
+  "last_updated": "2026-01-01T08:06:00.000Z"
+}

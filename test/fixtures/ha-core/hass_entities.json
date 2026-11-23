@@ -1,0 +1,204 @@
+{
+  "vacuum.robot_one": {
+    "entity_id": "vacuum.robot_one",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "platform": "roomba_plus"
+  },
+  "select.robot_one_cleaning_passes": {
+    "entity_id": "select.robot_one_cleaning_passes",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "cleaning_passes",
+    "platform": "roomba_plus",
+    "entity_category": "config",
+    "name": "Paramètre – Passes de nettoyage"
+  },
+  "select.robot_one_carpet_boost_select": {
+    "entity_id": "select.robot_one_carpet_boost_select",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "carpet_boost_select",
+    "platform": "roomba_plus",
+    "entity_category": "config",
+    "name": "Boost tapis"
+  },
+  "select.robot_one_smart_zone_select": {
+    "entity_id": "select.robot_one_smart_zone_select",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "smart_zone_select",
+    "platform": "roomba_plus",
+    "name": "Sélectionner une zone Smart Map"
+  },
+  "image.robot_one_map": {
+    "entity_id": "image.robot_one_map",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "map",
+    "platform": "roomba_plus",
+    "name": "Trajet de nettoyage"
+  },
+  "image.robot_one_coverage_map": {
+    "entity_id": "image.robot_one_coverage_map",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "coverage_map",
+    "platform": "roomba_plus",
+    "entity_category": "diagnostic",
+    "name": "Carte thermique de couverture"
+  },
+  "image.robot_one_rooms_map": {
+    "entity_id": "image.robot_one_rooms_map",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "rooms_map",
+    "platform": "roomba_plus",
+    "name": "Carte des pièces"
+  },
+  "vacuum.robot_two": {
+    "entity_id": "vacuum.robot_two",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "platform": "roomba_plus"
+  },
+  "select.robot_two_cleaning_passes": {
+    "entity_id": "select.robot_two_cleaning_passes",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "cleaning_passes",
+    "platform": "roomba_plus",
+    "entity_category": "config",
+    "name": "Paramètre – Passes de nettoyage"
+  },
+  "select.robot_two_smart_zone_select": {
+    "entity_id": "select.robot_two_smart_zone_select",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "smart_zone_select",
+    "platform": "roomba_plus",
+    "name": "Sélectionner une zone Smart Map"
+  },
+  "select.robot_two_disposable_pad_wetness": {
+    "entity_id": "select.robot_two_disposable_pad_wetness",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "disposable_pad_wetness",
+    "platform": "roomba_plus",
+    "entity_category": "config",
+    "name": "Humidité pad jetable"
+  },
+  "select.robot_two_reusable_pad_wetness": {
+    "entity_id": "select.robot_two_reusable_pad_wetness",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "reusable_pad_wetness",
+    "platform": "roomba_plus",
+    "entity_category": "config",
+    "name": "Humidité pad réutilisable"
+  },
+  "select.robot_two_prime_cleaning_mode": {
+    "entity_id": "select.robot_two_prime_cleaning_mode",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "prime_cleaning_mode",
+    "platform": "roomba_plus",
+    "entity_category": "config",
+    "name": "Mode de nettoyage"
+  },
+  "image.robot_two_map": {
+    "entity_id": "image.robot_two_map",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "map",
+    "platform": "roomba_plus",
+    "name": "Trajet de nettoyage"
+  },
+  "image.robot_two_coverage_map": {
+    "entity_id": "image.robot_two_coverage_map",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "coverage_map",
+    "platform": "roomba_plus",
+    "entity_category": "diagnostic",
+    "name": "Carte thermique de couverture"
+  },
+  "image.robot_two_rooms_map": {
+    "entity_id": "image.robot_two_rooms_map",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "rooms_map",
+    "platform": "roomba_plus",
+    "name": "Carte des pièces"
+  },
+  "select.robot_two_cloud_zone_mapc_k4l5m6": {
+    "entity_id": "select.robot_two_cloud_zone_mapc_k4l5m6",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "cloud_smart_zone_select",
+    "platform": "roomba_plus",
+    "name": "Sélectionner une zone (cloud)"
+  },
+  "image.robot_two_floor_plan_mapc_k4l5m6": {
+    "entity_id": "image.robot_two_floor_plan_mapc_k4l5m6",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "floor_plan",
+    "platform": "roomba_plus",
+    "name": "Plan Ground floor"
+  },
+  "image.robot_two_floor_plan_mapd_r7t8y9": {
+    "entity_id": "image.robot_two_floor_plan_mapd_r7t8y9",
+    "device_id": "02020202020202020202020202020202",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "floor_plan",
+    "platform": "roomba_plus",
+    "name": "Plan Upper level"
+  },
+  "select.robot_one_cloud_zone_mapa_q1w2e3": {
+    "entity_id": "select.robot_one_cloud_zone_mapa_q1w2e3",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "cloud_smart_zone_select",
+    "platform": "roomba_plus",
+    "name": "Sélectionner une zone (cloud)"
+  },
+  "image.robot_one_floor_plan_mapa_q1w2e3": {
+    "entity_id": "image.robot_one_floor_plan_mapa_q1w2e3",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "floor_plan",
+    "platform": "roomba_plus",
+    "name": "Plan Ground floor"
+  },
+  "image.robot_one_floor_plan_mapb_z9x8c7": {
+    "entity_id": "image.robot_one_floor_plan_mapb_z9x8c7",
+    "device_id": "01010101010101010101010101010101",
+    "next_name_part": "device",
+    "labels": [],
+    "translation_key": "floor_plan",
+    "platform": "roomba_plus",
+    "name": "Plan Upper floor"
+  }
+}

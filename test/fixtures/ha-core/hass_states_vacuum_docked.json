@@ -1,0 +1,36 @@
+{
+  "vacuum.robot_two": {
+    "entity_id": "vacuum.robot_two",
+    "state": "docked",
+    "attributes": {
+      "fan_speed_list": ["automatic", "eco", "performance"],
+      "fan_speed": "Deep-3",
+      "friendly_name": "Robot Two",
+      "supported_features": 13116
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAA03",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T08:00:00.000Z",
+    "last_updated": "2026-01-01T08:01:00.000Z"
+  },
+  "vacuum.robot_one": {
+    "entity_id": "vacuum.robot_one",
+    "state": "docked",
+    "attributes": {
+      "fan_speed_list": ["automatic", "eco", "performance"],
+      "fan_speed": "automatic",
+      "friendly_name": "Robot One",
+      "supported_features": 29500
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAA04",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T08:02:00.000Z",
+    "last_updated": "2026-01-01T08:03:00.000Z"
+  }
+}
