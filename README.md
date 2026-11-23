@@ -2,7 +2,7 @@
 
 A Home Assistant dashboard card to clean any room of your home with any of your robots: all your floor plans side by side, tap a room, pick a robot, confirm, done.
 
-> **Status: early development.** Nothing is released yet. The configuration shown below is the target design and may change before 1.0.
+> **Status: early development.** Version 0.1.0 is a preview: it installs from the Marketplace and shows only its title. Floor plans, rooms and robots come in later versions.
 
 [Lire en français](README.fr.md)
 
@@ -24,7 +24,7 @@ Vacuum map cards usually show one robot on one map. Homes have several floors an
 
 ## How it works
 
-1. **Floors and rooms** come from Home Assistant: floors and areas, and the mapping between your vacuum's segments and your areas (vacuum entity settings, Home Assistant 2026.3 or later, « à vérifier »).
+1. **Floors and rooms** come from Home Assistant: floors and areas, and the mapping between your vacuum's segments and your areas (vacuum entity settings; the minimum Home Assistant version for this is not verified yet).
 2. **Room outlines** come from a *room source* adapter for your vacuum integration. The first one supports [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). More adapters can be added without touching the rest of the card.
 3. **Cleaning** uses Home Assistant's own `vacuum.clean_area` action when the room is mapped to an area, or the integration's room action otherwise.
 
@@ -32,30 +32,37 @@ Vacuum map cards usually show one robot on one map. Homes have several floors an
 
 | Integration | Room outlines | Floor plans | Start a room | Status |
 |---|---|---|---|---|
-| Roomba+ (iRobot) | Yes, active map | Yes, every stored map | Yes | Planned for 0.1 |
+| Roomba+ (iRobot) | Yes, active map | Yes, every stored map | Yes | Planned |
 | Others | Contributions welcome, see `CONTRIBUTING.md` | | | |
 
 ## Installation
 
-Not available yet. The plan is to list the card in the Home Assistant Marketplace; until then it will be installable as a custom repository (Dashboard type).
+The card is not in the Marketplace catalog yet. Add it as a custom repository:
+
+1. In Home Assistant, go to **Settings > Marketplace > Add from link**.
+2. Enter `EnO33/vacuum-map-card` and choose the **Dashboard** type if asked.
+3. Install the repository, then add a card with `type: custom:vacuum-map-card` to a dashboard.
 
 ## Configuration
 
-Target design, not final:
-
 ```yaml
 type: custom:vacuum-map-card
-# Everything is discovered by default: floors, rooms, robots.
+```
+
+The card has no option yet. Planned options (target design, not final, ignored by 0.1.0):
+
+```yaml
+# Everything will be discovered by default: floors, rooms, robots.
 # Optional overrides:
 floors: [ground_floor, first_floor]   # Home Assistant floor ids, in display order
 robots: [vacuum.my_vacuum, vacuum.my_mop]
 ```
 
-A visual editor is part of the first release.
+A visual editor is planned.
 
 ## Requirements
 
-- Home Assistant « à vérifier » or later.
+- Home Assistant 2026.11 or later, to install from the Marketplace.
 - A supported vacuum integration (see above).
 
 ## Contributing
