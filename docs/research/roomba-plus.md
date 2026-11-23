@@ -1,87 +1,567 @@
 # Roomba+ data model
 
-- Integration: [johnnyh1975/ha_roomba_plus](https://github.com/johnnyh1975/ha_roomba_plus) **4.6.3**, Home Assistant **2026.11.2**.
-- Robots seen: one Roomba s9+ (vacuum) and one Braava jet m6 (mop), « Classic » family (local MQTT), iRobot account connected for maps.
-- Captured: 2026-11-20, from the frontend `hass` object and `roomba_plus.get_rooms` responses. Values below are **anonymised** (`<robot>`, `<map_id>`, room names and coordinates replaced).
+Status: **verified at source** on 2026-11-23 (date read for every fact below) against Roomba+ [`v4.6.5`](https://github.com/johnnyh1975/ha_roomba_plus/releases/tag/v4.6.5) (tag commit `a6390478e0ba46e5cb652e5d063150b0bfc892d7`, committed 2026-11-20T19:27:33Z; [tree](https://github.com/johnnyh1975/ha_roomba_plus/tree/v4.6.5)). Not yet checked live at 4.6.5: the live capture is #27. The previous version of this document was a live capture at 4.6.3 (2026-11-20, two Classic robots, one vacuum and one mop, iRobot account connected); where that capture and the source disagree, the row says so.
 
-## Entities that matter
+Method: the repository tarball at tag `v4.6.5` was read locally, and every file cited here was checked to be byte-identical to `gh api repos/johnnyh1975/ha_roomba_plus/contents/<path>?ref=v4.6.5` (same git blob SHA), so line numbers are those of the tag. Changes since 4.6.3: `gh release view v4.6.4|v4.6.5 -R johnnyh1975/ha_roomba_plus` and `gh api repos/johnnyh1975/ha_roomba_plus/compare/v4.6.3...v4.6.5`, plus a `diff` of the touched files. Core facts are not repeated: they link to [`ha-core-vacuum.md`](ha-core-vacuum.md) and [`ha-core-registries.md`](ha-core-registries.md). Every link is written in full. Code comments and docstrings are quoted as the author's statement; where they disagree with the code, the row says which is which. The upstream docs under `docs/` are a secondary source.
 
-| Entity | Content | Notes |
+Scope: the Roomba+ « Classic » generation (local MQTT plus iRobot cloud for maps) in full; the « Prime » generation (cloud only) where it differs, without the same depth. Out of scope: live captures and fixtures (#27), adapter code (Epic 4), the minimum Home Assistant version (#28), ADR edits (#29).
+
+## Versions covered
+
+| Fact | Source | Checked |
 |---|---|---|
-| `vacuum.<robot>` | State `docked`, `cleaning`, `returning`, `paused`, `idle`, `error` | Braava keeps a `detected_pad` attribute (`reusableWet`, `invalid`…) |
-| `image.<robot>_rooms_map` | Room map of **one** map (see below) | Attributes `rooms`, `calibration_points`, `alignment_pending` |
-| `image.<robot>_floor_plan_<map_id>` | Floor plan of one stored map, rooms drawn and labelled in the picture | **Disabled by default**, one per stored map; attributes `map_name`, `map_version`, `room_count`. `<map_id>` is the iRobot map id in lower case |
-| `image.<robot>_map` | Live cleaning path (local) | No room data |
-| `image.<robot>_coverage_map` | Coverage heat map | Diagnostic |
-| `select.<robot>_cloud_zone_<map_id>` | Cloud clean zones of one map | Options = zone names; attribute `is_active_map`; disabled for non-active maps |
+| `v4.6.5` is the latest release on the date read and equals `main` (`a6390478e0`) | `gh release list -R johnnyh1975/ha_roomba_plus`, `gh api repos/johnnyh1975/ha_roomba_plus/commits/main` | 2026-11-23 |
+| Integration domain `roomba_plus`, version `4.6.5`, `integration_type: device`, `iot_class: local_push`, requirements `roombapy>=2.0.2`, `roombapy-prime[map]==0.9.2` | [manifest.json#L2](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/manifest.json#L2), [L35-L36](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/manifest.json#L35-L36), [L45-L49](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/manifest.json#L45-L49) | 2026-11-23 |
+| Minimum Home Assistant declared for the Marketplace: `2025.5.0` | [hacs.json#L3](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/hacs.json#L3) | 2026-11-23 |
+| Release notes: « Requires Home Assistant 2025.5.0+ »; « The full suite passes on Home Assistant 2025.5 and 2026.10 » | [v4.6.5 release](https://github.com/johnnyh1975/ha_roomba_plus/releases/tag/v4.6.5), [release-notes/v4.6.5.md](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/release-notes/v4.6.5.md) | 2026-11-23 |
+| `CLEAN_AREA` and segments only exist when Home Assistant has them (core 2026.3.0 and later): the flag is guarded by `hasattr(VacuumEntityFeature, "CLEAN_AREA")` and `Segment` by an `ImportError` fallback | [vacuum.py#L343](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L343), [room_cleaning.py#L2649-L2656](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2649-L2656); core first version in [`ha-core-vacuum.md`, « First versions »](ha-core-vacuum.md#first-versions) | 2026-11-23 |
+| Licence MIT | `gh api repos/johnnyh1975/ha_roomba_plus --jq .license.spdx_id` | 2026-11-23 |
 
-The integration and the companion card find entities through the entity registry (`platform: roomba_plus`), not by id pattern.
+Version statements are facts for #28, not requirements: Roomba+ itself runs from 2025.5.0, while the room-to-area path (ADR 0003 path 1) needs core 2026.3.0 or later. Feature ages quoted below as « since 4.x » come from code comments and were **not** verified at older tags (upper bounds only).
 
-## `image.<robot>_rooms_map` attributes
+## Changes from 4.6.3 to 4.6.5
+
+Files touched (`compare/v4.6.3...v4.6.5`): `button.py`, `callbacks.py`, `const.py`, `image.py`, `manifest.json`, `map_renderer.py`, `prime_coordinator.py`, `sensor_helpers.py`, `vacuum.py`, `README.md`, docs, release notes and tests.
+
+| Release | Change | Affects this card? | Source |
+|---|---|---|---|
+| 4.6.4 | The vacuum's `error`, `error_code` (and `help_url`) attributes are no longer set for an error left over from an ended mission (`cycle == "none"` and phase `charge`, `stop`, `idle` or empty). The vacuum **state** is unchanged | Only if the card shows the robot's error text; the `error` state itself is unchanged | [vacuum.py#L676-L691](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L676-L691), [const.py#L3786-L3796](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L3786-L3796) |
+| 4.6.4 | Room tracking while driving off and back to the dock (current-room sensors); a refused Prime named shadow no longer fails setup | No | [v4.6.4 release](https://github.com/johnnyh1975/ha_roomba_plus/releases/tag/v4.6.4) |
+| 4.6.5 | Favourite buttons, `run_favorite` and « Repeat last mission » send the map's current version | No (the card does not use favourites) | [button.py#L947](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/button.py#L947) |
+| 4.6.5 | The dock is drawn where the robot last docked on the cleaning-path image (`image.<robot>_map`), not on the rooms map | No | [image.py#L2317-L2331](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L2317-L2331) |
+
+None of the code read below for the rooms map, the floor plans, the services, segments or area resolution changed between 4.6.3 and 4.6.5 (the `image.py` diff is limited to the cleaning-path class). Differences from the previous version of **this document** are listed at the end.
+
+## Entities the card needs
+
+All entities are created by the integration with registry `platform: "roomba_plus"` (the manifest domain, [manifest.json#L2](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/manifest.json#L2)). Every entity uses `has_entity_name` ([entity.py#L67](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L67)) and a `unique_id` of the form `roomba_plus_<blid>_<english key>`, with the entity id suffix taken from that key ([entity.py#L214-L247](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L214-L247)). `<blid>` is the robot's BLID, which is also the local MQTT user name (`RoombaClient(host, blid, password)`, [__init__.py#L446-L450](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/__init__.py#L446-L450)): treat every `unique_id` as an identifier never to log or publish.
+
+| Entity | `unique_id` | `translation_key` | Enabled by default | Created when | Source |
+|---|---|---|---|---|---|
+| `vacuum.*` | `roomba_plus_<blid>` (no suffix) | none (`_attr_name = None`: the name is the device's) | yes (not overridden) | Always; class chosen from the robot's state (Braava, carpet-boost Roomba, other Roomba) | [vacuum.py#L149-L156](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L149-L156), [L172](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L172), [L189-L190](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L189-L190) |
+| Rooms map `image.*` (Classic) | `roomba_plus_<blid>_rooms_map` | `rooms_map` (« Room map ») | yes (not overridden) | Smart Map robots, and 900-series with a cloud aligner; not created without pose capability | [image.py#L345-L347](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L345-L347), [L374-L384](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L374-L384), [L4946-L4947](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4946-L4947), [L4959](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4959); name [strings.json#L1903-L1905](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L1903-L1905) |
+| Floor plan `image.*`, one per stored map (Classic) | `roomba_plus_<blid>_floor_plan_<pmap_id>` (map id in its **original case**) | `floor_plan` (« Floor plan {map} ») | **no** (`_attr_entity_registry_enabled_default = False`, so the registry stores `disabled_by: "integration"`) | At image platform setup, for every map in the cloud's map list, only for a Smart Map robot whose cloud data is present at that moment | [image.py#L386-L402](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L386-L402), [L4578-L4581](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4578-L4581), [L4598-L4599](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4598-L4599); name [strings.json#L1906-L1908](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L1906-L1908); `disabled_by` rule in [`ha-core-registries.md`, « Read paths »](ha-core-registries.md#read-paths) |
+| Cleaning mode `select.*` | `roomba_plus_<blid>_prime_cleaning_mode` (same on Classic) | `prime_cleaning_mode` (« Cleaning mode »), category `config` | yes | Classic: only when the robot reports `padWetness` (a robot that mops); Prime: always | [select.py#L173-L183](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L173-L183), [select.py#L262-L286](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L262-L286), [select_prime.py#L1071-L1072](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select_prime.py#L1071-L1072), [L1097](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select_prime.py#L1097), [const.py#L866-L877](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L866-L877) |
+| Cloud zone `select.*`, one per stored map (Classic, cloud) | `roomba_plus_<blid>_cloud_zone_<pmap_id>` | `cloud_smart_zone_select` | only for the map that was the cloud's « active » map **at setup**; the others disabled, their `map_name` suffixed « (inactive) ». An enabled default only takes effect when the registry entry is first created ([`ha-core-registries.md`, « Read paths »](ha-core-registries.md#read-paths)), so a later change of the active map does not enable or disable existing selects | Classic Smart Map with cloud, for each map that has rooms or zones | [select.py#L236-L257](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L236-L257), [L846-L852](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L846-L852) |
+| Mop pad `sensor.*` | `roomba_plus_<blid>_mop_pad` | `mop_pad`, category `diagnostic` | yes | Robots that report `detectedPad` | [sensor_core.py#L1005-L1015](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/sensor_core.py#L1005-L1015), unique id [L1919](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/sensor_core.py#L1919) |
+
+Prime differences: the rooms map is `PrimeRoomsImage` with the same `unique_id` suffix `_rooms_map`, plus a second image `roomba_plus_<blid>_prime_cleaning_map` (`cleaning_map`) that carries no room attributes; Prime floor plans use `roomba_plus_<blid>_floor_plan_<p2map_id>`, also disabled by default ([image.py#L310-L343](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L310-L343), [L4793-L4796](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4793-L4796), [L4814](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4814), [L5517-L5521](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5517-L5521), [L6512-L6513](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L6512-L6513)). A Prime `p2map_id` contains the BLID (« `p2map_id` is literally "<BLID>-<epoch>" », [diagnostics.py#L414-L415](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/diagnostics.py#L414-L415)).
+
+### Device link
+
+| Fact | Source |
+|---|---|
+| Every entity of one robot sets the same device identifier `(roomba_plus, roomba_plus_<blid>)`; Classic also sets `serial_number` (`navSerialNo`), `model` and `model_id` (the robot's SKU), and a MAC connection | [entity.py#L165-L176](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L165-L176), [L182-L189](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L182-L189); Prime [L191-L210](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L191-L210) |
+| No child devices: no `via_device` or parent device anywhere in the integration (search of `custom_components/roomba_plus/` for `via_device`, `parent_device`, `DeviceInfo(`: three hits, all in `entity.py`, all the robot's own device) | [entity.py#L165](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L165), [L202](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L202), [L476](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L476) |
+| The device name is resolved from the robot's state and rewritten at runtime | [entity.py#L470-L478](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L470-L478) |
+
+So the card groups a robot's entities by `device_id` alone (the `parent_device_id` climb of [`ha-core-registries.md`](ha-core-registries.md#devices) is not needed for Roomba+ at 4.6.5).
+
+### Finding entities without entity id patterns
+
+- Robot: `domain == "vacuum"` and `platform == "roomba_plus"` in the registry.
+- Rooms map, floor plans, cleaning mode select, mop pad sensor: same `device_id` and `platform`, told apart by `translation_key` (`rooms_map`, `floor_plan`, `prime_cleaning_mode`, `mop_pad`). `hass.entities` carries `translation_key` for enabled entities; disabled floor plans are only in `config/entity_registry/list` ([`ha-core-registries.md`, « Read paths »](ha-core-registries.md#read-paths)).
+- The entity id suffix is a lower-cased slug of the map id ([entity.py#L219-L247](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L219-L247)); Classic map ids contain `_` and mixed case ([room_cleaning.py#L2800-L2803](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2800-L2803)), so the map id cannot be recovered from an entity id. ADR 0002 forbids trying anyway.
+
+### Where a map id can be read
+
+| Place | Map id there? | Read path | Source |
+|---|---|---|---|
+| Floor plan `unique_id` | yes: the suffix after `<vacuum unique_id>_floor_plan_` (the vacuum's `unique_id` is exactly `roomba_plus_<blid>`, so the prefix is known without parsing the BLID) | `config/entity_registry/list` (the only path that lists `unique_id` and disabled entries) | [image.py#L4598](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4598); the integration itself strips that same prefix [L419-L426](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L419-L426) |
+| Floor plan attributes | **no** (`map_name`, `map_version`, `room_count` only) | `hass.states` | [image.py#L4653-L4659](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4653-L4659) |
+| Rooms map attributes (Classic) | **no**: no attribute says which map is shown | `hass.states` | [image.py#L5218-L5420](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5218-L5420) |
+| Cloud zone select attribute `pmap_id` | yes, when that select is enabled (only the setup-time active map by default) | `hass.states` | [select.py#L1047-L1057](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L1047-L1057) |
+| `roomba_plus.get_rooms` row `map_id` | yes, but for the cloud's **active** map only (see « Which map ») | service response | [mission_queries.py#L84-L91](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L84-L91), [cloud_coordinator.py#L1559](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L1559) |
+| Classic segment ids `<pmap_id>_<region_id>` | yes, but map ids contain `_`: match against known map ids, longest first, never split | `last_seen_segments` (any user), `vacuum/get_segments` (admin) | [room_cleaning.py#L204-L234](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L204-L234), [L287-L291](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L287-L291) |
+
+## Rooms map (`translation_key: rooms_map`, Classic)
+
+### Which map it shows
+
+| Fact | Source |
+|---|---|
+| The rooms map draws the cloud map fetched by `_fetch_active_umf`, whose map is chosen by `displayed_pmap()`: the only map when there is one; otherwise the map of the robot's last command (`lastCommand.pmap_id`) unless the robot then reported error 224 (« Smart Map localization failed »); else the map with the newest version; else the first listed. The reason is kept in `displayed_map_source` (diagnostics only) | [cloud_coordinator.py#L489-L531](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L489-L531), [L1893-L1898](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L1893-L1898) |
+| The cloud's « active » map (`active_pmap_id`) is a different notion: the map with the newest version timestamp; the author's comment says « RUNNING A MISSION DOES NOT BUMP THE TIMESTAMP » and that it is not where the robot is | [cloud_coordinator.py#L1399-L1435](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L1399-L1435) |
+| The two can differ in the code at 4.6.5: `displayed_pmap()` prefers `lastCommand.pmap_id` and only falls back to the newest version, while `active_pmap_id` is always the newest version. (The nearby comment « need not be the map the room names come from » describes the pre-4.5.4 choice of the first listed map, [cloud_coordinator.py#L1893-L1896](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L1893-L1896).) | [cloud_coordinator.py#L489-L531](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L489-L531), [L1432-L1435](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L1432-L1435) |
+| A Classic robot does not report where it is; the integration's best guess is `lastCommand.pmap_id`, « never a live reading » | [room_cleaning.py#L1972-L2006](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1972-L2006) |
+| What changes the shown map: a cloud refresh whose UMF is another map or another version rebuilds the aligner (`_umf_version_changed`, `_async_realign`). Cloud refreshes run: daily when idle; every 10 minutes while the login or the room outlines are missing (at most 6 times in a row); after a mission ends (one delayed attempt, one retry); when the robot reports a new map version (retrain); and after a `vacuum.clean_area` command (the segment path only, **not** `clean_room`) | [callbacks.py#L3190-L3218](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/callbacks.py#L3190-L3218), [L3362-L3365](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/callbacks.py#L3362-L3365), [L3455-L3480](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/callbacks.py#L3455-L3480), [callbacks.py#L3563-L3615](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/callbacks.py#L3563-L3615), [cloud_coordinator.py#L50-L71](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L50-L71), [room_cleaning.py#L3023-L3030](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3023-L3030) |
+
+**Name mismatch risk (verified in code, not observed).** Room names on the rooms map are `{**aligner.rid_to_name(), **region_names_across_maps(cc)}` ([image.py#L5304-L5307](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5304-L5307)). `region_names_across_maps` is called without `prefer_pmap_id`, so the cloud-active map's names go in first and override the shown map's own names ([room_cleaning.py#L3330-L3396](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3330-L3396), active first at [L3387-L3390](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3387-L3390)). Region ids are numbered per map ([L3364](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3364)), so when the shown map is not the active one and both maps use the same region id, the outline can carry the other map's name. Whether it happens on a two-map account: « à vérifier » live (#27).
+
+### Attributes
+
+Built in `extra_state_attributes` ([image.py#L5218-L5420](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5218-L5420)). Core adds `access_token`, `entity_picture`, `friendly_name` ([`ha-core-vacuum.md`, « Image entity »](ha-core-vacuum.md#image-entity)).
+
+| Key | Type | Present when | Source |
+|---|---|---|---|
+| `alignment_pending` | boolean | an aligner with room outlines exists **and** the image was rendered once since start | [image.py#L5238-L5256](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5238-L5256) |
+| `calibration_points` | array of exactly 3 `{ "vacuum": {"x": number, "y": number}, "map": {"x": integer, "y": integer} }` | same as above, in both modes (aligned mode omits it if the aligner returns none) | [image.py#L5262-L5287](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5262-L5287), [umf_aligner.py#L367-L411](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L367-L411) |
+| `rooms` | object keyed by the room's **display name**; each value `{outline, name, room_id, region_id, icon, x, y}` | at least one room outline | [image.py#L5289-L5348](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5289-L5348) |
+| `rooms[*].outline` | array of `[number, number]` (3 or more points) | | [image.py#L5337](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5337), ≥ 3 vertices [umf_aligner.py#L496-L497](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L496-L497) |
+| `rooms[*].name` | string, equal to the key: alias set under Configure, else the account's name, else a locally stored name, else `Zone <id>` | | [image.py#L5326-L5328](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5326-L5328), [zone_naming.py#L94-L116](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/zone_naming.py#L94-L116), [L147-L176](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/zone_naming.py#L147-L176) |
+| `rooms[*].room_id` | string: an ASCII **slug of the name** (`"Küche"` → `"kuche"`, never empty, `"room"` as last resort), not a robot id | | [image.py#L5339](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5339), [const.py#L3340-L3365](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L3340-L3365) |
+| `rooms[*].region_id` | string: the robot's region id on the shown map (numbered per map) | | [image.py#L5340-L5342](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5340-L5342) |
+| `rooms[*].icon` | string `mdi:*` from the region type of the **active** map's room list, `mdi:map-marker` by default | | [image.py#L5293-L5297](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5293-L5297), [L5333-L5335](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5333-L5335), [const.py#L3264-L3300](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L3264-L3300) |
+| `rooms[*].x`, `rooms[*].y` | number: mean of the outline's vertices (not an area centroid; can fall outside a concave room) | | [image.py#L5331-L5332](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5331-L5332) |
+| `zones` (`[{type: "observed", x, y}` or `{type: "keepout", polygon}]`), `door_markers` (`[{id, cx, cy, label, mission_count}]`), `furniture_candidates` (`[{x_mm, y_mm}]`) | arrays | aligned mode only | [image.py#L5350-L5418](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5350-L5418) |
+
+- Two rooms with the same display name collapse into one key: the later one overwrites ([image.py#L5336](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5336)). `region_id` is the stable key; the card keys rooms by `region_id`, not by the object key.
+- `calibration_points`, `rooms`, `zones`, `door_markers`, `furniture_candidates` are excluded from the recorder ([image.py#L842-L850](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L842-L850)): history has none of them; the card reads current state only.
+
+### Coordinate system, unit and calibration
+
+| Fact | Source |
+|---|---|
+| Cloud map (UMF) points are in **metres** and multiplied by 1000 when read, so every outline is in **millimetres** | [umf_aligner.py#L6-L8](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L6-L8), [L25-L29](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L25-L29), [L415-L441](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L415-L441) |
+| `alignment_pending: true` (fallback): `outline`, `x`, `y` and `calibration_points.vacuum` are in the **cloud map's own frame** (mm). The image is drawn in that frame | [image.py#L5137-L5148](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5137-L5148), [L5322-L5323](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5322-L5323) |
+| `alignment_pending: false` (aligned): the same values are in **pose space**, mm relative to the dock, through a rigid transform (rotation plus translation, no scale, no mirror). Image, outlines and calibration all switch frame together | [umf_aligner.py#L3-L4](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L3-L4), [L220-L232](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L220-L232), [image.py#L5125-L5136](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5125-L5136), [L5311-L5321](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5311-L5321) |
+| Alignment needs at least 2 door markers seen in 2 or more missions (or 2 cloud bootstrap markers) and 2 door gaps in the map, then a confidence of at least 0.70; otherwise it stays pending. Bootstrap markers mean an identity transform (cloud frame = pose frame) | [umf_aligner.py#L32](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L32), [L107-L135](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L107-L135), [L161-L218](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L161-L218) |
+| Calibration points, fallback: the bounding-box corners `(min x, min y)`, `(max x, min y)`, `(min x, max y)` of all outlines | [image.py#L5271-L5287](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5271-L5287) |
+| Calibration points, aligned: `(min x, min y)`, `(max x, min y)`, `(max x, max y)` in pose space (a different third corner) | [umf_aligner.py#L392-L411](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L392-L411) |
+| Pixel space: the PNG is always **600 × 600** px; frame = bounding box of all outlines plus a 50 mm margin, one uniform scale `600 / max(width, height)`, y flipped, then turned clockwise by the « Rotate the map picture » option (0, 90, 180, 270°; anything else is 0). `map.x`/`map.y` are integers (truncated) from the same function | [image.py#L5153-L5161](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5153-L5161), [L5184-L5189](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5184-L5189), [L5205-L5216](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5205-L5216), [L4463-L4471](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4463-L4471), [L4492](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4492), [map_renderer.py#L87-L98](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/map_renderer.py#L87-L98) |
+
+So the three points always define the exact affine map (scale, flip and quarter turn) from `outline` units to image pixels, up to 1 px of truncation; the card solves it, never assumes a scale. Image size is not in the state ([`ha-core-vacuum.md`, « Image size »](ha-core-vacuum.md#image-size)); 600 px is a source fact the card should not hard-code (read `naturalWidth`).
+
+**Docstring against code.** The docstrings say that in fallback mode « only alignment_pending=True exposed … calibration/rooms are withheld » ([image.py#L5226-L5228](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5226-L5228), also [L5046-L5048](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5046-L5048)), and the upstream doc says `calibration_points` « is not there yet » while pending ([docs/xiaomi-vacuum-map-card.md#L104](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/docs/xiaomi-vacuum-map-card.md#L104)). The code publishes both in fallback mode ([image.py#L5271-L5287](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5271-L5287), [L5322-L5323](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5322-L5323)), which matches the 4.6.3 live capture (`alignment_pending: true` with `calibration_points` present). The card follows the code: outlines plus calibration are usable in either mode.
+
+### When the attributes change
+
+| Fact | Source |
+|---|---|
+| The image is rendered at entity start when outlines exist, and on every image fetch (cached by map version, alignment, labels, rotation, wall and door widths); the transform used by the attributes is the one of the **last render** | [image.py#L4985-L4994](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4985-L4994), [L5024-L5026](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5024-L5026), [L5091-L5121](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5091-L5121), [L5163-L5172](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5163-L5172) |
+| The entity writes its state on an options change and on the coverage-updated signal; core also writes every image entity's state every 5 minutes (token rotation), which recomputes the attributes | [image.py#L4998-L5019](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4998-L5019); core [`ha-core-vacuum.md`, « Access token and when it changes »](ha-core-vacuum.md#access-token-and-when-it-changes) |
+| Consequence (derived, « à vérifier » live): after a realign or a map switch the attributes can lag the image by up to one state write, and the attribute transform can briefly come from the previous render. The card treats `state` (image timestamp), `calibration_points` and `rooms` as one snapshot and re-solves the calibration whenever any of them changes | as above |
+| The rooms map stays available while the robot is offline (`_live_state` is false for it) | [entity.py#L69-L78](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L69-L78), [L424-L435](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L424-L435) |
+
+### No cloud, no map
+
+| Situation | Rooms map | Source |
+|---|---|---|
+| No iRobot credentials (no cloud coordinator) | Entity exists (Smart Map robot); no aligner is built, so **no extra attributes** at all; the picture is a 600 × 600 placeholder « No room layout. Room shapes come from the iRobot account » | aligner only with a coordinator [__init__.py#L1093-L1128](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/__init__.py#L1093-L1128); [image.py#L5233-L5240](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5233-L5240), [L5447-L5462](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5447-L5462) |
+| Cloud configured, map not loaded yet or without outlines | Same empty attributes; placeholder « No room layout yet. Waiting for it from the iRobot cloud. »; the integration retries every 10 minutes, up to 6 times, then daily | [image.py#L5459-L5462](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5459-L5462), [cloud_coordinator.py#L945-L978](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L945-L978) |
+| Cloud unreachable after a successful load | Attributes keep the last loaded map (the aligner is only replaced by a new UMF); update failures are suppressed for 2 minutes | [callbacks.py#L3589-L3611](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/callbacks.py#L3589-L3611), [cloud_coordinator.py#L73-L75](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L73-L75); live behaviour « à vérifier » |
+| Robot without a Smart Map and without a cloud aligner (900-series without one, 600-series) | No rooms map entity | [image.py#L345-L384](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L345-L384) |
+
+The card therefore reads « attribute absent » as « no outlines for this robot right now », never as an error; `rooms` and `calibration_points` are both required before a plan is clickable.
+
+### Prime rooms map (differences only)
+
+Keys are the room id (not the name), each value `{outline, name, room_id}` with `room_id` the app's id and no `region_id` or `icon`; no `alignment_pending` (Prime outlines are in the robot's own coordinates); optional `room_preferences`; 3 calibration points `(min,min)`, `(max,min)`, `(max,max)` through the renderer's fit, which may mirror x ([image.py#L5480-L5485](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5480-L5485), [L6504-L6538](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L6504-L6538), [prime_room_map.py#L232-L270](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/prime_room_map.py#L232-L270), [map_renderer.py#L1766-L1780](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/map_renderer.py#L1766-L1780)). Prime image size and outline unit: « à vérifier » (renderer canvas and `prime_room_map.py` polygon source).
+
+## Floor plans (`translation_key: floor_plan`)
+
+| Fact | Source |
+|---|---|
+| Attributes: `map_name` (string: the iRobot app's map name, or the raw map id when the map has none), `map_version` (string or null: the map version shown), `room_count` (integer or **null**: set inside the render without a state write, so it is null until the image is first fetched after start, and the value reaches `hass` only at the next state write: core's token rotation within 5 minutes, or an options change) | [image.py#L4653-L4659](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4653-L4659), [L4670-L4673](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4670-L4673) (no `async_write_ha_state` there, unlike [L4629-L4633](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4629-L4633)), [L4614-L4617](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4614-L4617), [cloud_coordinator.py#L539-L555](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L539-L555) |
+| No room name, no outline, no region id, no calibration and no map id in the attributes. Room names exist only **inside the picture** (labels drawn into the PNG) | [image.py#L4653-L4659](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4653-L4659), [L4676-L4680](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4676-L4680) |
+| Picture: 600 × 600 px, the map's own frame (cloud frame, mm), all outlines' bounding box plus 50 mm, uniform scale, y flipped, turned by the same rotation option; no robot, path or obstacles | [image.py#L4694-L4727](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4694-L4727), docstring [L4573-L4575](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4573-L4575) |
+| Derived, « à vérifier » live: for the map the rooms map shows **while `alignment_pending` is true**, the floor plan and the rooms map are drawn from the same outlines with the same frame function, so the rooms map's `calibration_points` also describe that floor plan (same map version, same rotation). Not true once aligned (the rooms map switches to pose space), and never available for the other maps | outlines resolved the same way [umf_aligner.py#L657-L669](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/umf_aligner.py#L657-L669); frames [image.py#L4705-L4721](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4705-L4721) and [L5143-L5189](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L5143-L5189) |
+| Available while the cloud's map list has a version for this map; unavailable once the account no longer lists it; removed from the registry at the next setup with a map list in hand | [image.py#L4647-L4651](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4647-L4651), [L407-L434](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L407-L434) |
+| A new stored map gets its floor plan only at the next image platform setup: the only constructor call is in `async_setup_entry` (search of `RoombaFloorPlanImage(`). In practice: integration reload or restart, « à vérifier » live | [image.py#L393-L399](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L393-L399) |
+| A new picture (new state) when the map's version changes on a cloud refresh, or when options change (names, rotation, walls, doors) | [image.py#L4614-L4642](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4614-L4642) |
+| Fetching the image costs at most one cloud call per map version, kept in memory; a failed fetch is retried after 3600 s. The map the rooms map shows reuses that fetch. Disabled floor plans cost no call | [cloud_coordinator.py#L534-L536](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L534-L536), [L1802-L1850](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L1802-L1850) |
+| Prime floor plans: same three attributes, same frame function. A Prime map without a name gets `map_name` = its `p2map_id` (which contains the BLID), and that name is also the `{map}` placeholder of the entity name, so `friendly_name` carries it too | [image.py#L4867-L4873](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4867-L4873), [L4907-L4929](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4907-L4929), [L4757-L4762](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4757-L4762), [L4811-L4815](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4811-L4815) |
+
+## Actions
+
+Both actions are domain services registered once in `async_setup` (they exist even when no robot is loaded), each wrapped by a guard that refuses a target whose config entry is not loaded with `ServiceValidationError` `roomba_plus` / `entry_not_loaded` ([service_guard.py#L3-L6](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/service_guard.py#L3-L6), [L45-L80](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/service_guard.py#L45-L80), [strings.json#L2693-L2695](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2693-L2695)). They are plain domain services, not entity services: no admin check and no entity permission check in the integration (search of the package for `verify_domain_control`, `admin`: none). A `target` passed by the caller is merged into the service data before validation ([core.py#L2989-L2990](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/core.py#L2989-L2990)).
+
+### `roomba_plus.clean_room`
+
+Target: `entity_id`, **required** by the schema (`cv.entity_ids`: one id or a list), a Roomba+ vacuum ([services.py#L2366-L2367](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2366-L2367); UI filter [services.yaml#L3-L7](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L3-L7)). No `map_id` field: each room goes to its own map.
+
+| Field | Schema (enforced) | `services.yaml` (UI only) | Default | Source |
+|---|---|---|---|---|
+| `room_name` | optional; a string or a list of strings | `text`, `required: false` | none | [services.py#L2386-L2389](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2386-L2389), [services.yaml#L9-L13](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L9-L13) |
+| `room_passes` | optional; list of `{name (required), two_pass, cleaning_mode, smart_scrub, pad_wetness}` | `object` | none | [services.py#L2411-L2422](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2411-L2422), [services.yaml#L36-L40](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L36-L40) |
+| `ordered` | optional boolean | `boolean`, `default: true` | `true` (schema default) | [services.py#L2407](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2407), [services.yaml#L14-L18](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L14-L18) |
+| `cleaning_mode` | optional **any string** (`cv.string`); a value outside the robot generation's table is silently dropped (the cleaning mode select's state is then used) | `select`: `vacuum`, `mop`, `vacuum_and_mop`, `vacuum_then_mop` | the cleaning mode select's state, else nothing sent (robot's own setting) | [services.py#L2404](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2404), [L745-L749](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L745-L749), [room_cleaning.py#L2447-L2473](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2447-L2473), [services.yaml#L19-L23](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L19-L23) |
+| `two_pass` | optional boolean | `boolean` | robot's own setting | [services.py#L2398](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2398), [room_cleaning.py#L2559-L2562](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2559-L2562) |
+| `smart_scrub` | optional boolean | `boolean` | not sent | [services.py#L2405](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2405), [room_cleaning.py#L2533-L2536](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2533-L2536) |
+| `pad_wetness` | optional, coerced to integer (no range check in the schema) | `select`: `"1"`, `"2"`, `"3"` (Low, Medium, High) | not sent | [services.py#L2406](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2406), [services.yaml#L31-L35](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L31-L35), [strings.json#L3092-L3097](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L3092-L3097) |
+
+- Exactly one of `room_name` and `room_passes` is required; the handler raises `room_name_and_room_passes_conflict` or `room_name_or_room_passes_required` ([services.py#L1100-L1111](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L1100-L1111)).
+- `room_name` resolution, in this order: case-insensitive name, then ASCII slug of the name (the rooms map's `room_id`), then a **bare region id**, refused when that id exists on two offered maps ([room_cleaning.py#L82-L145](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L82-L145)). Names come from stored names, the active map's rooms and zones, the other maps the robot could be on, then aliases; a duplicate name resolves to the **first** source, i.e. the active map ([room_cleaning.py#L2040-L2260](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2040-L2260), order at [L2130-L2134](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2130-L2134), [L2193-L2197](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2193-L2197)).
+- **Known risk, name first.** Names are tried before ids, so a `room_name` of `"3"` resolves to a room literally named « 3 » before region `3`; and a bare region id is refused (`unknown_rooms`) when the same id exists on another offered map ([room_cleaning.py#L118-L140](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L118-L140), order at [L136-L140](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L136-L140)). The card cannot see other maps' region ids from Home Assistant state, so it cannot predict that refusal. Handed to #29.
+- Response: none (`SupportsResponse.NONE`): `return_response: true` raises core `service_does_not_support_response` ([services.py#L2441](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2441), [core.py#L2974-L2981](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/core.py#L2974-L2981)).
+- When it returns (Classic): after the MQTT `start` command is published; nothing confirms the robot moved ([room_cleaning.py#L2592-L2596](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2592-L2596)). A background watch then checks that a mission started and, by default, **sends the same command once more** if none did within 20 s (60 s on Prime) and the robot reported no refusal (option `resend_swallowed_command`, default `true`) ([services.py#L827-L831](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L827-L831), [L502-L525](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L502-L525), [L113](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L113), [L120](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L120), [const.py#L314-L315](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L314-L315), [strings.json#L245](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L245)).
+
+Errors the card should recognise (all `ServiceValidationError`, translation domain `roomba_plus`; core maps them to websocket code `service_validation_error`, see [`ha-core-vacuum.md`, « Errors »](ha-core-vacuum.md#errors)):
+
+| `translation_key` | Condition in code | Source |
+|---|---|---|
+| `not_smart_map` | no room-cleaning backend for this robot | [services.py#L1176-L1185](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L1176-L1185), [strings.json#L2609-L2611](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2609-L2611) |
+| `no_rooms_configured` | the backend lists no named room | [services.py#L670-L685](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L670-L685) |
+| `no_rooms_resolved` | an empty request | [services.py#L690-L699](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L690-L699) |
+| `room_name_is_a_zone` (`names`) | the name is a zone | [services.py#L700-L725](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L700-L725) |
+| `unknown_rooms` (`entity_id`, `rooms`, `known`) | a name did not resolve; `known` lists every known room name (untrusted text) | [services.py#L727-L737](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L727-L737), [strings.json#L2645-L2647](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2645-L2647) |
+| `cloud_required` | Classic room targeting without a cloud coordinator | [room_cleaning.py#L1926-L1947](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1926-L1947), [strings.json#L2666-L2668](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2666-L2668) |
+| `map_updating` | the robot reports it is rebuilding its map | [room_cleaning.py#L1949-L1970](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1949-L1970) |
+| `entity_not_found`, `config_entry_not_found`, `entry_not_loaded` | target not in the registry, no config entry, entry not loaded | [services.py#L1146-L1163](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L1146-L1163), [service_guard.py#L55-L62](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/service_guard.py#L55-L62) |
+
+### `cleaning_mode` for a vacuum robot and a mop robot
+
+| Fact | Source |
+|---|---|
+| Values: `vacuum` (2), `mop` (4), `vacuum_and_mop` (6 Classic, 32 Prime), `vacuum_then_mop` (512) | [const.py#L851-L863](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L851-L863) |
+| What a robot can do comes from its `cap.oMode` mask (bit 2 vacuum, bit 4 mop): `vacuum` needs 2, `mop` 4, both combined modes 6. The author's examples: a vacuum-only s9+ reports 2, a Braava jet m6 reports 4. An unknown mask means all four | [const.py#L889-L929](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L889-L929) |
+| `clean_room` does **not** check the mode against `cap.oMode`: any of the four is sent as `operatingMode` | [services.py#L745-L749](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L745-L749), [room_cleaning.py#L2516-L2519](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2516-L2519) |
+| The cleaning mode select's `options` are filtered by `cap.oMode` (plus the mode of the robot's last start), so they are the HA-state view of what the robot can do; the select only exists on Classic robots that report `padWetness` | [select_prime.py#L1115-L1149](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select_prime.py#L1115-L1149), [select.py#L262-L286](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L262-L286) |
+
+So, from HA state only: a robot **without** a cleaning mode select (Classic) vacuums, and the card omits `cleaning_mode`; a robot **with** one may use exactly the values in its `options`. `pad_wetness` and `smart_scrub` apply to mopping robots only (field descriptions [strings.json#L2175-L2182](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2175-L2182)). Keeping `pad_wetness` and `smart_scrub` out of the card is a proposed refinement for #29 (ADR 0003 point 4 is about conditions, not run options).
+
+### `roomba_plus.get_rooms`
+
+| Fact | Source |
+|---|---|
+| Request: one field `entity_id`, **required**, a **single** entity id string (`cv.entity_id`; a list is refused) | [services.yaml#L123-L130](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L123-L130), [services.py#L2655-L2657](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2655-L2657) |
+| `SupportsResponse.ONLY`: a call without `return_response: true` raises core `service_lacks_response_request` | [services.py#L2672-L2680](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2672-L2680), [core.py#L2982-L2987](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/core.py#L2982-L2987) |
+| Response `{"rooms": [row, …]}`; each row has exactly `id`, `name`, `map_id`, `type`, `area_id`, `area_name`, `estimate_sec`, `estimate_quality` | [services.py#L2003-L2006](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2003-L2006), [mission_queries.py#L66-L106](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L66-L106) |
+| Classic rows: the **rooms** (not zones) of the cloud's **active** map (`cloud.regions`): `id` = region id (string), `name` = the account's name (not the alias), `map_id` = active map id, `type` = the cloud region type (`"default"` if missing). A region whose cloud name is empty is **skipped** (no row), while the rooms map still draws it, labelled by alias, stored name or `Zone <id>`. The docstring and the service description say « rooms and zones »; the Classic code reads rooms only | [mission_queries.py#L84-L91](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L84-L91) (skip at [L87](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L87)), [cloud_coordinator.py#L1523-L1567](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L1523-L1567); wording [mission_queries.py#L67-L73](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L67-L73), [strings.json#L2383-L2385](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2383-L2385) |
+| Prime rows: every named room of every map, `type: null` | [mission_queries.py#L79-L83](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L79-L83) |
+| `area_id`, `area_name`: string or null (derivation in « Segments and areas »); `estimate_sec`: integer or null; `estimate_quality`: `{runs: integer, spread_sec: number or null, rating: "none" \| "low" \| "medium" \| "high"}` | [area_resolver.py#L308-L333](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L308-L333), [mission_queries.py#L49-L57](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L49-L57), [estimate_quality.py#L33-L50](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/estimate_quality.py#L33-L50) |
+| Empty list for a Classic robot without a cloud coordinator | [mission_queries.py#L85-L86](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L85-L86) |
+| **No side effect** in the code path: the handler only reads runtime data, the entity and area registries and the estimate cache; it sends nothing to the robot or the cloud. The module states « NOTHING HERE TALKS TO THE CLOUD » | handler [services.py#L1991-L2006](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L1991-L2006), [L2992-L3014](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L2992-L3014); rows [mission_queries.py#L14-L15](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L14-L15), [L39-L106](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L39-L106); estimates [sensor_rooms.py#L527-L617](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/sensor_rooms.py#L527-L617); areas [area_resolver.py#L106-L333](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L106-L333) |
+
+Safe for #27 at source level. The 4.6.3 capture noted « a `target` is rejected: value should be a string at 'entity_id' »; the core merge above makes `target: {entity_id: "<one id>"}` equivalent to the data field, so that rejection most likely came from a list: « à vérifier » in #27. The card does not need `get_rooms` for the MVP (rooms come from the rooms map, areas from the registry; see gaps).
+
+### Other actions (recorded, not used by the card)
+
+`clean_zone` (zones by name, same target shape, [services.yaml#L449-L463](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L449-L463)) and `run_favorite` (`favorite_id` required, [services.yaml#L315-L325](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.yaml#L315-L325)). Both start the robot.
+
+## Segments and areas
+
+### `async_get_segments` (what core's `vacuum/get_segments` returns)
+
+| Fact | Source |
+|---|---|
+| The vacuum delegates to the room-cleaning backend; `[]` without one | [vacuum.py#L1891-L1904](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L1891-L1904) |
+| Classic room segment: `id = "<pmap_id>_<region_id>"`, `name` = the account's region name (or the id), `group` = the robot's **`floor_label` option** (free text set under Configure, « Groups robots in the fleet view »), or null | [room_cleaning.py#L204-L234](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L204-L234), [L2687-L2690](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2687-L2690), [const.py#L977](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L977), [strings.json#L233](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L233) |
+| Classic zone segment: `id = "<active pmap_id>_zid_<zone_id>"`, `group` = the zone type capitalised (`"Zone"` by default); zones of the **active** map only | [room_cleaning.py#L237-L252](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L237-L252), [L2739-L2741](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2739-L2741) |
+| Relation to `get_rooms` and the rooms map: for a Classic room, segment id = `get_rooms` `map_id` + `"_"` + `id`, and = `<shown map id>_` + rooms map `region_id` (derived from the formats above; « à vérifier » live) | as above, [mission_queries.py#L88-L91](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L88-L91) |
+| Which maps: with one map, that map. With several, only the map the robot can be on: the selected map (Prime), else where the robot says it is (Classic: `lastCommand.pmap_id`), else **every** map (active first) | [room_cleaning.py#L306-L349](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L306-L349), [L2708-L2724](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2708-L2724) |
+| A room name already offered by an earlier map is **skipped** (active map first), so a same-named room on another offered map has no segment | [room_cleaning.py#L216-L228](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L216-L228) |
+| Without a cloud coordinator: segments from stored names, `id = "<pmap_id>/<region_id>"` (a **slash**, unlike every other Classic id), no group | [room_cleaning.py#L2600-L2633](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2600-L2633), [L2659-L2678](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2659-L2678) |
+| No cloud call for Classic (reads coordinator data); Prime's listing calls the cloud | [room_cleaning.py#L2635-L2742](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2635-L2742), [L1302-L1311](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1302-L1311) |
+| Prime: rooms `id = "rid_<p2map_id>/<room_id>"`, `group: "Room"`, sorted by name; zones `zid_<p2map_id>/<id>` (or `zid_<id>`), `group: "Zone"` | [room_cleaning.py#L1118](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1118), [L1311-L1316](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1311-L1316), [L1426-L1440](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1426-L1440) |
+
+### `async_clean_segments` (what `vacuum.clean_area` calls) and the « active-map filter »
+
+The issue lead and a docstring speak of an « active-pmap filter » ([vacuum.py#L1909-L1913](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L1909-L1913)). That docstring is out of date: the Classic code accepts segments of **any** known map.
+
+| Fact | Source |
+|---|---|
+| Core 2026.11.2 calls `async_clean_segments` directly; Roomba+'s `async_clean_area(cleaning_area_ids)` override is never called by core (core's entity has no such method) | [vacuum.py#L1906-L1919](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L1906-L1919); core [services.py#L27-L86](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/components/vacuum/services.py#L27-L86), [entity.py#L148-L186](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/components/vacuum/entity.py#L148-L186) |
+| `async_clean_segments` delegates to the backend through the same send watch (and resend) as `clean_room` | [vacuum.py#L1921-L1946](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L1921-L1946), [services.py#L528-L544](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L528-L544) |
+| Classic: no active map known → `no_valid_segments`. Each id is matched to a known map id prefix (`<map>_`); an id naming **no** known map is dropped with a warning; ids from **two or more** maps → `rooms_different_floors` (`pmap_ids`); nothing left → `no_valid_segments` | [room_cleaning.py#L2778-L2835](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2778-L2835), messages [strings.json#L2606-L2608](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2606-L2608), [L2627-L2629](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L2627-L2629) |
+| Classic: a region id no longer on its map is replaced by the active map's room of the same stored label (« auto-heal »), else dropped with a warning | [room_cleaning.py#L2871-L2925](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2871-L2925) |
+| Classic: a target map other than the robot's last commanded map only logs a warning and is sent anyway (the robot may refuse with error 224) | [room_cleaning.py#L2847-L2858](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2847-L2858) |
+| Classic: the mode sent is the cleaning mode select's state, if any (no mode field in `clean_area`) | [room_cleaning.py#L2945-L2948](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2945-L2948), [L556-L592](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L556-L592) |
+| Classic: returns after the MQTT publish **and** an awaited post-command cloud refresh (failure ignored) | [room_cleaning.py#L3018-L3030](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3018-L3030) |
+| Classic: needs a cloud coordinator (`_cloud` raises `cloud_required`), so the no-cloud segments above can be mapped but never cleaned; their `/` ids would not match `<map>_` either | [room_cleaning.py#L1926-L1947](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1926-L1947), [L2778](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2778), [L2804-L2811](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2804-L2811) |
+| Prime: strips `rid_`, keeps `zid_`; nothing recognised → `no_valid_segments` | [room_cleaning.py#L1443-L1485](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1443-L1485) |
+| Segment change repair: Roomba+ calls `async_create_segments_issue()` after **3** consecutive cloud refreshes whose segment ids differ from `last_seen_segments` (only once a mapping was saved, only with cloud) | [vacuum.py#L1948-L2014](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L1948-L2014), [room_cleaning.py#L261-L303](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L261-L303); core issue in [`ha-core-vacuum.md`](ha-core-vacuum.md#when-the-integration-reports-different-segments) |
+
+### `area_id` in `get_rooms` against core `area_mapping`
+
+`async_room_area_fields` → `async_area_for_room` ([area_resolver.py#L222-L295](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L222-L295), [L308-L333](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L308-L333)) tries, in order:
+
+1. Core's mapping: `options["vacuum"]["area_mapping"]` of the robot's vacuum entities, **inverted** to segment → area; a segment under two areas keeps the **first** area in dict order ([area_resolver.py#L77-L96](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L77-L96)). Classic looks up `<pmap_id>_<region_id>` for the active map's room of that **name** ([L277-L288](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L277-L288)); Prime by region id across maps, only if all such segments name one area ([L138-L159](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L138-L159)).
+2. A mapped segment whose `last_seen_segments` name equals the room name (case-insensitive, zones excluded) ([L162-L188](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L162-L188)).
+3. **Name matching**: the first HA area whose name or alias equals the room name, case-insensitive, with no mapping at all ([L191-L219](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/area_resolver.py#L191-L219)).
+
+So `get_rooms.area_id` is not core's mapping: it can come from a name guess, and it resolves ambiguous segments by order where [`ha-core-vacuum.md`, « Gaps for this card »](ha-core-vacuum.md#gaps-for-this-card) (input 5) tells the card to treat them as ambiguous. ADR 0002 already says room-to-area links come from the registries; the card reads `area_mapping` itself and does not use `get_rooms.area_id` for path 1.
+
+## Capabilities
+
+### Vacuum robot or mop robot, from Home Assistant state only
+
+| Signal | Vacuum robot | Mop robot (Braava) | Source |
+|---|---|---|---|
+| Cleaning mode select on the device (`translation_key: prime_cleaning_mode`) and its `options` | absent on a Classic vacuum-only robot | present, `options` filtered by `cap.oMode` (`["mop"]` expected for a Braava) | [select.py#L262-L286](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L262-L286), [select_prime.py#L1115-L1149](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select_prime.py#L1115-L1149) |
+| Vacuum attributes `detected_pad`, `lid_closed`, `tank_present`, `tank_level` | absent (only the Braava class adds them) | present (values may be null) | [vacuum.py#L2209-L2230](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2209-L2230) |
+| `fan_speed_list` | `["automatic", "eco", "performance"]` on carpet-boost robots, else absent | 9 values `"<Standard\|Deep\|Extended>-<1\|2\|3>"` | [vacuum.py#L2068-L2076](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2068-L2076), [L2152-L2159](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2152-L2159), [const.py#L2835-L2848](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L2835-L2848) |
+| Device `model` / `model_id` (the SKU) | other prefixes | SKU starting with `m` is what the integration itself uses to call a robot a Braava | [entity.py#L171-L172](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/entity.py#L171-L172), [const.py#L3149-L3182](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L3149-L3182) |
+
+A robot that does both (a Combo) has a cleaning mode select whose options include both bits, keeps the vacuum attributes of a Roomba and gets `CLEAN_AREA` ([vacuum.py#L134-L156](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L134-L156), [L327-L342](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L327-L342)). Caveats: the select lists **all four** modes while `cap.oMode` is unknown, and adds the mode of the robot's last start even when outside the mask ([select_prime.py#L1130-L1148](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select_prime.py#L1130-L1148)); `clean_room` does not check the mode against `cap.oMode` either. Recommended order for the adapter: (1) the `detected_pad` key on the vacuum, present exactly for the Braava class (mop only; chosen by `is_braava`, [vacuum.py#L2209-L2216](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2209-L2216)); (2) otherwise the cleaning mode select's `options` (vacuum and mop modes together mean a Combo, with the caveats above); (3) no select on a Classic robot means vacuum only; (4) the SKU prefix last. Prime always has the select (« à vérifier » what its options are on a vacuum-only Prime robot).
+
+### Which robots get `CLEAN_AREA`
+
+| Fact | Source |
+|---|---|
+| Base flags of every robot: `PAUSE`, `RETURN_HOME`, `SEND_COMMAND`, `START`, `STATE`, `STOP`, `LOCATE` (= 13084); carpet-boost Roombas and Braavas add `FAN_SPEED` (13116) | [vacuum.py#L105-L116](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L105-L116), values in [`ha-core-vacuum.md`, « VacuumEntityFeature flags »](ha-core-vacuum.md#vacuumentityfeature-flags) |
+| `CLEAN_AREA` (16384) is added when a room-cleaning backend exists, the robot is not a Braava, and core has the flag | [vacuum.py#L324-L345](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L324-L345) |
+| A backend exists for Prime with a robot object, and for Classic with a Smart Map **and** room names in the options **or** loaded cloud data. The docstring says « cloud coordinator active and has data »; the code also accepts stored names without cloud | [room_cleaning.py#L3088-L3138](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3088-L3138), [L3032-L3063](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3032-L3063); docstring [vacuum.py#L287-L293](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L287-L293) |
+| Braava: **never** `CLEAN_AREA` (its class returns base flags plus `FAN_SPEED`), even though `clean_room` works for it | [vacuum.py#L2135-L2149](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2135-L2149); `clean_room` backend has no Braava exclusion [room_cleaning.py#L3088-L3138](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3088-L3138) |
+| `supported_features` is a property read on every state write, so `CLEAN_AREA` can appear when cloud data arrives after start | [vacuum.py#L285-L286](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L285-L286), [L1384](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L1384) |
+
+## States and eligibility attributes
+
+States are core's six plus `unavailable` and `unknown` ([`ha-core-vacuum.md`, « States the card can see »](ha-core-vacuum.md#states-the-card-can-see)). Roomba+ maps the robot's mission phase (unknown phase → `error`; an open mission in an idle or docked phase → `paused`), and the vacuum becomes `unavailable` when the local connection has been down for its grace period ([vacuum.py#L451-L599](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L451-L599), [const.py#L1313-L1345](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L1313-L1345), [vacuum.py#L170](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L170)).
+
+| Key | Type | On | Source |
+|---|---|---|---|
+| `status` | string | every robot | [vacuum.py#L663-L667](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L663-L667) |
+| `error`, `error_code` | string, integer (the upstream test asserts `error_code == 17`; live type « à vérifier »); both absent when there is no current error (stale errors hidden since 4.6.4) | Classic | [vacuum.py#L676-L691](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L676-L691), [tests/test_vacuum.py#L3093-L3095](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/tests/test_vacuum.py#L3093-L3095) |
+| `bin_present`, `bin_full` | boolean, only when the robot reports them | Roomba and Braava classes | [vacuum.py#L2053-L2065](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2053-L2065), [L2224-L2228](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2224-L2228) |
+| `detected_pad` | the robot's raw string (known: `reusableDry`, `reusableWet`, `reusablewet`, `dispDry`, `dispWet`, `padPlate`, `noPad`, `invalid`) or null | Braava | [vacuum.py#L2216](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2216), [const.py#L2775-L2784](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/const.py#L2775-L2784) |
+| `lid_closed`, `tank_present`, `tank_level` | the robot's raw values or null (types « à vérifier » live) | Braava | [vacuum.py#L2217-L2222](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/vacuum.py#L2217-L2222) |
+| Mop pad sensor `state` | `reusable_dry`, `reusable_wet`, `disposable_dry`, `disposable_wet`, `plate_fitted`, `no_plate`, `no_pad`, `unknown` | robots reporting `detectedPad` | [sensor_core.py#L1005-L1015](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/sensor_core.py#L1005-L1015), [strings.json#L644-L655](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/strings.json#L644-L655) |
+
+ADR 0003 point 4: the card shows these (for example « no pad ») but never blocks a start on them.
+
+## Cloud dependency
+
+| Item | Needs the iRobot cloud? | Without it | Source |
+|---|---|---|---|
+| Vacuum state, attributes, start/stop | no (local MQTT) | unchanged | [manifest.json#L36](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/manifest.json#L36) |
+| Rooms map outlines and calibration | yes | entity exists, no extra attributes, placeholder picture | « No cloud, no map » above |
+| Floor plans | yes, at setup (map list) and on first image fetch per version | not created; or unavailable when the map leaves the list | [image.py#L386-L402](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L386-L402), [L4647-L4651](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/image.py#L4647-L4651) |
+| Cloud zone selects | yes | a single local `SmartZoneSelect` instead | [select.py#L236-L260](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/select.py#L236-L260) |
+| `clean_room`, `clean_area` (Classic) | yes (region ids and map versions come from the cloud) | `cloud_required` | [room_cleaning.py#L1926-L1947](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L1926-L1947) |
+| `get_rooms` (Classic) | reads cached cloud data only, no call | `{"rooms": []}` | [mission_queries.py#L14-L15](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L14-L15), [L85-L86](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/mission_queries.py#L85-L86) |
+| Refresh cadence | daily when idle; 10 min retries for login or missing outlines (6 at most); after a mission ends; on a map retrain; after `clean_area` only (not `clean_room`) | | [callbacks.py#L3190-L3218](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/callbacks.py#L3190-L3218), [callbacks.py#L3455-L3480](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/callbacks.py#L3455-L3480), [cloud_coordinator.py#L50-L71](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/cloud_coordinator.py#L50-L71), [room_cleaning.py#L3023-L3030](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3023-L3030) |
+
+The card adds no cloud traffic: it reads states and fetches images through `/api/image_proxy`, and repeated fetches of an image hit the integration's per-version cache. It never polls ([`ha-core-vacuum.md`, « Security and privacy »](ha-core-vacuum.md#security-and-privacy), item 5).
+
+## HTTP views (recorded only)
+
+The card does **not** call these: `CLAUDE.md` allows writes only through `callService` and `callWS`, and the card needs none of their data. Registered once per instance ([__init__.py#L2695-L2709](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/__init__.py#L2695-L2709)); no websocket command is registered by the integration (search for `websocket_api`: none).
+
+| URL | Method | Auth | Source |
+|---|---|---|---|
+| `/api/roomba_plus/{entry_id}/mission_history` | GET | required | [api_views.py#L472-L479](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L472-L479) |
+| `/api/roomba_plus/{entry_id}/mission/{mission_id}/explain` | GET | required | [api_views.py#L790-L806](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L790-L806) |
+| `/api/roomba_plus/{entry_id}/mission/{n_mssn}/path` | GET | required | [api_views.py#L846-L867](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L846-L867) |
+| `/api/roomba_plus/{entry_id}/mission_history/import` | POST | required | [api_views.py#L949-L961](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L949-L961) |
+| `/api/roomba_plus/household` | GET | required | [api_views.py#L1075-L1093](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L1075-L1093) |
+| `/api/roomba_plus/{entry_id}/maintenance`, `/digest` | GET | required | [api_views.py#L1234-L1257](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L1234-L1257), [L1273-L1298](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L1273-L1298) |
+| `/api/roomba_plus/{entry_id}/missions/{record_id}/map.json`, `/map.png` | GET | required | [api_views.py#L1413-L1431](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L1413-L1431), [L1449-L1471](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/api_views.py#L1449-L1471) |
+| `/api/roomba_plus/{entry_id}/naming_map.png` (rooms map with labels, for the naming form) | GET | required | [naming_map.py#L39](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/naming_map.py#L39), [L94-L103](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/naming_map.py#L94-L103) |
+| `/api/roomba_plus/care/{entry_id}/{guide}` and `/schema.svg` (care guides, query `exp`, `sig`) | GET | **not required** (`requires_auth = False`); the card never links to or embeds them | [care_guides.py#L72-L76](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/care_guides.py#L72-L76), [L821-L828](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/care_guides.py#L821-L828), [L846-L852](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/care_guides.py#L846-L852) |
+
+Not relevant to this card: `room_layout.py` and `outline_store.py` concern 900-series robots without a persistent map ([room_layout.py#L1](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_layout.py#L1), [outline_store.py#L1-L7](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/outline_store.py#L1-L7)); `geometry_utils.py` holds the integration's own point-in-polygon ([geometry_utils.py#L19-L30](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/geometry_utils.py#L19-L30)), which the card does not share.
+
+## Anonymised examples
+
+Numbers and names are made up; only the shape is real. Shapes are built from the source cited above (and match the keys of the 4.6.3 live capture); #27 replaces them with anonymised captures (geometry invented, see the rule for #27). Robot `robot_one` (vacuum), `robot_two` (mop), BLID stand-in `ROBOTBLID0001`, map ids `MapA_q1W2e3` and `MapB_z9X8c7`.
+
+Registry entries from `config/entity_registry/list` (other fields as in [`ha-core-registries.md`](ha-core-registries.md#anonymised-examples)):
+
+```json
+[
+  { "entity_id": "vacuum.robot_one", "platform": "roomba_plus", "unique_id": "roomba_plus_ROBOTBLID0001", "translation_key": null, "disabled_by": null, "device_id": "f0e1d2c3b4a5968778695a4b3c2d1e0f" },
+  { "entity_id": "image.robot_one_rooms_map", "platform": "roomba_plus", "unique_id": "roomba_plus_ROBOTBLID0001_rooms_map", "translation_key": "rooms_map", "disabled_by": null, "device_id": "f0e1d2c3b4a5968778695a4b3c2d1e0f" },
+  { "entity_id": "image.robot_one_floor_plan_mapa_q1w2e3", "platform": "roomba_plus", "unique_id": "roomba_plus_ROBOTBLID0001_floor_plan_MapA_q1W2e3", "translation_key": "floor_plan", "disabled_by": null, "device_id": "f0e1d2c3b4a5968778695a4b3c2d1e0f" },
+  { "entity_id": "image.robot_one_floor_plan_mapb_z9x8c7", "platform": "roomba_plus", "unique_id": "roomba_plus_ROBOTBLID0001_floor_plan_MapB_z9X8c7", "translation_key": "floor_plan", "disabled_by": "integration", "device_id": "f0e1d2c3b4a5968778695a4b3c2d1e0f" }
+]
+```
+
+The map id is the `unique_id` minus `"roomba_plus_ROBOTBLID0001_floor_plan_"` (the vacuum's `unique_id` plus `_floor_plan_`): `MapA_q1W2e3`, case kept; the entity id suffix is lower-cased.
+
+Rooms map, alignment pending (cloud frame, mm). The bounding box is x −4200…3800, y −1500…5500, so the frame is that box plus 50 mm, scale 600 / 8100, and the three calibration pairs are consistent with it:
 
 ```json
 {
-  "alignment_pending": true,
-  "calibration_points": [
-    { "vacuum": { "x": -1000.0, "y": -500.0 }, "map": { "x": 10, "y": 400 } }
-  ],
-  "rooms": {
-    "<Room A>": {
-      "name": "<Room A>",
-      "room_id": "1",
-      "region_id": "<region>",
-      "icon": "mdi:sofa",
-      "x": 0, "y": 0,
-      "outline": [[1000.0, 3000.0], [-1500.0, 3000.0], [-1500.0, 2000.0]]
-    }
+  "entity_id": "image.robot_one_rooms_map",
+  "state": "2026-01-02T03:00:00+00:00",
+  "attributes": {
+    "alignment_pending": true,
+    "calibration_points": [
+      { "vacuum": { "x": -4200.0, "y": -1500.0 }, "map": { "x": 3, "y": 596 } },
+      { "vacuum": { "x": 3800.0, "y": -1500.0 }, "map": { "x": 596, "y": 596 } },
+      { "vacuum": { "x": -4200.0, "y": 5500.0 }, "map": { "x": 3, "y": 77 } }
+    ],
+    "rooms": {
+      "Library": { "outline": [[-4200.0, -1500.0], [-500.0, -1500.0], [-500.0, 2000.0], [-4200.0, 2000.0]], "name": "Library", "room_id": "library", "region_id": "1", "icon": "mdi:bookshelf", "x": -2350.0, "y": 250.0 },
+      "Reading corner": { "outline": [[-500.0, -1500.0], [3800.0, -1500.0], [3800.0, 5500.0], [-500.0, 5500.0]], "name": "Reading corner", "room_id": "reading_corner", "region_id": "2", "icon": "mdi:sofa", "x": 1650.0, "y": 2000.0 },
+      "Workshop": { "outline": [[-4200.0, 2000.0], [-500.0, 2000.0], [-500.0, 5500.0], [-4200.0, 5500.0]], "name": "Workshop", "room_id": "workshop", "region_id": "3", "icon": "mdi:toolbox", "x": -2350.0, "y": 3750.0 }
+    },
+    "access_token": "<token>",
+    "entity_picture": "/api/image_proxy/image.robot_one_rooms_map?token=<token>",
+    "friendly_name": "Robot one Room map"
   }
 }
 ```
 
-- Numbers above are made up; only the shape is real.
-- `outline` is in **robot coordinates** (millimetres, « à vérifier »); `calibration_points` map robot coordinates to image pixels. Count of points in the capture: « à vérifier » (an affine transform needs 3).
-- `alignment_pending: true` means the plan is not yet aligned with the robot's position data; per the companion card, coverage, doors and position appear « after a few cleans » (« à vérifier » how it changes `calibration_points`).
-- Which map it shows: per the Roomba+ docs, the map the robot's **last command** went to, else the most recently edited map; not necessarily the account's active map.
-
-## `roomba_plus.get_rooms`
-
-Called with `service_data: { entity_id: "vacuum.<robot>" }` and `return_response: true` (a `target` is rejected: « value should be a string at 'entity_id' »).
+The same entity with no cloud credentials, or before the map loads (no integration attributes at all):
 
 ```json
-{
-  "rooms": [
-    {
-      "id": "1",
-      "name": "<Room A>",
-      "map_id": "<MapId>",
-      "type": "living_room",
-      "area_id": "<area_id>",
-      "area_name": "<Area>",
-      "estimate_sec": null,
-      "estimate_quality": { "runs": 0, "spread_sec": null, "rating": "none" }
-    }
-  ]
-}
+{ "entity_id": "image.robot_one_rooms_map", "state": "2026-01-02T03:00:00+00:00", "attributes": { "access_token": "<token>", "entity_picture": "/api/image_proxy/image.robot_one_rooms_map?token=<token>", "friendly_name": "Robot one Room map" } }
 ```
 
-- Returns the rooms of **one** map only (the same as the rooms map). `map_id` matches the floor plan entity suffix once lower-cased.
-- `area_id` / `area_name`: the Home Assistant area the room is linked to.
+Floor plan, enabled, before its image was first fetched (`room_count` null):
 
-## Actions
+```json
+{ "entity_id": "image.robot_one_floor_plan_mapa_q1w2e3", "state": "2026-01-02T03:00:00+00:00", "attributes": { "map_name": "Upper level", "map_version": "260102T030405", "room_count": null, "access_token": "<token>", "entity_picture": "/api/image_proxy/image.robot_one_floor_plan_mapa_q1w2e3?token=<token>", "friendly_name": "Robot one Floor plan Upper level" } }
+```
 
-| Action | Fields (from the service schema) | Notes |
-|---|---|---|
-| `roomba_plus.clean_room` | `room_name`, `ordered`, `cleaning_mode` (`vacuum`, `mop`, …), `two_pass`, `smart_scrub`, `pad_wetness` (`1`–`3`), `room_passes` | No `map_id`: per the docs a room command « goes to the map of its room » |
-| `roomba_plus.clean_zone` | `zone_name` or `zone_id` | Cloud zones |
-| `roomba_plus.get_rooms` | `entity_id` | Response only |
-| `roomba_plus.run_favorite` | « à vérifier » | Favourites carry their own map |
+`roomba_plus.get_rooms`, called as `hass.callService("roomba_plus", "get_rooms", { entity_id: "vacuum.robot_one" }, undefined, true, true)`; the `response` member of the result (Classic: active map's rooms only; the third row's area comes from name matching, not from a mapping):
 
-Exact field types and the entity field of `clean_room`: « à vérifier » in the integration's `services.yaml` at the pinned version.
+```json
+{ "response": { "rooms": [
+  { "id": "1", "name": "Library", "map_id": "MapA_q1W2e3", "type": "study", "area_id": "library", "area_name": "Library", "estimate_sec": null, "estimate_quality": { "runs": 0, "spread_sec": null, "rating": "none" } },
+  { "id": "2", "name": "Reading corner", "map_id": "MapA_q1W2e3", "type": "living_room", "area_id": null, "area_name": null, "estimate_sec": null, "estimate_quality": { "runs": 0, "spread_sec": null, "rating": "none" } },
+  { "id": "3", "name": "Workshop", "map_id": "MapA_q1W2e3", "type": "workshop", "area_id": "garden_shed", "area_name": "Garden shed", "estimate_sec": 840, "estimate_quality": { "runs": 4, "spread_sec": 95.5, "rating": "medium" } }
+] } }
+```
+
+`vacuum/get_segments` for the vacuum robot (admin only; `group` is the robot's free-text floor label, here unset):
+
+```json
+{ "segments": [
+  { "id": "MapA_q1W2e3_1", "name": "Library", "group": null },
+  { "id": "MapA_q1W2e3_2", "name": "Reading corner", "group": null },
+  { "id": "MapA_q1W2e3_3", "name": "Workshop", "group": null },
+  { "id": "MapA_q1W2e3_zid_4", "name": "Under the desk", "group": "Zone" }
+] }
+```
+
+Vacuum robot (carpet boost, `CLEAN_AREA`: 13116 + 16384 = 29500) and mop robot (no `CLEAN_AREA`: 13116), with the mop robot's cleaning mode select:
+
+```json
+[
+  { "entity_id": "vacuum.robot_one", "state": "docked", "attributes": { "fan_speed_list": ["automatic", "eco", "performance"], "fan_speed": "automatic", "status": "<status text>", "bin_present": true, "bin_full": false, "friendly_name": "Robot one", "supported_features": 29500 } },
+  { "entity_id": "vacuum.robot_two", "state": "docked", "attributes": { "fan_speed_list": ["Standard-1", "Standard-2", "Standard-3", "Deep-1", "Deep-2", "Deep-3", "Extended-1", "Extended-2", "Extended-3"], "status": "<status text>", "detected_pad": "reusableWet", "lid_closed": true, "tank_present": true, "tank_level": 100, "friendly_name": "Robot two", "supported_features": 13116 } },
+  { "entity_id": "select.robot_two_prime_cleaning_mode", "state": "mop", "attributes": { "options": ["mop"], "friendly_name": "Robot two Cleaning mode" } }
+]
+```
+
+`clean_room` for the mop robot, one room, mop mode, as the card would send it after confirmation:
+
+```json
+{ "type": "call_service", "domain": "roomba_plus", "service": "clean_room", "service_data": { "room_name": "2", "cleaning_mode": "mop" }, "target": { "entity_id": "vacuum.robot_two" }, "return_response": false }
+```
+
+## « à vérifier »
+
+| Claim | What would confirm it |
+|---|---|
+| All JSON shapes above match a live 4.6.5 installation | Capture in #27 |
+| On a two-map account, the rooms map can show a map that is not the cloud's active one, and its room names then come from the active map when region ids collide | Two-map capture in #27: compare the rooms map, both floor plan pictures, `get_rooms` and both cloud zone selects |
+| While `alignment_pending` is true, the rooms map's `calibration_points` place outlines correctly on the floor plan picture of the same map | Overlay test in #27 (floor plan enabled for the shown map) |
+| `get_rooms` accepts `target: {entity_id: "<one id>"}` and rejects a list | Call both ways in #27 |
+| Classic segment id = `<get_rooms map_id>_<id>` = `<shown map>_<region_id>` | `vacuum/get_segments` (admin) or `last_seen_segments` capture in #27 |
+| A new stored map needs an integration reload before its floor plan appears | Observe after adding a stored map (#27) |
+| Prime rooms map image size, outline unit and the cleaning mode select's options on a vacuum-only Prime robot | Prime source deeper read or a Prime capture (no Prime robot available) |
+| Types of `lid_closed`, `tank_present`, `tank_level` | Mop robot capture in #27 |
+| Behaviour of attributes while the cloud is unreachable after a load | Capture with the cloud blocked (only with the owner's consent) |
+
+### To confirm live (#27)
+
+1. Registry entries of both robots (`config/entity_registry/list` filtered on `platform: "roomba_plus"`): `unique_id` shapes, `translation_key`, `disabled_by` of every floor plan, `device_id` equal for all entities of a robot, no `hidden_by`.
+2. Device entries: one device per robot, no child device, `model`/`model_id` SKU prefix of each robot.
+3. Rooms map state of each robot: keys and types, `alignment_pending`, exactly 3 calibration points, outline magnitudes in mm, 600 × 600 picture (`naturalWidth`).
+4. Every floor plan enabled for the capture: `map_name`, `map_version`, `room_count` before and after the first image fetch; picture size.
+5. Which stored map the rooms map shows, compared with the `pmap_id` of the enabled cloud zone select and with `get_rooms.map_id`.
+6. `get_rooms` response of each robot (read-only, safe); `vacuum/get_segments` (admin) of the vacuum robot; `last_seen_segments` if a mapping exists.
+7. Vacuum attributes and `supported_features` of each robot; cleaning mode select `options` of the mop robot; absence of that select on the vacuum robot.
+8. Never start a robot during a capture without the owner's go-ahead.
+
+**Anonymisation rule for #27** (security, applies to fixtures and to any text pasted in an issue or PR): capture only the robots' devices and entities. Replace with made-up values of the same shape: the **whole** entity id (domain kept; prefix, robot part and map-id suffix replaced), also inside `/api/image_proxy/<entity_id>` paths; every `access_token` and `token=` query; `friendly_name`; room, map, area, floor and device names (including `map_name`, `rooms` keys and `name`, `room_id` slugs, segment `name` and `group`, `floor_label`, `area_name`); map ids (`pmap_id`, `map_id`, floor plan and cloud zone `unique_id` suffixes, segment id prefixes); region and room ids; every `unique_id` and device `identifiers` (they contain the BLID, which is the robot's local MQTT user name); serial numbers, MAC connections, `configuration_url`, registry `id`, `device_id`, `config_entry_id`, `context` ids. Also replace `area_id`, `floor_id`, entity and device `name`, `name_by_user`, `aliases` and `labels`, every timestamp (`state` of image entities, `last_changed`, `last_updated`, `map_version`, `created_at`, `modified_at`) and every usage counter (`estimate_sec`, `estimate_quality.runs` and `spread_sec`, `door_markers[].mission_count`). **Geometry is invented** (issue #27): no outline or calibration from the real home is committed, not even rotated, scaled or shifted. `outline`, `x`, `y`, `calibration_points`, `zones`, `door_markers` and `furniture_candidates` are made up, keeping only the unit, the orders of magnitude, the vertex counts and the structural cases (non-convex room, shared edges, alignment pending or not); `calibration_points.map` is recomputed for the invented geometry and the documented 600 × 600 picture. Never commit or attach a map picture or a screenshot of the real home, and never paste a real image URL anywhere.
 
 ## Gaps for this card
 
-1. Room outlines exist for one map at a time. Other floors only have a picture (`floor_plan`) and a room count: no outlines, no names in attributes.
-2. Floor plan entities are created disabled: the card must detect « map exists but plan disabled » (entity registry `disabled_by`) and tell the user how to enable it.
-3. Braava jet m6 has no Map tab in the companion card; its room data does exist in `image.<braava>_rooms_map`.
+### Epic 3: floor model and geometry
 
-Open questions for the integration author (to draft as an issue, posted by the owner): exposing outlines and calibration for every stored map (for example on each `floor_plan` image), and a stable link between a floor plan and a Home Assistant floor.
+1. **Outlines for one map only.** Clickable outlines exist only for the map the rooms map shows (Classic) or the selected map (Prime). Every other floor has a floor plan picture with names drawn into it and a `room_count`: no outlines, no ids, no names in attributes. The card shows those floors with the « room list » fallback of ADR 0002 and says why.
+2. **Which stored map the rooms map shows is not exposed** (no `map_id` on the rooms map). The adapter cannot reliably pair the rooms map with a floor plan entity, or with a floor. Options: (a) treat the rooms map as its own plan, shown in place of the floor plan of an unknown map, with a note; (b) infer the map by matching `region_id` and names against the enabled cloud zone selects (weak: names can collide, and those selects are disabled for non-active maps); (c) ask upstream (draft below). Until then, (a) is the honest default. Owner decision (`owner-only`).
+3. **Two frames.** While `alignment_pending` is true the rooms map is in the cloud map's frame (which, per the source, matches its floor plan); once aligned it is in the dock frame and rotated. The geometry code never assumes either: it solves the affine transform from the 3 calibration pairs each time any of `state`, `calibration_points` or `rooms` changes, validates that the 3 points are finite and not collinear, and drops a plan whose transform is degenerate.
+4. **Room identity.** Key rooms by `region_id` (stable across renames), not by the `rooms` object key (the display name; duplicates collapse) nor `room_id` (a slug of the name). Map from the rooms map to core segments as `<map id>_<region_id>` only once the map id is known (gap 2).
+5. **Floors.** No stable link from a stored map to a Home Assistant floor: `map_name` is free text from the iRobot app, the segment `group` is one free-text label per robot (not per map), and the card cannot read the robot's position on Classic. Linking maps to floors is a card setting or an upstream feature (draft below).
+6. **Area mapping across floors.** On a Classic robot with several maps, core's mapping dialog lists the rooms of one map only (the last commanded one), and a room name already seen on an earlier map is dropped, so mapping a second floor needs the robot to have been sent there first. The card must not promise path 1 for a floor whose segments are absent from `area_mapping`.
+
+### Epic 4: adapter
+
+1. **Detection** by `platform: "roomba_plus"` and `translation_key` on the robot's `device_id` (no child devices). Disabled floor plans and every `unique_id` only through the shared `config/entity_registry/list` capability of [`ha-core-registries.md`](ha-core-registries.md#epic-4-robot-detection-and-data-access).
+2. **Map id** from the floor plan `unique_id` suffix after `<vacuum unique_id>_floor_plan_`; never from an entity id. Treat it as an opaque, case-sensitive string containing `_`.
+3. **Starting a clean (ADR 0003).** Path 1 (`vacuum.clean_area`) only for robots with `CLEAN_AREA` (never a Braava), one area per call, and only for areas whose segments are all on one map (else `rooms_different_floors`). Path 2: `roomba_plus.clean_room` with `target: {entity_id}` and `room_name` set to the room's `region_id` **only**, never the room name (a duplicate name resolves to the active map, and the card cannot tell from Home Assistant state whether an id is ambiguous); an `unknown_rooms` answer is shown as a readable error and not retried with the name. Once the shown map's id is known (Epic 3 gap 2), path 1 may be used for the area whose `area_mapping` on this robot lists the segment `<map id>_<region_id>`, only when exactly one area lists it ([`ha-core-vacuum.md`](ha-core-vacuum.md), start input 5). `clean_area` takes area ids, not segment ids, and cleans **every** segment of that area: if the area maps to more segments, the confirmation names every room that will be cleaned, or the card uses path 2. The name-first precedence risk (see `clean_room`) goes to #29; `cleaning_mode` only when the robot has a cleaning mode select, and only a value from its `options`; never `return_response`.
+4. **Wording of the confirmation** (ADR 0003 point 3): for path 1 on a robot with a cleaning mode select, the mode is that select's state, so the card names it. When that state is `unknown` or `unavailable`, `_selected_cleaning_mode` finds no mode and **none is sent**: the robot uses its own setting ([room_cleaning.py#L569-L589](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L569-L589)), and the confirmation says « clean » without naming vacuum or mop. On a Classic robot without the select (vacuum only), « vacuum ». The integration may re-send an ignored start once on its own (option on by default): the card sends once per confirmation and never retries.
+5. **Errors**: switch on `translation_key` (`not_smart_map`, `cloud_required`, `unknown_rooms`, `no_rooms_configured`, `map_updating`, `rooms_different_floors`, `no_valid_segments`, `entry_not_loaded`); show `known` and other placeholders only as text.
+6. **Do not use `get_rooms.area_id`** for path 1 (name-guess fallback, first-area wins). `get_rooms` is optional for the MVP; if used (for example for `type` icons), it is read-only and safe, called once per explicit need, never on a timer.
+7. **Eligibility display**: mop pad state from the mop pad sensor or `detected_pad`, shown, never blocking (ADR 0003 point 4).
+
+### Security
+
+1. Room names, map names (which can be a raw map id), region ids, `icon`, zone and door labels, error placeholders: untrusted integration or cloud strings; Lit text bindings only; `icon` only into `ha-icon`.
+2. Numeric geometry: accept only finite numbers with |value| ≤ 1e7 mm, at least 3 and at most 1000 points per outline, at most 100 rooms per plan (limits proposed for #29, generous against real homes), exactly 3 calibration pairs whose determinant exceeds a tolerance (not collinear, not degenerate after integer truncation); check that every transformed point is finite before drawing. `icon` is used only if it matches `^mdi:[a-z0-9-]+$`, else a default icon.
+3. Index rooms by `region_id` in a `Map`; the `rooms` object comes from JSON and its keys are user-set names (`__proto__` is a valid room name).
+4. `unique_id`, map ids and segment ids embed or sit next to the BLID: never log them or put them in an error message. A floor plan's `map_name` (and its `friendly_name`) falls back to the map id, which on Prime contains the BLID: the card does not show it as a label when it equals the map id or contains the vacuum `unique_id` suffix (a generic « Map n » instead). Proposed for #29 (card configuration is `owner-only`): configuration keys floors by floor plan `entity_id`, never by map id or `unique_id`. Image URLs: [`ha-core-vacuum.md`, « Security and privacy »](ha-core-vacuum.md#security-and-privacy).
+5. The confirm button is disabled while the call is in flight and the card never retries: the integration may already re-send an ignored start once.
+6. Care-guide views (no authentication) are never linked or embedded.
+
+### Upstream issue draft (not posted; the owner decides)
+
+Plain ASCII, for https://github.com/johnnyh1975/ha_roomba_plus/issues:
+
+```text
+Title: Room outlines and calibration for every stored map, and a stable map id
+
+Hello, and thank you for Roomba+.
+
+I am writing a Lovelace card that shows one floor plan per Home Assistant
+floor, side by side, with every room clickable. With Roomba+ 4.6.5 this
+works for one map at a time:
+
+- image.<robot>_rooms_map has rooms (outline, region_id) and
+  calibration_points, but only for the map chosen by displayed_pmap()
+  (cloud_coordinator.py), and no attribute says which map that is.
+- image.<robot>_floor_plan_<map id> exists for every stored map, but its
+  attributes are only map_name, map_version and room_count. The room
+  names are drawn into the picture; outlines, region ids and the
+  pixel transform are not exposed.
+
+Requests, in order of usefulness for a multi-floor home:
+
+1. On each floor_plan image, expose the same data the rooms map has, in
+   the floor plan's own frame: rooms keyed or tagged by region_id, each
+   with outline and name, plus three calibration_points. The floor plan
+   is already drawn with the same frame function as the unaligned rooms
+   map (render_floor_plan_png), so the transform is known when the
+   picture is rendered.
+2. Expose the map id as an attribute: map_id on each floor_plan image,
+   and map_id plus map_name on the rooms map, so a card can tell which
+   stored map the rooms map currently shows without parsing unique ids.
+3. A stable link from a stored map to a Home Assistant floor: for
+   example an optional per-map floor_id option, or at least the map name
+   as the Segment group, so the core "map segments to areas" dialog
+   groups rooms per map instead of per robot (floor_label).
+
+Observations from reading the source, in case they help:
+
+- The rooms map names come from {**aligner.rid_to_name(),
+  **region_names_across_maps(cc)}, called without prefer_pmap_id. When
+  the shown map is not the cloud's active map and both use the same
+  region id, the outline can carry the other map's name.
+- Without a cloud coordinator, _segments_from_saved_zone_data() builds
+  ids as "<pmap_id>/<region_id>", while ClassicRoomCleaning.clean_segments
+  matches "<pmap_id>_" prefixes.
+- The RoombaRoomsImage docstrings say calibration and rooms are withheld
+  while alignment is pending, and docs/xiaomi-vacuum-map-card.md says the
+  same; the code publishes both in UMF space.
+
+Thank you for considering it. I can test changes on a Classic robot with
+several maps.
+```
+
+## Relation to ADR 0002, ADR 0003 and the core documents
+
+- ADR 0002 « one map at a time for outlines today »: confirmed. Refinement for #29: the `RoomSource` port's « whether the map is the robot's active one » has three different meanings in Roomba+ (cloud-active = newest version; shown by the rooms map = last command's map; where the robot is = unknown on Classic). The adapter can only report « shown by the rooms map », and today it cannot name that map (gap 2).
+- ADR 0002 « room-to-area links come from Home Assistant registries »: consistent; `get_rooms.area_id` is not that link (name-guess fallback).
+- ADR 0003 path 1: a Braava never qualifies (no `CLEAN_AREA`), even when its rooms can be cleaned through `clean_room`; path 2 is its only path. The mode of a path 1 clean is the cleaning mode select's state, which answers the « vacuum or mop » wording question that [`ha-core-vacuum.md`](ha-core-vacuum.md#fallback-adr-0003-path-2) left to the adapter.
+- Proposed refinements for #29: path 2 sends `region_id` only, never the name; when the cleaning mode select is `unknown` or `unavailable` the confirmation says « clean » without naming vacuum or mop, a departure from ADR 0003 point 3 (naming the action) to settle there; the card leaves `pad_wetness`, `smart_scrub` and `two_pass` to the robot's own settings.
+- The « à vérifier » rows of [`ha-core-vacuum.md`](ha-core-vacuum.md) on Roomba+ are now settled at source: `CLEAN_AREA` set (not for Braava); segment ids are `<pmap_id>_<region_id>` (Classic), not the bare `get_rooms` id; `group` is the robot's free-text floor label or the zone type; Roomba+ creates the `segments_changed` issue after 3 mismatching refreshes; `async_clean_segments` returns after the MQTT publish and a cloud refresh; an unknown map prefix is dropped, a stale region on a known map is healed by name or dropped. Live confirmation stays with #27.
+- The « à vérifier » rows of [`ha-core-registries.md`](ha-core-registries.md): Roomba+ puts no entity on a child device; it hides one Prime runtime sensor with `hidden_by: integration` while its value cannot be true ([sensor_prime.py#L996-L1005](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/sensor_prime.py#L996-L1005)), none of the entities this card uses. Its `unique_id` does carry a login-like identifier (the BLID), as that document suspected.
+
+## Relation to the previous document (4.6.3 capture)
+
+Breaking or corrected statements:
+
+1. « `get_rooms` returns the rooms of one map only (the same as the rooms map) »: **not guaranteed**. `get_rooms` returns the cloud-active map (newest version); the rooms map shows the last commanded map. They agree on single-map accounts only.
+2. `rooms[*].room_id` is a slug of the name, not a robot id; the robot's id is `region_id`.
+3. `outline` unit settled: millimetres; frame is the cloud map while `alignment_pending` is true and the dock frame once aligned. `calibration_points`: always exactly 3 pairs, map pixels are integers in a 600 × 600 picture, rotated with the map rotation option. `alignment_pending: false` changes all coordinates at once.
+4. `clean_room` fields settled: target `entity_id` required (one or a list); `cleaning_mode` values `vacuum`, `mop`, `vacuum_and_mop`, `vacuum_then_mop` (any string accepted by the schema, unknown values silently ignored); `pad_wetness` 1 to 3 (no range check); `room_name` or `room_passes`, exactly one. No response.
+5. `get_rooms` request is a single-string `entity_id`; response keys confirmed; Classic rows are rooms only, not zones.
+6. Floor plan `unique_id` keeps the map id's original case; only the entity id is lower-cased. The `map_id` of `get_rooms` therefore matches the floor plan's `unique_id` suffix exactly, not its lower-cased entity id suffix.
+7. New: Braava robots never get `CLEAN_AREA`; the cleaning mode select's `options` tell vacuum from mop robots; Roomba+ may re-send an ignored start once.
+8. Unchanged and confirmed: entity set and translation keys, floor plans disabled by default (one per stored map), cloud zone selects disabled for non-active maps, `is_active_map` and `map_name` attributes (frozen at setup).
