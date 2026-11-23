@@ -1,20 +1,220 @@
 # ADR 0003: Starting a clean
 
-- Status: proposed
-- Date: 2026-11-20
+- Status: accepted
+- Date: 2026-11-23 (proposed 2026-11-20)
 
 ## Context
 
-Home Assistant core added area-based cleaning for vacuums (`vacuum.clean_area`, with a mapping between vacuum segments and areas in the entity settings; « à vérifier »: exact service fields, minimum version and the entity feature flag). Integrations also keep their own room actions (Roomba+: `roomba_plus.clean_room` with a room name).
+Home Assistant core cleans by area: `vacuum.clean_area` takes area ids and cleans the vacuum segments mapped to them in the vacuum's entity settings. It first shipped in 2026.3.0, the card's minimum version (`docs/standards.md`). Integrations keep their own room actions (Roomba+: `roomba_plus.clean_room`).
+
+The facts below were verified at source on 2026-11-23, at Home Assistant core 2026.11.2, frontend 20261028.6 and Roomba+ 4.6.5, with live captures where stated. No service that moves a robot was called:
+
+- [`ha-core-vacuum.md`](../research/ha-core-vacuum.md)
+- [`roomba-plus.md`](../research/roomba-plus.md)
+- fixtures in `test/fixtures/`
+
+ADR 0005 covers how rooms link to areas, which rooms map is paired with a stored map, and which robots may join a room.
 
 ## Decision
 
-1. If the robot's room is mapped to a Home Assistant area and the vacuum supports area cleaning, call `vacuum.clean_area` with that area.
-2. Otherwise call the adapter's own room action.
-3. Every start is confirmed by the user in a dialog that names the robot, the action (vacuum or mop) and the room.
-4. The card never chains robots or adds conditions (pad state, water level): that belongs to the user's automations and scripts. An option may later let the user point a robot to a script instead of a direct action.
+### Eligibility (both paths)
+
+A robot is offered for a room only when its vacuum entity was found by registry `platform` (ADR 0002) and is present in `hass.states` with a state other than `unavailable`. Otherwise the robot is shown as not startable, with a reason; it never falls back to another path. Calls to a missing, disabled or unavailable vacuum succeed and do nothing ([`ha-core-vacuum.md` « Calls that succeed and do nothing »](../research/ha-core-vacuum.md#calls-that-succeed-and-do-nothing)).
+
+### Path 1: `vacuum.clean_area`
+
+**Where it applies.** It applies in two places:
+- a room of a paired rooms map (ADR 0005 « Rooms map pairing », one stored map), through the room's segment id `<map id>_<region id>`;
+- an area item of a plan without outlines (ADR 0005 « Room lists » item 1), whose area is given.
+
+**Condition.** All of these hold:
+
+1. `supported_features & 16384` (`CLEAN_AREA`) is set. A mop robot (Roomba+ Braava) never has it.
+2. `hass.services.vacuum.clean_area` exists.
+3. The vacuum's `options.vacuum.area_mapping` is present and parses as area id → list of segment ids. Keys that are not own keys of `hass.areas` and empty lists are ignored.
+4. For a room: its area comes from ADR 0005 « Room to area » rule 1, that is, exactly one area of **this robot's** mapping lists the room's segment id.
+5. All segments of that area are on one stored map. Roomba+ refuses a mix with `rooms_different_floors`.
+6. Every segment of that area can be named in the confirmation:
+   - on a paired rooms map, it is a region currently on that map;
+   - otherwise, it is in `last_seen_segments`.
+
+   In both cases, no `segments_changed` repair issue is open for the robot. Core never updates the mapping when segments change, and Roomba+ replaces a vanished region by a room with the same stored label, or drops it.
+
+The mapping is read from the shared `config/entity_registry/list` (or `config/entity_registry/get`), re-fetched on `entity_registry_updated`. Repair issues are listed without admin. Sources:
+- [`ha-core-vacuum.md` « Gaps for this card », inputs 1 to 5](../research/ha-core-vacuum.md#epic-3-inputs-of-the--start-a-clean--use-case-adr-0003-path-1)
+- [« Target and feature flag »](../research/ha-core-vacuum.md#target-and-feature-flag)
+- [« When the integration reports different segments »](../research/ha-core-vacuum.md#when-the-integration-reports-different-segments)
+- [`roomba-plus.md` « Which robots get `CLEAN_AREA` »](../research/roomba-plus.md#which-robots-get-clean_area)
+- [« `async_clean_segments` »](../research/roomba-plus.md#async_clean_segments-what-vacuumclean_area-calls-and-the--active-map-filter-)
+- [« Gaps for this card », Epic 4 item 3](../research/roomba-plus.md#epic-4-adapter)
+
+When a condition fails for an area item of a room list, that item is not startable on this robot, with a reason. When it fails for a room of a rooms map, the robot falls back to path 2 under that path's rules.
+
+**Call.** One robot and one area per call, only after confirmation, never on hover, load or re-render:
+
+```
+hass.callService("vacuum", "clean_area", { cleaning_area_id: [areaId] }, { entity_id }, false, false)
+```
+
+There is no `return_response`: the service has no response. One area per call avoids a partial start, because `areas_not_mapped` is raised after the robots with mapped areas were called. Sources: [`ha-core-vacuum.md` « Fields »](../research/ha-core-vacuum.md#fields), [« Response »](../research/ha-core-vacuum.md#response), [« Gaps for this card », inputs 6 and 7](../research/ha-core-vacuum.md#epic-3-inputs-of-the--start-a-clean--use-case-adr-0003-path-1).
+
+**Example.** In the fixtures, `vacuum.robot_one` has `supported_features` 29500 (`29500 & 16384` is set; `test/fixtures/ha-core/hass_states_vacuum_docked.json`) and two stored maps, so its rooms map is not paired (ADR 0005). Its mapping lists `library` → `["MapA_q1W2e3_1"]` (`entity_registry_get_vacuum_clean_area.json`). The plan of map `MapA_q1W2e3` therefore lists the area `library`, and choosing it calls `clean_area` with `["library"]`.
+
+**Counter-example.** `vacuum.robot_two` has `supported_features` 13116 (no `CLEAN_AREA`, same states fixture) and no `options.vacuum` (`entity_registry_get_vacuum_no_clean_area.json`), so it uses path 2 only.
+
+### Path 2: the integration's room action
+
+**When.** Only for a room of a rooms map, when any path 1 condition fails:
+- no `clean_area` service;
+- no `CLEAN_AREA`;
+- no mapping;
+- the room's segment is in no area, or in an empty one;
+- the room's segment is under several areas;
+- the area's segments span two maps (condition 5);
+- a segment of the area cannot be named (condition 6).
+
+Path 2 needs the room's `region_id` from the rooms map, so an area item of a room list never uses it. Sources: [`ha-core-vacuum.md` « Fallback (ADR 0003 path 2) »](../research/ha-core-vacuum.md#fallback-adr-0003-path-2), [`roomba-plus.md` « Gaps for this card », Epic 4 item 3](../research/roomba-plus.md#epic-4-adapter) (« or the card uses path 2 »).
+
+**Call.** For Roomba+, `roomba_plus.clean_room`, after confirmation, with the data field `entity_id` (one id) and `room_name` set to the room's `region_id` **only**, never the room name:
+
+```
+hass.callService("roomba_plus", "clean_room", { entity_id, room_name: regionId }, undefined, false, false)
+```
+
+The data field is the form proven live with `get_rooms` (#27). At source, `target: {entity_id}` is equivalent for `clean_room` (`cv.entity_ids` plus core's merge of the target into the data).
+
+**Not offered when a name can shadow the id.** Roomba+ resolves `room_name` by case-insensitive name first, then by slug, then by bare region id. So path 2 is not offered for a room when another room of the same rooms map has a `name` or a `room_id` equal to this room's `region_id`. For a robot with a mapping, the same check runs against the names in `last_seen_segments`. Names are normalised generously before comparing (ASCII-folded, non-alphanumerics dropped, lower-cased), because Roomba+ also matches by slug: matching too much only withdraws path 2, which is the safe side. The room is then offered through path 1 only, or shown as not startable with a reason.
+
+**Errors and risks.**
+- `unknown_rooms` is shown as a readable error and never retried with the name.
+- Residual risks (owner decision, 2026-11-23, comment on #37: path 2 stays allowed on robots with several stored maps; risks recorded):
+  - names on other maps and stored names are not visible to the card, so the shadow check above can miss one;
+  - on a robot whose several maps are offered, a region id shared by two maps is refused (`unknown_rooms`). Region ids are per-map ordinals, so this is frequent on multi-map robots;
+  - after the robot reported error 224, the rooms map shows the newest map ([`roomba-plus.md` « Which map it shows »](../research/roomba-plus.md#which-map-it-shows)), while the maps Roomba+ offers for room targeting follow where the robot says it is, with no 224 exception ([room_cleaning.py#L306-L349](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L306-L349), `_maps_to_offer`). A region id can then target the same number on another map. Whether `clean_room` resolves through those offered maps, and what the robot then does (fail to localise with 224, or clean that region of the other map), is « à vérifier »;
+  - between a re-map and Roomba+'s `segments_changed` issue (opened only after 3 differing cloud refreshes in a row, with the cloud), condition 6 cannot see a vanished segment on a map without a paired rooms map, because `last_seen_segments` is a snapshot ([`roomba-plus.md` « `async_clean_segments` », last row](../research/roomba-plus.md#async_clean_segments-what-vacuumclean_area-calls-and-the--active-map-filter-)). Roomba+ then cleans a same-label room or drops the segment.
+
+**Run options.**
+- The MVP sends no `cleaning_mode`, so the cleaning mode select's state applies, as in path 1.
+- If a later feature lets the user choose a mode, only a value from that select's `options` is sent.
+- `pad_wetness`, `smart_scrub` and `two_pass` are never sent (point 4).
+
+Sources:
+- [`roomba-plus.md` « `roomba_plus.clean_room` »](../research/roomba-plus.md#roomba_plusclean_room) (resolution order, known risk)
+- [« `cleaning_mode` for a vacuum robot and a mop robot »](../research/roomba-plus.md#cleaning_mode-for-a-vacuum-robot-and-a-mop-robot)
+- [« Which map it shows »](../research/roomba-plus.md#which-map-it-shows)
+- [« `async_get_segments` »](../research/roomba-plus.md#async_get_segments-what-cores-vacuumget_segments-returns) (maps offered)
+- [« Gaps for this card », Epic 4 item 3](../research/roomba-plus.md#epic-4-adapter)
+
+A robot that joins a room of another robot's plan through a name link uses path 2, and only for its own room on the same floor (ADR 0005 « Room to area »).
+
+### Checks before calling
+
+Some calls succeed and do nothing. The card prevents them with checks before the call, not with error handling.
+
+| Silent case | Check that prevents it |
+|---|---|
+| Target vacuum unavailable, disabled or missing: dropped by core, success returned | « Eligibility »: the robot is not startable |
+| Area mapped to `[]`: counted as handled, nothing sent | Condition 3: empty lists are ignored, so such an area is not offered |
+| On core 2026.3.x and 2026.4.x, an area that is not a key of the mapping: success, nothing sent (`areas_not_mapped` exists from 2026.5.0) | Condition 4 and room lists: the area comes from this robot's own mapping |
+| Roomba+: a segment id naming no known map: dropped with a warning | ADR 0005 « Rooms map pairing »: segment ids are built only from a known map id |
+| Roomba+: a segment that vanished after a re-map: replaced by a room with the same stored label, or dropped | Condition 6 narrows it; a window remains (« Path 2 », residual risks) |
+
+**When the checks run.** Opening the dialog captures one immutable intent:
+- the robot's `entity_id` and the path;
+- `areaId` or `regionId`, and the map id when known;
+- the names shown.
+
+On confirm, the card re-evaluates « Eligibility » and the conditions of that path against the current `hass`. If anything differs from the intent, it sends nothing and asks the user to try again; the wording is decided in Epic 5. That covers the robot's availability, the area mapping, the rooms map snapshot and the chosen path. The comparison uses captured values, never object identity: core rewrites every image state every 5 minutes (token rotation), which must not refuse an open dialog. For the rooms map, the intent keeps only its `state` string and a projection of `rooms` (`region_id`, `name`, `room_id`) plus the map id, never the state object or `attributes`, which carry `access_token` (ADR 0005 « Plan pictures »). A state change between opening and confirming therefore never sends a different room.
+
+A successful call means « accepted », not « cleaning ». Progress comes only from later state changes of the vacuum entity. Sources:
+- [`ha-core-vacuum.md` « Calls that succeed and do nothing »](../research/ha-core-vacuum.md#calls-that-succeed-and-do-nothing)
+- [« First versions »](../research/ha-core-vacuum.md#first-versions)
+- [« Gaps for this card », input 8](../research/ha-core-vacuum.md#epic-3-inputs-of-the--start-a-clean--use-case-adr-0003-path-1)
+- [« Fallback »](../research/ha-core-vacuum.md#fallback-adr-0003-path-2)
+- [`roomba-plus.md` « `async_clean_segments` »](../research/roomba-plus.md#async_clean_segments-what-vacuumclean_area-calls-and-the--active-map-filter-)
+- [« When the attributes change »](../research/roomba-plus.md#when-the-attributes-change)
+
+### Confirmation
+
+Every start is confirmed by the user in a dialog (point 3). The dialog names the robot, the action and the robot's own room.
+
+- **The area for path 1.** For path 1 it also names the area that `vacuum.clean_area` receives (ADR 0005). Because the call cleans the whole area, when that area maps to several segments the dialog names every room that will be cleaned ([`ha-core-vacuum.md` « How the call resolves »](../research/ha-core-vacuum.md#how-the-call-resolves)).
+- **The action** comes from the adapter, never from core, which has no notion of mopping. Roomba+ order, first match wins:
+  1. a `detected_pad` key on the vacuum means a mop robot (a Braava always reads « mop »);
+  2. else, when the robot has a cleaning mode select:
+     - its state `vacuum`, `mop`, `vacuum_and_mop` or `vacuum_then_mop` names the action;
+     - if its state is `unknown` or `unavailable` and its `options` include both a vacuum mode and a mop mode, the dialog uses the neutral verb « clean » (exception below);
+  3. else no select on a Classic robot means vacuum only;
+  4. the SKU prefix last.
+
+  Sources: [`ha-core-vacuum.md` « Mopping versus vacuuming »](../research/ha-core-vacuum.md#mopping-versus-vacuuming), [`roomba-plus.md` « Vacuum robot or mop robot, from Home Assistant state only »](../research/roomba-plus.md#vacuum-robot-or-mop-robot-from-home-assistant-state-only).
+- **Exception to point 3** (owner decision, 2026-11-23, #37). Step 2 above is the only case where the dialog does not name vacuum or mop. No mode is sent and the robot uses its own setting, so the dialog says « Send <robot> to clean <room>? », and the robot stays in the picker.
+
+  Live, a cleaning mode select was `unknown` with all four options. That robot was a mop robot, which step 1 reads as « mop » ([`roomba-plus.md` « Gaps for this card », Epic 4 item 4](../research/roomba-plus.md#epic-4-adapter), [« To confirm live (#27) », row 7](../research/roomba-plus.md#to-confirm-live-27)).
+- **One send per confirmation.** The confirm button is disabled while the call runs, and the card never retries: Roomba+ may already re-send an ignored start once on its own ([`roomba-plus.md` « Gaps for this card », Security item 5](../research/roomba-plus.md#security)).
+- **No path switch after an error.** The card never falls back to path 2 after a path 1 error, in particular after `Unauthorized`.
+
+The final wording is decided in Epic 5, with `src/i18n/en.json` and `fr.json`.
+
+### Errors
+
+Calls use `notifyOnError = false`, so the error is shown once, in the dialog, not also as a Home Assistant toast ([`ha-core-vacuum.md` « Response »](../research/ha-core-vacuum.md#response)).
+
+The card shows its own localised text, chosen from `error.code` and `error.translation_key`. It shows the raw `message` only as a fallback, and as text. Placeholders are shown only as text: Roomba+'s `known` lists every room name, which is untrusted. This replaces the earlier consequence « with the integration's message » ([`ha-core-vacuum.md` « Relation to ADR 0003 »](../research/ha-core-vacuum.md#relation-to-adr-0003-and-to-the-previous-document)).
+
+Core cases ([`ha-core-vacuum.md` « Errors »](../research/ha-core-vacuum.md#errors)):
+
+| Case | `code` / `translation_key` | The user is told | Robot may have started? |
+|---|---|---|---|
+| 1. Bad call data | `invalid_format` | The card could not start the clean (a card problem) | No |
+| 2. `return_response` sent | `service_does_not_support_response` | Same as 1 (never sent by the card) | No |
+| 3. Robot lacks area cleaning | `service_not_supported` | This robot cannot clean by area | No |
+| 4. User not allowed to control the robot | `home_assistant_error`, message `Unauthorized`, no key | You are not allowed to control this robot; ask an administrator | No |
+| 5. Robot has no registry entry | `unknown_error` | The robot is not set up for area cleaning | No |
+| 6. No mapping saved | `area_mapping_not_configured` | The robot's rooms are not linked to areas; how to link them in Home Assistant | No |
+| 7. Area not mapped | `areas_not_mapped` | This area is not linked to the robot | Possibly, with several areas; never with the card's one area per call |
+| 8. The integration refused | the integration's key (Roomba+ table below) | The integration's reason, mapped below | Integration-specific |
+| 9. The integration does not implement area cleaning | `unknown_error` | Same as 5 | No |
+| 10. Service missing | `not_found` / `service_not_found` | This Home Assistant version cannot clean by area | No |
+
+Roomba+ cases, `translation_domain` `roomba_plus`, websocket code usually `service_validation_error` ([`roomba-plus.md` « `roomba_plus.clean_room` »](../research/roomba-plus.md#roomba_plusclean_room), [« `async_clean_segments` »](../research/roomba-plus.md#async_clean_segments-what-vacuumclean_area-calls-and-the--active-map-filter-)).
+
+Every key below is raised before the start command is published. The handler checks run before `backend.clean_rooms` ([services.py#L670-L820](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L670-L820), [L1146-L1185](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/services.py#L1146-L1185), [service_guard.py#L55-L62](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/service_guard.py#L55-L62)). The Classic backend raises in `clean_rooms` before `send_command("start")` at [room_cleaning.py#L2592](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2592) ([L2350-L2365](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2350-L2365)), and in `clean_segments` before [L3018](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L3018) ([L2778-L2930](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2778-L2930)).
+
+| `translation_key` | The user is told | Robot may have started? |
+|---|---|---|
+| `not_smart_map` | This robot has no room map | No |
+| `no_rooms_configured` | The robot's account lists no room yet | No |
+| `no_rooms_resolved` | Nothing to clean was sent (a card problem) | No |
+| `room_name_is_a_zone` | This is a zone, not a room | No |
+| `unknown_rooms` | The robot could not find this room, or found it on several of its maps; try from the robot's app | No |
+| `cloud_required` | Room cleaning needs the iRobot account in the integration | No |
+| `map_updating` | The robot is rebuilding its map; try later | No |
+| `entity_not_found`, `config_entry_not_found`, `entry_not_loaded` | The integration is not ready for this robot | No |
+| `rooms_different_floors` | These rooms are on different maps; clean them one map at a time | No |
+| `no_valid_segments` | The robot's current map does not contain this room | No |
+| `room_list_not_read` (a `HomeAssistantError`, websocket code `home_assistant_error`; not in the research table, [room_cleaning.py#L2345-L2347](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2345-L2347)) | The robot's room list is not loaded yet; try later | No |
+| `room_map_unknown` (not in the research table, [room_cleaning.py#L2383-L2387](https://github.com/johnnyh1975/ha_roomba_plus/blob/v4.6.5/custom_components/roomba_plus/room_cleaning.py#L2383-L2387)) | The robot does not know which map this room is on | No |
+
+### Permissions
+
+The flow needs no admin-only command at core 2026.11.2. Verified at source; a live call as a non-admin user was not made.
+
+- **Reading `area_mapping`** (`config/entity_registry/list` or `get`) and listing repair issues are allowed for every user.
+- **`vacuum.clean_area`** is allowed unless the user's entity permissions deny `control` on the vacuum (case 4).
+- **`roomba_plus.clean_room`** is a plain domain service: Roomba+ 4.6.5 checks no entity permission ([`roomba-plus.md` « Actions »](../research/roomba-plus.md#actions)). The card adds no capability a user does not already have through Home Assistant.
+- **`vacuum/get_segments`** (admin only) is never called, and the card never writes the mapping.
+
+When the mapping is missing, a non-admin user is told to ask an administrator. An administrator also gets a link to the vacuum's entity settings, built from the registry entity id on a fixed Home Assistant path and shown only when `hass.user.is_admin`. The wording is decided in Epic 5. Source: [`ha-core-vacuum.md` « What a non-admin user cannot do »](../research/ha-core-vacuum.md#what-a-non-admin-user-cannot-do).
+
+### Points kept
+
+3. Every start is confirmed by the user in a dialog that names the robot, the action (vacuum or mop) and the room, with the one exception in « Confirmation ».
+4. The card never chains robots, adds conditions (pad state, water level) or sets run options (`pad_wetness`, `smart_scrub`, `two_pass`): that belongs to the user's automations and scripts. Pad state is shown in the picker, never blocking ([`roomba-plus.md` « States and eligibility attributes »](../research/roomba-plus.md#states-and-eligibility-attributes), [« Gaps for this card », Epic 4 item 7](../research/roomba-plus.md#epic-4-adapter)). An option may later let the user point a robot to a script instead of a direct action.
 
 ## Consequences
 
-- The same card works for any integration that supports core area cleaning, even without a dedicated adapter, as long as some room geometry is available.
-- Errors from the action are shown in the dialog in plain words, with the integration's message.
+- Path 1 works the same for every integration that supports core area cleaning, once the vacuum's segments are mapped to areas. The adapter still names the action and links rooms to segments (ADR 0002 amendment).
+- Errors are shown in the dialog in plain words chosen by the card, with the integration's message only as a fallback.
+- A mop robot without area cleaning always uses its integration's action, through its adapter, with the residual risks recorded under « Path 2 ».
+- On robots with several stored maps, a tapped outline uses path 2 (the rooms map is not paired), where a shared region id is often refused (`unknown_rooms`). The room lists of their plans start areas through path 1, which does not depend on region ids.
