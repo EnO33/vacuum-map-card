@@ -37,7 +37,13 @@ Releases are created with the `gh` CLI preinstalled on GitHub-hosted runners, no
 
 ## Home Assistant support
 
-- Minimum Home Assistant version: à vérifier (depends on the floor registry and vacuum area cleaning, see `docs/research/ha-core-vacuum.md`).
+- Minimum Home Assistant version: **2026.3.0** (owner decision, 2026-11-23, #28). Declared in `hacs.json` (`homeassistant`). Reasons:
+  - `vacuum.clean_area` and `CLEAN_AREA`, path 1 of ADR 0003, first ship in 2026.3.0 ([`ha-core-vacuum.md`, « First versions »](research/ha-core-vacuum.md#first-versions)). This is the binding constraint.
+  - The registry read paths need less: area `floor_id` since 2024.4.0, `hass.floors` since 2024.10.0 ([`ha-core-registries.md`, « First versions »](research/ha-core-registries.md#first-versions)).
+  - Roomba+ 4.6.5 declares 2025.5.0 ([`roomba-plus.md`, « Versions covered »](research/roomba-plus.md#versions-covered)).
+  - On 2026.3.x and 2026.4.x an area without mapped segments makes `clean_area` succeed without cleaning (`areas_not_mapped` arrives in 2026.5.0, [`ha-core-vacuum.md`, « First versions »](research/ha-core-vacuum.md#first-versions)); the card must check the mapping before calling (a requirement for the clean use case of Epic 3), so this is a behaviour to handle, not a reason for a higher minimum.
+  - Installing from the Marketplace needs Home Assistant 2026.11 ([`marketplace.md`, « Owner decisions (2026-11-20) »](research/marketplace.md#owner-decisions-2026-11-20)); a manual dashboard resource needs only the minimum above.
+  - Raising the minimum later is a major version (`CONTRIBUTING.md`).
 - Latest stable at the last check: Home Assistant 2026.11.2 (released 2026-11-16), frontend 20261028.8 (released 2026-11-20); checked 2026-11-23 with `gh api repos/home-assistant/{core,frontend}/releases/latest`. No beta open on that date (the last one, 2026.11.0b6, preceded 2026.11.0).
 - Tested on: stable and the current beta, recorded in each release.
 
