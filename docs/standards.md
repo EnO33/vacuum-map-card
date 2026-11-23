@@ -29,6 +29,7 @@ Releases are created with the `gh` CLI preinstalled on GitHub-hosted runners, no
 | `pnpm/action-setup` | v6.1.1 | `73e46992e05b19abd31f2f3c20e0e7370d762115` | 2026-11-03 | 2026-11-20 |
 | `actions/upload-artifact` | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | 2026-10-07 | 2026-11-20 |
 | `actions/download-artifact` | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` | 2026-10-07 | 2026-11-20 |
+| `hacs/action` | `main` (no release since 22.5.0 of 2022-05-28; runs the image `ghcr.io/hacs/action:main` whatever the pin) | `1ebf01c408f29afcb6406bd431bc98fd8cbb15aa` | 2026-06-08 (commit) | 2026-11-20 |
 
 ### Maintenance notes
 

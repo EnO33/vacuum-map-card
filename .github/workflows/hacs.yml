@@ -1,0 +1,36 @@
+name: HACS validation
+
+# Checks the repository against the catalog rules (docs/research/marketplace.md, « Validation action »).
+# It fails until the first stable release carries vacuum-map-card.js: dist/ is not committed,
+# so the card file only exists as a release asset. Not a required status check.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  hacs:
+    name: hacs
+    # A fork has no releases, so the action cannot find the card file there: skip pull requests from forks.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # The action always runs the image ghcr.io/hacs/action:main; the pin fixes the action definition only.
+      - name: Validate with the HACS action
+        uses: hacs/action@1ebf01c408f29afcb6406bd431bc98fd8cbb15aa # main 2026-06-08 (no release since 22.5.0)
+        with:
+          category: plugin
+          comment: "false"
