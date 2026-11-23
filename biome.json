@@ -7,7 +7,17 @@
     "defaultBranch": "main"
   },
   "files": {
-    "includes": ["src/**", "test/**", "scripts/**", "!scripts/test-hooks.mjs", "!**/*.md", "*.ts", "*.json"]
+    "includes": [
+      "src/**",
+      "test/**",
+      "scripts/**",
+      "!scripts/test-hooks.mjs",
+      "!**/*.md",
+      "!src/domain/text/case-fold-table.ts",
+      "!test/fixtures/synthetic/casefold-vectors.json",
+      "*.ts",
+      "*.json"
+    ]
   },
   "formatter": {
     "indentStyle": "space",

@@ -1,6 +1,6 @@
 // Geometry limits from ADR 0002, amendment, « Parsing limits », item 1: coordinates, outline points, calibration.
-// The room count per plan (item 1) and the string and collection caps (item 3) live with the modules that read
-// rooms and mappings, each in its own limits file. Generous against real homes; outside them is « unsupported ».
+// The room count per plan (item 1) and the collection caps (item 3) live with the modules that read rooms and
+// mappings; the string cap is in `../text/limits.ts`. Generous against real homes; outside them is « unsupported ».
 
 /** Largest accepted absolute value of any coordinate, in outline units (mm) or pixels. */
 export const MAX_ABS_COORDINATE = 1e7;
