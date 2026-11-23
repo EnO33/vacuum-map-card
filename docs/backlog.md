@@ -13,12 +13,14 @@ Planned as epic #2 (issues #3 to #11). The list below is the original idea; the 
 
 ## Epic 2: Verify the Home Assistant data model
 
-Planned as epic #22 (issues #23 to #29). The list below is the original idea; the epic is the source of truth.
+Planned as epic #22 (issues #23 to #29, and #37 split from #29); done. The list below is the original idea; the epic is the source of truth.
 
 - `integration-scout`: verify `docs/research/ha-core-vacuum.md` (floors, areas, segment mapping, `vacuum.clean_area`) at the pinned Home Assistant version; capture anonymised registry shapes.
 - `integration-scout`: re-verify `docs/research/roomba-plus.md` against the Roomba+ source (`services.yaml`, image entity attributes), capture anonymised fixtures.
 
 ## Epic 3: Domain and app
+
+Planned as epic #40 (issues #41 to #56). The list below is the original idea; the epic is the source of truth.
 
 - Geometry: polygon hit test, affine transform from calibration points, outline to SVG path, label placement (ADR 0002 « Parsing limits »).
 - Floor model: floors from HA, plans per floor from room sources, rooms with outlines or list-only (ADR 0005 « Floors », « Map to floor », « Rooms map pairing », « Room lists »).
