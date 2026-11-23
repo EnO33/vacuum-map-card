@@ -1,0 +1,39 @@
+{
+  "segments": [
+    {
+      "group": null,
+      "id": "MapA_q1W2e3_1",
+      "name": "Library"
+    },
+    {
+      "group": null,
+      "id": "MapB_z9X8c7_1",
+      "name": "Gallery"
+    },
+    {
+      "group": null,
+      "id": "MapB_z9X8c7_3",
+      "name": "Music corner"
+    },
+    {
+      "group": null,
+      "id": "MapB_z9X8c7_2",
+      "name": "Studio"
+    },
+    {
+      "group": "Furniture",
+      "id": "MapA_q1W2e3_zid_0",
+      "name": "Reading table "
+    },
+    {
+      "group": "Flooring",
+      "id": "MapA_q1W2e3_zid_1",
+      "name": "Mat"
+    },
+    {
+      "group": "Other",
+      "id": "MapA_q1W2e3_zid_2",
+      "name": "Workshop"
+    }
+  ]
+}

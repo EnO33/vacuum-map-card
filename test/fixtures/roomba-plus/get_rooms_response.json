@@ -1,0 +1,38 @@
+{
+  "vacuum.robot_one": {
+    "rooms": [
+      {
+        "id": "1",
+        "name": "Library",
+        "map_id": "MapA_q1W2e3",
+        "type": "living_room",
+        "area_id": "library",
+        "area_name": "Library",
+        "estimate_sec": null,
+        "estimate_quality": {
+          "runs": 0,
+          "spread_sec": null,
+          "rating": "none"
+        }
+      }
+    ]
+  },
+  "vacuum.robot_two": {
+    "rooms": [
+      {
+        "id": "1",
+        "name": "Library",
+        "map_id": "MapC_k4L5m6",
+        "type": "living_room",
+        "area_id": "library",
+        "area_name": "Library",
+        "estimate_sec": 3000,
+        "estimate_quality": {
+          "runs": 1,
+          "spread_sec": null,
+          "rating": "low"
+        }
+      }
+    ]
+  }
+}

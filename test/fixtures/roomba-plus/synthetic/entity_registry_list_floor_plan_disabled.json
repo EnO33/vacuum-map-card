@@ -1,0 +1,29 @@
+[
+  {
+    "area_id": null,
+    "categories": {},
+    "config_entry_id": "01JAAAAAAAAAAAAAAAAAAAAA01",
+    "config_subentry_id": null,
+    "created_at": 1767229860,
+    "device_id": "01010101010101010101010101010101",
+    "disabled_by": "integration",
+    "entity_category": null,
+    "entity_id": "image.robot_one_floor_plan_mapb_z9x8c7",
+    "hidden_by": null,
+    "icon": null,
+    "id": "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a",
+    "labels": [],
+    "modified_at": 1767229920,
+    "name": null,
+    "next_name_part": "device",
+    "options": {
+      "conversation": {
+        "should_expose": false
+      }
+    },
+    "original_name": "Plan Upper floor",
+    "platform": "roomba_plus",
+    "translation_key": "floor_plan",
+    "unique_id": "roomba_plus_ROBOTBLID0001_floor_plan_MapB_z9X8c7"
+  }
+]
