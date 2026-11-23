@@ -16,7 +16,7 @@ A card that starts from the home, not from the robot: every floor plan visible a
 4. The user picks a robot; a confirmation dialog states the action in plain words: « Send Roomba S9+ to vacuum the bedroom? »
 5. On confirm, the card starts the job and shows its progress on the room (in progress, done, failed).
 
-## MVP (0.1)
+## MVP
 
 - Roomba+ room source: floor plans of every stored map, clickable rooms on the active map with outlines and calibration from the integration.
 - Floors from Home Assistant floors, rooms matched to Home Assistant areas when the vacuum's segments are mapped, otherwise by the integration's room name.

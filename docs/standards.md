@@ -6,15 +6,15 @@ Binding. Every version here is checked live by `/check-versions` and dated. A ro
 
 | Tool | Version | Released | Source | Checked |
 |---|---|---|---|---|
-| Node.js (LTS « Lithium », tooling only) | 26.13.1 | 2026-11-10 | nodejs.org/dist/index.json | 2026-11-20 |
-| pnpm (`packageManager`, `latest` dist-tag) | `pnpm@12.21.0+sha512.66fd8278ee28935ce951792d34367ff3af5c432a2756445823029533835b8da529bbe0be5130afd56ed0713fb8789e47bad82d93bd5ae2fe54b15562d6276ef0` | 2026-11-13 | `npm view pnpm` | 2026-11-20 |
-| TypeScript | 7.0.2 | 2026-07-08 | `npm view typescript` | 2026-11-20 |
-| Lit | 3.3.3 | 2026-05-14 | `npm view lit` | 2026-11-20 |
-| Bundler: Vite (Rolldown via `~1.2.18`, resolved to 1.2.19 of 2026-11-11 on 2026-11-20; the lockfile pins it) | 8.3.8 | 2026-11-11 | `npm view vite`, `npm view vite@8.3.8 dependencies.rolldown` | 2026-11-20 |
-| Vitest | 5.1.1 | 2026-11-18 | `npm view vitest` | 2026-11-20 |
-| `@vitest/coverage-v8` | 5.1.1 | 2026-11-18 | `npm view @vitest/coverage-v8` | 2026-11-20 |
-| DOM environment: happy-dom | 21.0.4 | 2026-10-20 | `npm view happy-dom` | 2026-11-20 |
-| Biome | 2.6.8 | 2026-11-15 | `npm view @biomejs/biome` | 2026-11-20 |
+| Node.js (LTS « Lithium », tooling only) | 26.13.1 | 2026-11-10 | nodejs.org/dist/index.json | 2026-11-23 |
+| pnpm (`packageManager`, `latest` dist-tag) | `pnpm@12.21.0+sha512.66fd8278ee28935ce951792d34367ff3af5c432a2756445823029533835b8da529bbe0be5130afd56ed0713fb8789e47bad82d93bd5ae2fe54b15562d6276ef0` | 2026-11-13 | `npm view pnpm` | 2026-11-23 |
+| TypeScript | 7.0.2 | 2026-07-08 | `npm view typescript` | 2026-11-23 |
+| Lit | 3.3.3 | 2026-05-14 | `npm view lit` | 2026-11-23 |
+| Bundler: Vite (Rolldown via `~1.2.18`, resolved to 1.2.19 of 2026-11-11 on 2026-11-23; the lockfile pins it) | 8.3.8 | 2026-11-11 | `npm view vite`, `npm view vite@8.3.8 dependencies.rolldown` | 2026-11-23 |
+| Vitest | 5.1.1 | 2026-11-18 | `npm view vitest` | 2026-11-23 |
+| `@vitest/coverage-v8` | 5.1.1 | 2026-11-18 | `npm view @vitest/coverage-v8` | 2026-11-23 |
+| DOM environment: happy-dom | 21.0.4 | 2026-10-20 | `npm view happy-dom` | 2026-11-23 |
+| Biome | 2.6.8 | 2026-11-15 | `npm view @biomejs/biome` | 2026-11-23 |
 
 Bundler and DOM environment chosen in ADR 0001 (measurements there). No bundler plugin is needed.
 
@@ -24,12 +24,12 @@ Releases are created with the `gh` CLI preinstalled on GitHub-hosted runners, no
 
 | Action | Version | Commit SHA | Released | Checked |
 |---|---|---|---|---|
-| `actions/checkout` | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` | 2026-07-20 | 2026-11-20 |
-| `actions/setup-node` | v7.1.0 | `949feb2413d6458794dcd2491c4babbbce0c15c1` | 2026-10-08 | 2026-11-20 |
-| `pnpm/action-setup` | v6.1.1 | `73e46992e05b19abd31f2f3c20e0e7370d762115` | 2026-11-03 | 2026-11-20 |
-| `actions/upload-artifact` | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | 2026-10-07 | 2026-11-20 |
-| `actions/download-artifact` | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` | 2026-10-07 | 2026-11-20 |
-| `hacs/action` | `main` (no release since 22.5.0 of 2022-05-28; runs the image `ghcr.io/hacs/action:main` whatever the pin) | `1ebf01c408f29afcb6406bd431bc98fd8cbb15aa` | 2026-06-08 (commit) | 2026-11-20 |
+| `actions/checkout` | v7.0.1 | `3d3c42e5aac5ba805825da76410c181273ba90b1` | 2026-07-20 | 2026-11-23 |
+| `actions/setup-node` | v7.1.0 | `949feb2413d6458794dcd2491c4babbbce0c15c1` | 2026-10-08 | 2026-11-23 |
+| `pnpm/action-setup` | v6.1.1 | `73e46992e05b19abd31f2f3c20e0e7370d762115` | 2026-11-03 | 2026-11-23 |
+| `actions/upload-artifact` | v7.0.2 | `cf430e030ddbb5b0abf93d22962f4752f3646cd9` | 2026-10-07 | 2026-11-23 |
+| `actions/download-artifact` | v8.0.2 | `9000827ccba6bdab643e8b6fd33ac0654aef8333` | 2026-10-07 | 2026-11-23 |
+| `hacs/action` | `main` (no release since 22.5.0 of 2022-05-28; runs the image `ghcr.io/hacs/action:main` whatever the pin) | `1ebf01c408f29afcb6406bd431bc98fd8cbb15aa` | 2026-06-08 (commit) | 2026-11-23 |
 
 ### Maintenance notes
 
@@ -38,7 +38,7 @@ Releases are created with the `gh` CLI preinstalled on GitHub-hosted runners, no
 ## Home Assistant support
 
 - Minimum Home Assistant version: à vérifier (depends on the floor registry and vacuum area cleaning, see `docs/research/ha-core-vacuum.md`).
-- Latest stable at the last check: Home Assistant 2026.11.2 (released 2026-11-16), frontend 20261028.6 (released 2026-11-13); checked 2026-11-20 with `gh api repos/home-assistant/{core,frontend}/releases/latest`.
+- Latest stable at the last check: Home Assistant 2026.11.2 (released 2026-11-16), frontend 20261028.8 (released 2026-11-20); checked 2026-11-23 with `gh api repos/home-assistant/{core,frontend}/releases/latest`. No beta open on that date (the last one, 2026.11.0b6, preceded 2026.11.0).
 - Tested on: stable and the current beta, recorded in each release.
 
 ## Supply chain

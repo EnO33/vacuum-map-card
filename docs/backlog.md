@@ -34,7 +34,7 @@ Planned as epic #2 (issues #3 to #11). The list below is the original idea; the 
 - Degraded states: plan disabled (how to enable), no outlines on this floor (room list), robot unavailable.
 - Visual editor, i18n English and French, light and dark screenshots.
 
-## Epic 6: Release 0.1
+## Epic 6: MVP release
 
 - README with real screenshots of a demo home (not the owner's), docs, `/ha-live-test` on stable and beta, owner publishes the release and the Marketplace submission.
 
