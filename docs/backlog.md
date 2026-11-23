@@ -20,9 +20,9 @@ Planned as epic #22 (issues #23 to #29). The list below is the original idea; th
 
 ## Epic 3: Domain and app
 
-- Geometry: polygon hit test, affine transform from calibration points, outline to SVG path, label placement.
-- Floor model: floors from HA, plans per floor from room sources, rooms with outlines or list-only.
-- Eligibility: robots that can clean a room (floor, room known, state, capability), with a reason when not.
+- Geometry: polygon hit test, affine transform from calibration points, outline to SVG path, label placement (ADR 0002 « Parsing limits »).
+- Floor model: floors from HA, plans per floor from room sources, rooms with outlines or list-only (ADR 0005 « Floors », « Map to floor », « Rooms map pairing », « Room lists »).
+- Eligibility: robots that can clean a room (floor, room known, state, capability), with a reason when not (ADR 0005 « Room to area »).
 - Start use case: `vacuum.clean_area` when mapped, else the adapter's action; typed errors.
 
 ## Epic 4: Roomba+ adapter
