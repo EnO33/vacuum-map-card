@@ -22,7 +22,7 @@ A card that starts from the home, not from the robot: every floor plan visible a
 - Floors from Home Assistant floors, rooms matched to Home Assistant areas when the vacuum's segments are mapped, otherwise by the integration's room name.
 - Robot picker and confirmation dialog, keyboard and screen-reader accessible.
 - Start through `vacuum.clean_area` when available, else the integration's room action.
-- Graceful degradation: a floor without outlines is shown with a clear note and stays usable through a room list.
+- Graceful degradation: a floor without outlines is shown with a clear note and stays usable through a room list. A robot without area cleaning (a mop robot) has no room list for its maps without outlines: their plan shows the picture and says why (ADR 0005).
 - English and French. Visual editor for the few options.
 
 ## Non-goals (for now)
