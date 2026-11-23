@@ -1,0 +1,15 @@
+{
+  "entity_id": "select.robot_two_prime_cleaning_mode",
+  "state": "unknown",
+  "attributes": {
+    "options": ["vacuum", "mop", "vacuum_and_mop", "vacuum_then_mop"],
+    "friendly_name": "Robot Two Mode de nettoyage"
+  },
+  "context": {
+    "id": "01JAAAAAAAAAAAAAAAAAAAAC09",
+    "parent_id": null,
+    "user_id": null
+  },
+  "last_changed": "2026-01-01T09:16:00.000Z",
+  "last_updated": "2026-01-01T09:17:00.000Z"
+}

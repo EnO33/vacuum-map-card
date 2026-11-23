@@ -1,0 +1,78 @@
+{
+  "image.robot_one_floor_plan_mapa_q1w2e3": {
+    "entity_id": "image.robot_one_floor_plan_mapa_q1w2e3",
+    "state": "2026-01-01T09:30:00.123456+00:00",
+    "attributes": {
+      "access_token": "0000000000000000000000000000000000000000000000000000000000000001",
+      "map_name": "Ground floor",
+      "map_version": "260101T090000",
+      "room_count": null,
+      "friendly_name": "Robot One Plan Ground floor",
+      "entity_picture": "/api/image_proxy/image.robot_one_floor_plan_mapa_q1w2e3?token=0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAC03",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T09:04:00.000Z",
+    "last_updated": "2026-01-01T09:05:00.000Z"
+  },
+  "image.robot_one_floor_plan_mapb_z9x8c7": {
+    "entity_id": "image.robot_one_floor_plan_mapb_z9x8c7",
+    "state": "2026-01-01T09:30:00.123456+00:00",
+    "attributes": {
+      "access_token": "0000000000000000000000000000000000000000000000000000000000000001",
+      "map_name": "Upper floor",
+      "map_version": "260102T090000",
+      "room_count": null,
+      "friendly_name": "Robot One Plan Upper floor",
+      "entity_picture": "/api/image_proxy/image.robot_one_floor_plan_mapb_z9x8c7?token=0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAC04",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T09:06:00.000Z",
+    "last_updated": "2026-01-01T09:07:00.000Z"
+  },
+  "image.robot_two_floor_plan_mapc_k4l5m6": {
+    "entity_id": "image.robot_two_floor_plan_mapc_k4l5m6",
+    "state": "2026-01-01T09:30:00.123456+00:00",
+    "attributes": {
+      "access_token": "0000000000000000000000000000000000000000000000000000000000000001",
+      "map_name": "Ground floor",
+      "map_version": "260103T090000",
+      "room_count": null,
+      "friendly_name": "Robot Two Plan Ground floor",
+      "entity_picture": "/api/image_proxy/image.robot_two_floor_plan_mapc_k4l5m6?token=0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAC05",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T09:08:00.000Z",
+    "last_updated": "2026-01-01T09:09:00.000Z"
+  },
+  "image.robot_two_floor_plan_mapd_r7t8y9": {
+    "entity_id": "image.robot_two_floor_plan_mapd_r7t8y9",
+    "state": "2026-01-01T09:30:00.123456+00:00",
+    "attributes": {
+      "access_token": "0000000000000000000000000000000000000000000000000000000000000001",
+      "map_name": "Upper level",
+      "map_version": "260104T090000",
+      "room_count": null,
+      "friendly_name": "Robot Two Plan Upper level",
+      "entity_picture": "/api/image_proxy/image.robot_two_floor_plan_mapd_r7t8y9?token=0000000000000000000000000000000000000000000000000000000000000001"
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAC06",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T09:10:00.000Z",
+    "last_updated": "2026-01-01T09:11:00.000Z"
+  }
+}

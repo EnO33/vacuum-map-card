@@ -1,0 +1,78 @@
+{
+  "entity_id": "image.robot_one_rooms_map",
+  "state": "2026-01-01T09:30:00.123456+00:00",
+  "attributes": {
+    "access_token": "0000000000000000000000000000000000000000000000000000000000000001",
+    "alignment_pending": true,
+    "calibration_points": [
+      {
+        "vacuum": {
+          "x": 0,
+          "y": 0
+        },
+        "map": {
+          "x": 4,
+          "y": 595
+        }
+      },
+      {
+        "vacuum": {
+          "x": 6000,
+          "y": 0
+        },
+        "map": {
+          "x": 595,
+          "y": 595
+        }
+      },
+      {
+        "vacuum": {
+          "x": 0,
+          "y": 4500
+        },
+        "map": {
+          "x": 4,
+          "y": 152
+        }
+      }
+    ],
+    "rooms": {
+      "Gallery": {
+        "outline": [[0, 0], [6000, 0], [6000, 1200], [0, 1200]],
+        "name": "Gallery",
+        "room_id": "gallery",
+        "region_id": "1",
+        "icon": "mdi:map-marker",
+        "x": 3000,
+        "y": 600
+      },
+      "Studio": {
+        "outline": [[0, 1200], [2800, 1200], [2800, 4500], [0, 4500]],
+        "name": "Studio",
+        "room_id": "studio",
+        "region_id": "2",
+        "icon": "mdi:map-marker",
+        "x": 1400,
+        "y": 2850
+      },
+      "Music corner": {
+        "outline": [[2800, 1200], [6000, 1200], [6000, 4500], [4500, 4500], [4500, 3200.5], [2800, 3200.5]],
+        "name": "Music corner",
+        "room_id": "music_corner",
+        "region_id": "3",
+        "icon": "mdi:map-marker",
+        "x": 4433.333333333333,
+        "y": 2966.8333333333335
+      }
+    },
+    "friendly_name": "Robot One Carte des pièces",
+    "entity_picture": "/api/image_proxy/image.robot_one_rooms_map?token=0000000000000000000000000000000000000000000000000000000000000001"
+  },
+  "context": {
+    "id": "01JAAAAAAAAAAAAAAAAAAAAC10",
+    "parent_id": null,
+    "user_id": null
+  },
+  "last_changed": "2026-01-01T09:18:00.000Z",
+  "last_updated": "2026-01-01T09:19:00.000Z"
+}

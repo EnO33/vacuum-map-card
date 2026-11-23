@@ -1,0 +1,91 @@
+{
+  "vacuum.robot_one": {
+    "entity_id": "vacuum.robot_one",
+    "state": "docked",
+    "attributes": {
+      "fan_speed_list": ["automatic", "eco", "performance"],
+      "software_version": "1.0.0+example",
+      "status": "Charging",
+      "mission_elapsed_min": null,
+      "mission_area_sqft": null,
+      "mid_mission_recharge": false,
+      "recharge_minutes_remaining": null,
+      "expire_minutes_remaining": null,
+      "fan_speed": "automatic",
+      "mission_id": "01JAAAAAAAAAAAAAAAAAAAAB13",
+      "mission_scope": null,
+      "last_cleaned_rooms": ["Music corner", "Library"],
+      "last_cleaned_rooms_source": "cloud",
+      "room_coverage": {
+        "Library": 0.92,
+        "Music corner": 0.85
+      },
+      "favorites": [
+        {
+          "id": "08ab08ab08ab08ab08ab08ab08ab08ab",
+          "name": "Favorite 1"
+        },
+        {
+          "id": "0cab0cab0cab0cab0cab0cab0cab0cab",
+          "name": "Favorite 3"
+        }
+      ],
+      "bin_present": true,
+      "bin_full": false,
+      "friendly_name": "Robot One",
+      "supported_features": 29500
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAC07",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T09:12:00.000Z",
+    "last_updated": "2026-01-01T09:13:00.000Z"
+  },
+  "vacuum.robot_two": {
+    "entity_id": "vacuum.robot_two",
+    "state": "docked",
+    "attributes": {
+      "fan_speed_list": ["automatic", "eco", "performance"],
+      "software_version": "1.0.0+example",
+      "status": "Charging",
+      "mission_elapsed_min": null,
+      "mission_area_sqft": null,
+      "mid_mission_recharge": false,
+      "recharge_minutes_remaining": null,
+      "expire_minutes_remaining": null,
+      "fan_speed": "Deep-3",
+      "mission_id": "01JAAAAAAAAAAAAAAAAAAAAB10",
+      "mission_scope": null,
+      "last_cleaned_rooms": ["Library"],
+      "last_cleaned_rooms_source": "cloud",
+      "room_coverage": {
+        "Library": 0.92
+      },
+      "favorites": [
+        {
+          "id": "08ab08ab08ab08ab08ab08ab08ab08ab",
+          "name": "Favorite 1"
+        },
+        {
+          "id": "09ab09ab09ab09ab09ab09ab09ab09ab",
+          "name": "Favorite 2"
+        }
+      ],
+      "detected_pad": "reusableWet",
+      "lid_closed": null,
+      "tank_present": true,
+      "tank_level": 100,
+      "friendly_name": "Robot Two",
+      "supported_features": 13116
+    },
+    "context": {
+      "id": "01JAAAAAAAAAAAAAAAAAAAAC08",
+      "parent_id": null,
+      "user_id": null
+    },
+    "last_changed": "2026-01-01T09:14:00.000Z",
+    "last_updated": "2026-01-01T09:15:00.000Z"
+  }
+}
