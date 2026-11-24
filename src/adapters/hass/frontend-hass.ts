@@ -29,6 +29,8 @@ export interface FrontendHass {
   readonly states: unknown;
   /** `hass.services`: services keyed by domain, then by service name. Untrusted. */
   readonly services: unknown;
+  /** `hass.devices`: device registry entries keyed by device id, with `model` and `model_id`. Untrusted. */
+  readonly devices: unknown;
   /** `hass.user`: the signed-in user, with `is_admin`. Untrusted. */
   readonly user: unknown;
 }
