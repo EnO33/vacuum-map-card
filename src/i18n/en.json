@@ -4,5 +4,7 @@
   "card.no_robot": "No supported robot found",
   "card.no_robot_hint": "This card works with robots from the {integration} integration.",
   "card.no_plan": "No floor plan found.",
-  "card.no_floor": "Plans without a floor"
+  "card.no_floor": "Plans without a floor",
+  "confirm.cancel": "Cancel",
+  "confirm.ok": "OK"
 }

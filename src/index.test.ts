@@ -32,4 +32,10 @@ describe("entry module", () => {
     expect(info).toHaveBeenCalledTimes(1);
     expect(info).toHaveBeenCalledWith(`vacuum-map-card ${CARD_VERSION}`);
   });
+
+  it("registers the card's own confirmation element", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    await loadEntry();
+    expect(customElements.get("vmc-confirm-dialog")).toBeDefined();
+  });
 });

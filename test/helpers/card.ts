@@ -8,6 +8,7 @@ import type { SessionDependencies } from "../../src/ui/card-session";
 import { VacuumMapCard } from "../../src/ui/vacuum-map-card";
 import type { FakeFrontendHass } from "../fakes/frontend-hass";
 import { type AdaptersHarness, adaptersHarness } from "./adapters";
+import { shadowOf } from "./shadow";
 
 const TAG = "vacuum-map-card-under-test";
 export const LOADING = "Loading floor plans…";
@@ -111,10 +112,7 @@ export async function mount(hass: unknown): Promise<TestCard> {
   return attach(card);
 }
 
-export function shadowOf(card: VacuumMapCard): ShadowRoot {
-  if (card.shadowRoot === null) throw new Error("card has no shadow root");
-  return card.shadowRoot;
-}
+export { shadowOf };
 
 /** The card's text without the title, whitespace collapsed. */
 export function bodyText(card: VacuumMapCard): string {
