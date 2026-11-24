@@ -4,6 +4,9 @@ import { isVacuumEntityId } from "../hass/entity-registry-entry";
 /** The integration's registry `platform` (`docs/research/roomba-plus.md` « Entities the card needs »). */
 export const PLATFORM = "roomba_plus";
 
+/** The integration's name as its users see it: the manifest `name` (`manifest.json` at `v4.6.5`, checked 2026-11-24). */
+export const INTEGRATION_NAME = "Roomba+";
+
 /** One Roomba+ robot's registry entries, found without entity id patterns (ADR 0002 « Decision »). */
 export interface RobotEntities {
   readonly vacuum: EntityRegistryEntry;

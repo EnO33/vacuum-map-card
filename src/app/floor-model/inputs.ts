@@ -18,6 +18,8 @@ export interface RobotInputs {
 export interface FloorModelInputs {
   /** `undefined` before the floor list is read. */
   readonly floors: readonly Floor[] | undefined;
+  /** `false` while a source has not read its robots yet. */
+  readonly sourcesLoaded: boolean;
   readonly areas: ReadonlyMap<string, Area>;
   readonly robots: readonly RobotInputs[];
 }
@@ -25,6 +27,7 @@ export interface FloorModelInputs {
 export function readInputs(hass: HassPort, sources: readonly RoomSource[]): FloorModelInputs {
   return {
     floors: hass.floors(),
+    sourcesLoaded: sources.every((source) => source.loaded()),
     areas: hass.areas(),
     robots: sources
       .flatMap((source) => source.robots())
@@ -40,6 +43,7 @@ export function readInputs(hass: HassPort, sources: readonly RoomSource[]): Floo
 export function comparable(inputs: FloorModelInputs): unknown {
   return {
     floors: inputs.floors,
+    sourcesLoaded: inputs.sourcesLoaded,
     areas: inputs.areas,
     robots: inputs.robots.map(({ robot, supportedFeatures, options }) => ({
       id: robot.vacuumEntityId,

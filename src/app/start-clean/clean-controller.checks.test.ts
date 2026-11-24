@@ -227,6 +227,8 @@ describe("release and hardening", () => {
     state.sources = [
       {
         integration: "roomba_plus",
+        integrationName: "Roomba+",
+        loaded: () => true,
         robots: () => {
           throw new Error("adapter failed");
         },

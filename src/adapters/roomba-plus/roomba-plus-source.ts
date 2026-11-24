@@ -4,7 +4,7 @@ import type { FrontendHass } from "../hass/frontend-hass";
 import { stateObjectOf } from "../hass/picture-state";
 import { actionKindOf, deviceEntryOf } from "./action-kind";
 import { classifyRoombaPlusError } from "./error-kinds";
-import { findRobots, PLATFORM, type RobotEntities } from "./robot-entities";
+import { findRobots, INTEGRATION_NAME, PLATFORM, type RobotEntities } from "./robot-entities";
 import { roomActionOf } from "./room-action";
 import { roomsMapReader } from "./rooms-map";
 import { segmentLinks } from "./segments";
@@ -59,6 +59,8 @@ export function createRoombaPlusSource({ registry, getHass }: RoombaPlusSourceOp
 
   return {
     integration: PLATFORM,
+    integrationName: INTEGRATION_NAME,
+    loaded: () => registry.version() !== undefined,
     robots() {
       const current = registry.version();
       if (current === undefined) return NO_ROBOTS;

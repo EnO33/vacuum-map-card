@@ -1,5 +1,8 @@
 {
   "card.loading": "Chargement des plans…",
+  "card.error": "Les plans n'ont pas pu être affichés. Rechargez la page pour réessayer.",
   "card.no_robot": "Aucun robot compatible trouvé",
-  "card.no_robot_hint": "Cette carte fonctionne avec les robots de l'intégration {integration}."
+  "card.no_robot_hint": "Cette carte fonctionne avec les robots de l'intégration {integration}.",
+  "card.no_plan": "Aucun plan trouvé.",
+  "card.no_floor": "Plans sans étage"
 }

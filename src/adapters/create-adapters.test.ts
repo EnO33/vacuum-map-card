@@ -59,6 +59,12 @@ describe("createAdapters", () => {
     expect(display.robotName("vacuum.robot_one")).toBe("Robot One");
   });
 
+  it("names the supported integrations as their users know them, in a frozen list", () => {
+    const { integrations } = harness.adapters;
+    expect(integrations).toStrictEqual(["Roomba+"]);
+    expect(Object.isFrozen(integrations)).toBe(true);
+  });
+
   it("debounces updates on the injected timer", async () => {
     const waits: number[] = [];
     const adapters = createAdapters(() => harness.hass, {

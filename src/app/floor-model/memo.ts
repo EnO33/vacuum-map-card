@@ -7,6 +7,9 @@ import type { FloorModel } from "./floor-model";
 import { comparable, readInputs } from "./inputs";
 import { sameValue } from "./same-value";
 
+/** A memoised floor model builder: the same model object for equal inputs. */
+export type FloorModelBuilder = (hass: HassPort, sources: readonly RoomSource[]) => FloorModel;
+
 interface CachedPlan {
   readonly snapshot: RoomsMapSnapshot;
   readonly result: RoomsPlanResult;
@@ -17,7 +20,7 @@ interface CachedPlan {
  * are read once per call; equal inputs in new objects give the same model object. A robot's rooms plan, and so its
  * calibration, is rebuilt only when its snapshot changes (ADR 0002 « Parsing limits » item 2).
  */
-export function createFloorModelBuilder(): (hass: HassPort, sources: readonly RoomSource[]) => FloorModel {
+export function createFloorModelBuilder(): FloorModelBuilder {
   let last: { readonly inputs: unknown; readonly model: FloorModel } | undefined;
   let plans = new Map<string, CachedPlan>();
 

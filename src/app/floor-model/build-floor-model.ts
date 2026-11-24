@@ -24,6 +24,7 @@ export function floorModelOf(inputs: FloorModelInputs, plansFor: RoomsPlanFor): 
   const registry = { floors, areas, areaIds: new Set(areas.keys()) };
   const loading =
     inputs.floors === undefined ||
+    !inputs.sourcesLoaded ||
     inputs.robots.some(({ options }) => options.kind === "unsupported" && options.reason === "not_loaded");
   const robots = inputs.robots.map((robot) => robotModelOf(robot, registry, plansFor));
   const placed = robots

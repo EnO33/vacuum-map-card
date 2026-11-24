@@ -1,5 +1,8 @@
 {
   "card.loading": "Loading floor plans…",
+  "card.error": "The floor plans could not be shown. Reload the page to try again.",
   "card.no_robot": "No supported robot found",
-  "card.no_robot_hint": "This card works with robots from the {integration} integration."
+  "card.no_robot_hint": "This card works with robots from the {integration} integration.",
+  "card.no_plan": "No floor plan found.",
+  "card.no_floor": "Plans without a floor"
 }

@@ -88,7 +88,8 @@ export interface FloorView {
 /** What the UI renders: floors in list order with one plan each, then every unplaced plan (ADR 0005 « Floors »). */
 export interface FloorModel {
   /**
-   * `true` while the floor list or a robot's vacuum options are not read yet: placements and reasons are provisional,
+   * `true` while the floor list, a source's robots or a robot's vacuum options are not read yet: placements and reasons
+   * (and « no robot ») are provisional,
    * so the UI shows a loading state rather than fixes the user does not need.
    */
   readonly loading: boolean;

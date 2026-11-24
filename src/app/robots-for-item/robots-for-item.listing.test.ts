@@ -25,6 +25,8 @@ describe("robotsForItem listing rules", () => {
     const early = { ...vacuum, vacuumEntityId: "vacuum.Robot_z" };
     const source: RoomSource = {
       integration: "roomba_plus",
+      integrationName: "Roomba+",
+      loaded: () => true,
       robots: () => [
         ...mopOnGround.robots(),
         ...mopOnGround
@@ -69,7 +71,12 @@ describe("robotsForItem listing rules", () => {
   });
 
   it("lists nothing when the plan's robot has no source robot", () => {
-    const empty: RoomSource = { integration: "roomba_plus", robots: () => [] };
+    const empty: RoomSource = {
+      integration: "roomba_plus",
+      integrationName: "Roomba+",
+      loaded: () => true,
+      robots: () => [],
+    };
     expect(robotsForItem(onGround, item, hass, [empty])).toEqual([]);
   });
 
@@ -80,6 +87,8 @@ describe("robotsForItem listing rules", () => {
   it("drops a joining robot that has no source robot", () => {
     const mopOnly: RoomSource = {
       integration: "roomba_plus",
+      integrationName: "Roomba+",
+      loaded: () => true,
       robots: () => mopOnGround.robots().filter((r) => r.vacuumEntityId === "vacuum.robot_two"),
     };
     expect(robotsForItem(onGround, item, hass, [mopOnly]).map((c) => c.vacuumEntityId)).toEqual(["vacuum.robot_two"]);

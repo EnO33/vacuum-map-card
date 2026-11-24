@@ -71,6 +71,14 @@ export interface SourceRobot {
 export interface RoomSource {
   /** The integration's domain, matched against `ServiceError.translationDomain`. */
   readonly integration: string;
+  /** The integration's name as its users know it (its manifest `name`), shown when no supported robot is found. */
+  readonly integrationName: string;
+  /**
+   * Whether the source has read what it lists its robots from. It may only depend on data whose changes
+   * `HassPort.subscribe` signals (Roomba+: the entity registry list), since the source has no notification of its own.
+   * Until then `robots()` is empty and the floor model is loading, so the card never says « no supported robot » early.
+   */
+  loaded(): boolean;
   /**
    * The robots, as the same objects while their sources are unchanged (the `hass.states` objects of their entities,
    * which Home Assistant replaces only when that entity changes, and the entity registry list, whose changes

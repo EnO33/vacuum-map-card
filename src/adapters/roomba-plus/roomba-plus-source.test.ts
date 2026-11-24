@@ -64,13 +64,16 @@ describe("createRoombaPlusSource", () => {
     const { source } = await sourceOn(registryList);
     const typed: RoomSource = source;
     expect(typed.integration).toBe("roomba_plus");
+    expect(typed.integrationName).toBe("Roomba+");
+    expect(typed.loaded()).toBe(true);
   });
 
-  it("returns one frozen empty array before the registry list is read", () => {
+  it("returns one frozen empty array and reports it is not loaded before the registry list is read", () => {
     const source = createRoombaPlusSource({
       registry: { version: () => undefined, entry: () => undefined, byPlatform: () => [], onChange: () => () => {} },
       getHass: () => hass,
     });
+    expect(source.loaded()).toBe(false);
     expect(source.robots()).toStrictEqual([]);
     expect(source.robots()).toBe(source.robots());
     expect(Object.isFrozen(source.robots())).toBe(true);
