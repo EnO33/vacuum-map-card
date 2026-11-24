@@ -70,6 +70,11 @@ export function areasOnMapping(mapping: AreaMapping): readonly string[] {
   return [...mapping.segmentsByArea.keys()];
 }
 
+/** Every segment id listed under a kept area, once each. */
+export function segmentsOnMapping(mapping: AreaMapping): Iterable<string> {
+  return mapping.areaBySegment.keys();
+}
+
 /**
  * The kept areas with at least one segment on a stored map, in stored order; `mapOfSegment` is the adapter's link
  * from a segment id to its map (ADR 0002 « What an adapter reports » item 2).

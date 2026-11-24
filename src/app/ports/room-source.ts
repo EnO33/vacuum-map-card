@@ -24,7 +24,8 @@ export interface RoomsMap {
   readonly pictureState: PictureState;
   /**
    * The stored map the rooms map shows, only when the adapter can tell (ADR 0002 item 1; Roomba+ Classic: a robot
-   * with one stored map, ADR 0005 « Rooms map pairing »), otherwise `undefined`. `app` keeps ADR 0005's other checks.
+   * with one stored map, ADR 0005 « Rooms map pairing »), otherwise `undefined`. the domain's `pairRoomsMap` keeps ADR 0005's
+   * other checks.
    */
   readonly shownMapId: string | undefined;
   readonly content: RoomsMapContent;

@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { FakeHass } from "../../../test/fakes/fake-hass";
 import { FakeRoomSource } from "../../../test/fakes/fake-room-source";
+import type { PairingRobot } from "../../domain/plan/pairing";
 import { unsupported } from "../../domain/unsupported";
 import type { HassPort } from "./hass-port";
 import type { RoomSource, SourceRobot } from "./room-source";
@@ -94,7 +95,8 @@ describe("FakeHass", () => {
 describe("FakeRoomSource", () => {
   const source: RoomSource = new FakeRoomSource();
 
-  it("keeps the same robots between calls", () => {
+  it("keeps the same robots between calls, in the shape the domain's pairing reads", () => {
+    source.robots() satisfies readonly PairingRobot[];
     expect(source.robots()).toBe(source.robots());
   });
 
