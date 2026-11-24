@@ -3,8 +3,13 @@ import { CATALOGS, type Catalog, ENGLISH, type Locale, type MessageKey } from ".
 /** Values for `{name}` placeholders: plain text, often untrusted (room, floor and robot names). */
 export type MessageParams = Readonly<Record<string, string>>;
 
-/** A `{name}` placeholder. Shared with the catalogue parity test, so both read the same grammar. */
-export const PLACEHOLDER = /\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+/** A `{name}` placeholder. Global, so kept private: only `replace` and `matchAll` use it, which reset its position. */
+const PLACEHOLDER = /\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+
+/** The `{name}` placeholders of a template, in order; the catalogue parity test reads the same grammar through it. */
+export function placeholders(template: string): string[] {
+  return Array.from(template.matchAll(PLACEHOLDER), (match) => match[0]);
+}
 
 /**
  * The catalogue's string for `key`, else the English one, with each placeholder replaced in one pass: a value is

@@ -1,23 +1,23 @@
 import { describe, expect, it } from "vitest";
 import { CATALOGS, ENGLISH } from "./catalogs";
-import { PLACEHOLDER } from "./localize";
+import { placeholders } from "./localize";
 
 /** Each key with its sorted, distinct placeholders: equal shapes mean the same keys and placeholder sets. */
 function shape(catalog: Readonly<Record<string, string>>): Record<string, string[]> {
   return Object.fromEntries(
-    Object.entries(catalog).map(([key, text]) => [
-      key,
-      [...new Set(Array.from(text.matchAll(PLACEHOLDER), (match) => match[0]))].sort(),
-    ]),
+    Object.entries(catalog).map(([key, text]) => [key, [...new Set(placeholders(text))].sort()]),
   );
 }
 
 const locales = Object.entries(CATALOGS);
 
 describe("catalogues", () => {
-  it.each(locales)("%s has the same keys and placeholder sets as English", (_locale, catalog) => {
-    expect(shape(catalog)).toEqual(shape(ENGLISH));
-  });
+  it.each(locales.filter(([locale]) => locale !== "en"))(
+    "%s has the same keys and placeholder sets as English",
+    (_locale, catalog) => {
+      expect(shape(catalog)).toEqual(shape(ENGLISH));
+    },
+  );
 
   it.each(locales)("%s has no empty string", (_locale, catalog) => {
     expect(Object.values(catalog).filter((text) => text.trim() === "")).toEqual([]);
