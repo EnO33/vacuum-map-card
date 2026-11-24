@@ -1,5 +1,5 @@
 import { jsonEqual } from "./json-equal";
-import { boundedText, isObject, ownValue } from "./own-property";
+import { boundedId, boundedText, isObject, ownValue } from "./own-property";
 
 /**
  * One entry of `config/entity_registry/list` (`docs/research/ha-core-registries.md` « Read paths »), reduced to what
@@ -37,7 +37,7 @@ export function parseEntityRegistryEntry(raw: unknown): EntityRegistryEntry | un
     registryId,
     platform,
     deviceId: boundedText(ownValue(raw, "device_id")) ?? null,
-    areaId: boundedText(ownValue(raw, "area_id")) ?? null,
+    areaId: boundedId(ownValue(raw, "area_id")) ?? null,
     disabled: disabledBy !== undefined && disabledBy !== null,
     uniqueId: boundedText(ownValue(raw, "unique_id")),
     translationKey: boundedText(ownValue(raw, "translation_key")) ?? null,
