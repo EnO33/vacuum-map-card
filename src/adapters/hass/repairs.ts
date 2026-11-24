@@ -40,13 +40,14 @@ function parseIssueIds(raw: unknown): ReadonlySet<string> | undefined {
 
 /**
  * `HassPort.segmentsChangedOpen()`: whether the issue `segments_changed_<registry entry id>` is listed, compared as a
- * whole string. `true` until both lists are read and for a vacuum without a registry entry: the safe side of ADR 0003
- * path 1 condition 6. An ignored issue counts, since ignoring the repair does not update the mapping.
+ * whole string. `true` until both lists are read, while the issue list is not settled (an update came and no fetch
+ * after it succeeded yet), and for a vacuum without a registry entry: the safe side of ADR 0003 path 1 condition 6.
+ * An ignored issue counts, since ignoring the repair does not update the mapping.
  */
 export function segmentsChangedReader(registry: EntityRegistry, issues: RepairIssues): (entityId: string) => boolean {
   return (entityId) => {
     const ids = issues.value();
-    if (ids === undefined || registry.version() === undefined) return true;
+    if (ids === undefined || !issues.settled() || registry.version() === undefined) return true;
     const entry = registry.entry(entityId);
     return entry === undefined || ids.has(`${SEGMENTS_CHANGED}${entry.registryId}`);
   };

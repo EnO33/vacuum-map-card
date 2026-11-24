@@ -76,8 +76,10 @@ export interface HassPort {
   /**
    * Whether core's repair issue `segments_changed` is open for the vacuum: an issue of `repairs/list_issues` with
    * domain `vacuum` and `issue_id` `segments_changed_<vacuum registry entry id>` (its `translation_placeholders`
-   * carry the entity id; there is no `data` field). `true` until the list has been read: the safe side of ADR 0003
-   * path 1 condition 6 (`docs/research/ha-core-vacuum.md` « When the integration reports different segments »).
+   * carry the entity id; there is no `data` field). `true` until both the entity registry list and the issue list are
+   * read, while an update of the issue list has not been fetched successfully, and for a vacuum without a registry
+   * entry: the safe side of ADR 0003 path 1 condition 6 (`docs/research/ha-core-vacuum.md` « When the integration
+   * reports different segments »).
    */
   segmentsChangedOpen(entityId: string): boolean;
   /**

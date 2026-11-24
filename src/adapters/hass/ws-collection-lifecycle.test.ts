@@ -134,6 +134,70 @@ describe("failures", () => {
   });
 });
 
+describe("settled", () => {
+  it("is false before the first fetch and true once it is applied", async () => {
+    expect(collection.settled()).toBe(false);
+    collection.start();
+    expect(collection.settled()).toBe(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(collection.settled()).toBe(true);
+  });
+
+  it("is false from an update event until a fetch made after it is applied, equal or not", async () => {
+    collection.start();
+    await vi.advanceTimersByTimeAsync(0);
+    hass.connection.emit(EVENT);
+    expect(collection.settled()).toBe(false);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(collection.settled()).toBe(true);
+  });
+
+  it("stays false while a trailing fetch is pending after the leading one answered", async () => {
+    collection.start();
+    await vi.advanceTimersByTimeAsync(0);
+    hass.connection.emit(EVENT);
+    await vi.advanceTimersByTimeAsync(0);
+    hass.connection.emit(EVENT);
+    await vi.advanceTimersByTimeAsync(100);
+    expect(collection.settled()).toBe(false);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(collection.settled()).toBe(true);
+  });
+
+  it.each<[string, () => Promise<unknown>]>([
+    ["rejected", () => Promise.reject(new Error("Connection lost"))],
+    ["refused by parse", () => Promise.resolve({ not: "a list" })],
+  ])("stays false when the fetch after an event is %s, until one succeeds", async (_, failing) => {
+    collection.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const answer = hass.answerWS;
+    hass.answerWS = failing;
+    hass.connection.emit(EVENT);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(collection.settled()).toBe(false);
+    hass.answerWS = answer;
+    hass.connection.reconnect();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(collection.settled()).toBe(true);
+  });
+
+  it("is false after a reconnection until its fetch is applied, and not settled by an older answer", async () => {
+    const older = deferred();
+    const newer = deferred();
+    const answers = [older, newer];
+    hass.answerWS = () => answers.shift()?.promise ?? Promise.reject(new Error("unexpected"));
+    collection.start();
+    hass.connection.reconnect();
+    older.resolve(["a"]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(collection.value()).toBeDefined();
+    expect(collection.settled()).toBe(false);
+    newer.resolve(["a"]);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(collection.settled()).toBe(true);
+  });
+});
+
 describe("stop", () => {
   it("cancels the pending debounce, removes the ready listener and unsubscribes", async () => {
     collection.start();

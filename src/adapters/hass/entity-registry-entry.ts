@@ -28,7 +28,7 @@ export interface EntityRegistryEntry {
 export function parseEntityRegistryEntry(raw: unknown): EntityRegistryEntry | undefined {
   if (!isObject(raw)) return undefined;
   const entityId = boundedText(ownValue(raw, "entity_id"));
-  const registryId = boundedText(ownValue(raw, "id"));
+  const registryId = boundedId(ownValue(raw, "id"));
   const platform = boundedText(ownValue(raw, "platform"));
   if (entityId === undefined || registryId === undefined || platform === undefined) return undefined;
   const disabledBy = ownValue(raw, "disabled_by");

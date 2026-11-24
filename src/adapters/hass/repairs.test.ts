@@ -58,7 +58,7 @@ describe("createRepairIssues", () => {
     await loaded();
     expect([...(issues.value() ?? [])]).toStrictEqual([
       "segments_changed_03030303030303030303030303030303",
-      "segments_changed_0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+      "segments_changed_0f1e2d3c4b5a69788796a5b4c3d2e1f0",
     ]);
   });
 
@@ -150,6 +150,23 @@ describe("segmentsChangedOpen", () => {
     ["a shorter id", { issue_id: "segments_changed_0303" }],
   ])("does not count an issue with %s", async (_, overrides) => {
     await loaded({ issues: [issue(overrides)] });
+    expect(open(ROBOT_ONE)).toBe(false);
+  });
+
+  it.each<[string, () => Promise<unknown>]>([
+    ["rejected", () => Promise.reject(new Error("Connection lost"))],
+    ["refused", () => Promise.resolve({ issues: "none" })],
+  ])("is true after an update whose fetch is %s, until a fetch succeeds", async (_, failing) => {
+    await loaded({ issues: [] });
+    expect(open(ROBOT_ONE)).toBe(false);
+    const answer = hass.answerWS;
+    hass.answerWS = failing;
+    hass.connection.emit("repairs_issue_registry_updated");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(open(ROBOT_ONE)).toBe(true);
+    hass.answerWS = answer;
+    hass.connection.emit("repairs_issue_registry_updated");
+    await vi.advanceTimersByTimeAsync(500);
     expect(open(ROBOT_ONE)).toBe(false);
   });
 

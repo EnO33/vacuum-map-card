@@ -65,6 +65,22 @@ describe("createHassPort", () => {
     expect(port.segmentsChangedOpen("vacuum.robot_two")).toBe(false);
   });
 
+  it("shares its entity registry read-only, without start or stop", async () => {
+    port.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(port.entityRegistry.entry("vacuum.robot_one")?.platform).toBe("roomba_plus");
+    expect(port.entityRegistry.byPlatform("roomba_plus").length).toBeGreaterThan(0);
+    expect(port.entityRegistry.version()).toBeDefined();
+    expect("stop" in port.entityRegistry).toBe(false);
+    expect("start" in port.entityRegistry).toBe(false);
+    const changes = vi.fn();
+    port.entityRegistry.onChange(changes);
+    hass.answerWS = () => Promise.resolve([]);
+    hass.connection.emit("entity_registry_updated");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(changes).toHaveBeenCalledTimes(1);
+  });
+
   it("sends a service call through hass, never rejecting", async () => {
     hass.behaviour = { kind: "reject", value: { code: "home_assistant_error", message: "Unauthorized" } };
     await expect(port.callService({ domain: "vacuum", service: "start", data: {} })).resolves.toStrictEqual({

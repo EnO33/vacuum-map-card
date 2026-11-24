@@ -24,6 +24,11 @@ export interface WsCollectionOptions<T> {
 export interface WsCollection<T> {
   /** The last list read, `undefined` until the first successful fetch; same object while nothing changed. */
   value(): T | undefined;
+  /**
+   * Whether the value reflects every update signal so far: `false` before the first fetch, and from an update event or
+   * a reconnection until a fetch made after it is applied (equal or not). A failed fetch leaves it `false`.
+   */
+  settled(): boolean;
   /** Calls `listener` once each time the value changes; returns the function that removes it. */
   onChange(listener: () => void): () => void;
   start(): void;
@@ -46,11 +51,20 @@ class ListCollection<T> implements WsCollection<T> {
   #latest = 0;
   /** The request whose answer the value reflects: an answer to an older one is never applied. */
   #applied = 0;
+  /** Update signals received (events and reconnections), and the last one an applied answer covers. */
+  #signals = 0;
+  #covered = -1;
   #connection: FrontendConnection | undefined;
   #unsubscribe: (() => Promise<void>) | undefined;
   readonly #refetch = () => void this.#fetch();
   readonly #onEvent = () => {
-    if (this.#state === "started") this.#debounced.call();
+    if (this.#state !== "started") return;
+    this.#signals++;
+    this.#debounced.call();
+  };
+  readonly #onReady = () => {
+    this.#signals++;
+    this.#refetch();
   };
 
   constructor(options: WsCollectionOptions<T>) {
@@ -60,6 +74,10 @@ class ListCollection<T> implements WsCollection<T> {
 
   value(): T | undefined {
     return this.#current;
+  }
+
+  settled(): boolean {
+    return this.#covered === this.#signals;
   }
 
   onChange(listener: () => void): () => void {
@@ -72,7 +90,7 @@ class ListCollection<T> implements WsCollection<T> {
     let connection: FrontendConnection;
     try {
       connection = this.#options.getHass().connection;
-      connection.addEventListener("ready", this.#refetch);
+      connection.addEventListener("ready", this.#onReady);
     } catch {
       return;
     }
@@ -88,7 +106,7 @@ class ListCollection<T> implements WsCollection<T> {
     this.#debounced.cancel();
     this.#listeners.clear();
     try {
-      this.#connection?.removeEventListener("ready", this.#refetch);
+      this.#connection?.removeEventListener("ready", this.#onReady);
     } catch {
       // Nothing more to remove.
     }
@@ -102,6 +120,7 @@ class ListCollection<T> implements WsCollection<T> {
    */
   async #fetch(): Promise<void> {
     const request = ++this.#latest;
+    const signals = this.#signals;
     const { getHass, command, parse, equal } = this.#options;
     let next: T | undefined;
     try {
@@ -110,6 +129,7 @@ class ListCollection<T> implements WsCollection<T> {
       next = parse(raw);
       if (next === undefined) return;
       this.#applied = request;
+      this.#covered = signals;
       if (this.#current !== undefined && equal(this.#current, next)) return;
     } catch {
       return;
