@@ -1,5 +1,5 @@
 import type { ServiceError } from "../../app/ports/service-call";
-import { withinTextCap } from "../../domain/text/limits";
+import { boundedText, isObject, ownValue } from "./own-property";
 
 const UNKNOWN: ServiceError = Object.freeze({ code: "unknown_error" });
 
@@ -23,11 +23,11 @@ export function serviceErrorOf(rejection: unknown): ServiceError {
 }
 
 function parse(rejection: unknown): ServiceError {
-  if (typeof rejection !== "object" || rejection === null) return UNKNOWN;
-  const code = bounded(ownValue(rejection, "code"));
-  const domain = bounded(ownValue(rejection, "translation_domain"));
-  const key = bounded(ownValue(rejection, "translation_key"));
-  const message = untranslated(rejection) ? bounded(ownValue(rejection, "message")) : undefined;
+  if (!isObject(rejection)) return UNKNOWN;
+  const code = boundedText(ownValue(rejection, "code"));
+  const domain = boundedText(ownValue(rejection, "translation_domain"));
+  const key = boundedText(ownValue(rejection, "translation_key"));
+  const message = untranslated(rejection) ? boundedText(ownValue(rejection, "message")) : undefined;
   return {
     code: code === undefined || code === "" ? "unknown_error" : code,
     ...(message === undefined ? {} : { message }),
@@ -44,14 +44,4 @@ function untranslated(source: object): boolean {
   const descriptor = Object.getOwnPropertyDescriptor(source, "translation_key");
   if (descriptor === undefined) return !("translation_key" in source);
   return "value" in descriptor && (descriptor.value === undefined || descriptor.value === null);
-}
-
-/** An own data property's value, or `undefined` for a missing or accessor property (its getter never runs). */
-function ownValue(source: object, name: string): unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(source, name);
-  return descriptor && "value" in descriptor ? descriptor.value : undefined;
-}
-
-function bounded(value: unknown): string | undefined {
-  return typeof value === "string" && withinTextCap(value) ? value : undefined;
 }

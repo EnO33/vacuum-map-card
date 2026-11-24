@@ -133,7 +133,14 @@
                     "message": "Adapters import nothing from ui, i18n, index or Lit (CLAUDE.md « Architecture »)."
                   },
                   {
-                    "group": ["**/roomba-plus", "**/roomba-plus/**"],
+                    "group": [
+                      "../roomba-plus",
+                      "../roomba-plus/**",
+                      "../../roomba-plus",
+                      "../../roomba-plus/**",
+                      "**/adapters/roomba-plus",
+                      "**/adapters/roomba-plus/**"
+                    ],
                     "message": "The Home Assistant adapter imports nothing from an integration adapter (ADR 0002)."
                   }
                 ]
