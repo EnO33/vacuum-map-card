@@ -34,6 +34,7 @@ export default defineConfig({
       thresholds: {
         "src/domain/**": coverageFloor,
         "src/app/**": coverageFloor,
+        "src/adapters/**": coverageFloor,
       },
     },
   },

@@ -33,7 +33,7 @@ pnpm run build       # single ES module in dist/, size reported
 node --test scripts/test-hooks.mjs   # guard rules (also run by CI)
 ```
 
-- Coverage floor: 90 % lines and branches on `domain` and `app`.
+- Coverage floor: 90 % lines and branches on `domain`, `app` and `adapters`.
 - Bundle size is printed by the build and stated in every PR.
 - A UI change also gets `/ha-live-test` (real Home Assistant) before merge; say when it was not run.
 
