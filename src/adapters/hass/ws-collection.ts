@@ -1,5 +1,6 @@
 import { type Debounced, leadingDebounce, type Schedule, timerSchedule } from "./debounce";
 import type { FrontendConnection, FrontendHass } from "./frontend-hass";
+import { Listeners } from "./listeners";
 
 /** The frontend's registry collections wait 500 ms (`docs/research/ha-core-registries.md` « Update signal »). */
 const DEBOUNCE_MS = 500;
@@ -38,7 +39,7 @@ export function createWsCollection<T>(options: WsCollectionOptions<T>): WsCollec
 
 class ListCollection<T> implements WsCollection<T> {
   readonly #options: WsCollectionOptions<T>;
-  readonly #listeners = new Set<() => void>();
+  readonly #listeners = new Listeners();
   readonly #debounced: Debounced;
   #state: State = "idle";
   #current: T | undefined;
@@ -62,10 +63,7 @@ class ListCollection<T> implements WsCollection<T> {
   }
 
   onChange(listener: () => void): () => void {
-    this.#listeners.add(listener);
-    return () => {
-      this.#listeners.delete(listener);
-    };
+    return this.#listeners.add(listener);
   }
 
   /** Does nothing while `hass` or its connection cannot be read: the collection stays idle, so a later start works. */
@@ -117,20 +115,7 @@ class ListCollection<T> implements WsCollection<T> {
       return;
     }
     this.#current = next;
-    this.#notify();
-  }
-
-  #notify(): void {
-    for (const listener of [...this.#listeners]) {
-      // A listener may stop the collection or remove another listener.
-      if (this.#state !== "started") return;
-      if (!this.#listeners.has(listener)) continue;
-      try {
-        listener();
-      } catch {
-        // A failing listener must not stop the others.
-      }
-    }
+    this.#listeners.notify();
   }
 
   #subscribe(connection: FrontendConnection): void {

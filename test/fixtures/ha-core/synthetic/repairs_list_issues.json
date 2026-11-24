@@ -1,0 +1,46 @@
+{
+  "issues": [
+    {
+      "breaks_in_ha_version": null,
+      "created": "2026-01-02T03:04:05.678901+00:00",
+      "dismissed_version": null,
+      "ignored": false,
+      "domain": "vacuum",
+      "is_fixable": false,
+      "issue_domain": null,
+      "issue_id": "segments_changed_03030303030303030303030303030303",
+      "learn_more_url": null,
+      "severity": "warning",
+      "translation_key": "segments_changed",
+      "translation_placeholders": { "entity_id": "vacuum.robot_one" }
+    },
+    {
+      "breaks_in_ha_version": null,
+      "created": "2026-01-03T03:04:05.678901+00:00",
+      "dismissed_version": "2026.11.2",
+      "ignored": true,
+      "domain": "vacuum",
+      "is_fixable": false,
+      "issue_domain": null,
+      "issue_id": "segments_changed_0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e0e",
+      "learn_more_url": null,
+      "severity": "warning",
+      "translation_key": "segments_changed",
+      "translation_placeholders": { "entity_id": "vacuum.robot_three" }
+    },
+    {
+      "breaks_in_ha_version": null,
+      "created": "2026-01-04T03:04:05.678901+00:00",
+      "dismissed_version": null,
+      "ignored": false,
+      "domain": "roomba_plus",
+      "is_fixable": false,
+      "issue_domain": null,
+      "issue_id": "segments_changed_0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a",
+      "learn_more_url": null,
+      "severity": "warning",
+      "translation_key": "segments_changed",
+      "translation_placeholders": { "entity_id": "vacuum.robot_two" }
+    }
+  ]
+}

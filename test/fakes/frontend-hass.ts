@@ -5,6 +5,7 @@ import entityRegistryList from "../fixtures/ha-core/entity_registry_list.json" w
 import floorRegistryList from "../fixtures/ha-core/floor_registry_list.json" with { type: "json" };
 import hassAreas from "../fixtures/ha-core/hass_areas.json" with { type: "json" };
 import hassStates from "../fixtures/ha-core/hass_states_vacuum_docked.json" with { type: "json" };
+import repairsListIssues from "../fixtures/ha-core/synthetic/repairs_list_issues.json" with { type: "json" };
 
 /** How `callService` answers: resolve with a value, reject with a value, or throw synchronously. */
 export interface CallServiceBehaviour {
@@ -16,6 +17,7 @@ export interface CallServiceBehaviour {
 export const fixtureLists: Readonly<Record<string, unknown>> = {
   "config/entity_registry/list": entityRegistryList,
   "config/floor_registry/list": floorRegistryList,
+  "repairs/list_issues": repairsListIssues,
 };
 
 type ReadyListener = () => void;
