@@ -7,6 +7,15 @@
   "card.no_robot_hint": "Cette carte fonctionne avec les robots de l'intégration {integration}.",
   "card.no_plan": "Aucun plan trouvé.",
   "card.no_floor": "Plans sans étage",
+  "plan.alt": "Plan : {name}",
+  "plan.generic_name": "Plan {number}",
+  "plan.current_map": "Plan actuel",
+  "plan.alt_no_floor": "Plan : {map}, {robot}",
+  "plan.disabled": "Ce plan est désactivé dans Home Assistant.",
+  "plan.unavailable": "Ce plan est indisponible.",
+  "plan.unknown": "Ce plan n'a pas encore d'image.",
+  "plan.no_picture": "L'image de ce plan ne peut pas être affichée pour le moment.",
+  "plan.load_failed": "L'image du plan n'a pas pu être chargée. La carte réessaiera quand le plan changera.",
   "confirm.cancel": "Annuler",
   "confirm.ok": "OK"
 }

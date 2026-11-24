@@ -33,9 +33,9 @@ describe("entry module", () => {
     expect(info).toHaveBeenCalledWith(`vacuum-map-card ${CARD_VERSION}`);
   });
 
-  it("registers the card's own confirmation element", async () => {
+  it.each(["vmc-confirm-dialog", "vmc-plan-picture"])("registers the card's own element %s", async (name) => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     await loadEntry();
-    expect(customElements.get("vmc-confirm-dialog")).toBeDefined();
+    expect(customElements.get(name)).toBeDefined();
   });
 });

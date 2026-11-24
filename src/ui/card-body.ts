@@ -2,21 +2,23 @@ import { css, html, nothing, type TemplateResult } from "lit";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
 import type { CardView } from "./card-session";
+import { floorLayout } from "./floor-layout";
+import { planCount } from "./plan-display";
 
 /** Styles of the card's body; the title keeps `ha-card`'s own header style. */
 export const bodyStyles = css`
   .content {
     padding: 0 var(--ha-space-4, 16px) var(--ha-space-4, 16px);
-    color: var(--primary-text-color);
+    color: var(--primary-text-color, #141414);
   }
-  .content p {
+  [role="status"] p {
     margin: 0;
   }
-  .content p + p {
+  [role="status"] p + p {
     margin-top: var(--ha-space-2, 8px);
   }
   .secondary {
-    color: var(--secondary-text-color);
+    color: var(--secondary-text-color, #5e5e5e);
   }
   .title {
     font-weight: var(--ha-font-weight-medium, 500);
@@ -27,37 +29,19 @@ export const bodyStyles = css`
       var(--state-vacuum-error-color, var(--state-vacuum-active-color, var(--state-active-color)));
     padding-inline-start: var(--ha-space-3, 12px);
   }
-  ul {
-    margin: 0;
-    padding-inline-start: var(--ha-space-6, 24px);
-  }
 `;
 
 /**
  * The card's body for a view. The status region is the same element in every view, so a screen reader announces each
- * message that replaces the previous one (loading or « could not load », then no robot, error or no plan); the floor list stays outside it.
- * Every value inserted is text, never markup.
+ * message that replaces the previous one (loading or « could not load », then no robot, error or no plan); the plans
+ * stay outside it. Every value inserted is text, never markup.
  */
 export function cardBody(view: CardView, locale: Locale): TemplateResult {
-  const names = view.kind === "ready" && view.model.robots.length > 0 ? floorNames(view, locale) : [];
-  return html`<div role="status">${message(view, names, locale)}</div>
-    ${
-      names.length === 0
-        ? nothing
-        : html`<ul>
-          ${names.map((name) => html`<li>${name}</li>`)}
-        </ul>`
-    }`;
+  return html`<div role="status">${message(view, locale)}</div>
+    ${view.kind === "ready" && planCount(view.model) > 0 ? floorLayout(view, locale) : nothing}`;
 }
 
-/** A temporary summary: the floor names, then the « no floor » group; the layout issue replaces it with the plans. */
-function floorNames(view: Extract<CardView, { kind: "ready" }>, locale: Locale): string[] {
-  const names = view.model.floors.map((floor) => floor.name);
-  if (view.model.noFloor.length > 0) names.push(localize(locale, "card.no_floor"));
-  return names;
-}
-
-function message(view: CardView, names: readonly string[], locale: Locale): TemplateResult | typeof nothing {
+function message(view: CardView, locale: Locale): TemplateResult | typeof nothing {
   switch (view.kind) {
     case "loading":
       return html`<p class="secondary">${localize(locale, "card.loading")}</p>`;
@@ -72,7 +56,7 @@ function message(view: CardView, names: readonly string[], locale: Locale): Temp
       return html`<p>${localize(locale, "card.error")}</p>`;
     case "ready":
       if (view.model.robots.length === 0) return noRobot(view.integrations, locale);
-      return names.length === 0 ? html`<p class="secondary">${localize(locale, "card.no_plan")}</p>` : nothing;
+      return planCount(view.model) > 0 ? nothing : html`<p class="secondary">${localize(locale, "card.no_plan")}</p>`;
   }
 }
 

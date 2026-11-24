@@ -43,6 +43,16 @@ export interface Plan {
   readonly imageEntityId: string;
   /** `unavailable`, `unknown` and `disabled` pictures are kept with their state (ADR 0005 « Plan pictures »). */
   readonly pictureState: PictureState;
+  /**
+   * The stored map's name when it is safe to show (`StoredMap.mapName`), or `undefined`: an unsafe or missing name, or
+   * a rooms map not paired with a stored map. The UI then shows a generic label from `mapNumber`.
+   */
+  readonly mapName: string | undefined;
+  /**
+   * The stored map's position in the robot's `storedMaps`, from 1, so its generic label stays the same whatever the
+   * rooms map shows; `undefined` for a rooms map not paired, which shows the robot's current map.
+   */
+  readonly mapNumber: number | undefined;
   readonly placement: Placement;
   readonly content: PlanContent;
 }

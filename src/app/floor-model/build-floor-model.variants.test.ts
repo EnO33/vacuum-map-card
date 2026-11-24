@@ -35,6 +35,7 @@ describe("buildFloorModel variants", () => {
     if (ground?.plan.content.kind !== "outlines") throw new Error("expected outlines");
     expect(ground.plan.content.rooms.map((r) => r.area)).toEqual([{ kind: "core", areaId: "library" }]);
     expect(model.robots[0]?.rooms[0]?.floorId).toBe("ground_floor");
+    expect([ground.plan.mapName, ground.plan.mapNumber]).toEqual([fixtureMaps.mapA.mapName, 1]);
   });
 
   it("shows a paired robot's outlines before another robot's room list, whatever their ids", () => {
