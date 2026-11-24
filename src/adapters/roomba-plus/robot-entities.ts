@@ -13,6 +13,8 @@ export interface RobotEntities {
   readonly roomsMap: EntityRegistryEntry | undefined;
   /** The cleaning mode select (mop robots) when there is exactly one. */
   readonly primeCleaningMode: EntityRegistryEntry | undefined;
+  /** Whether the device has any cleaning mode select, so two of them are not read as none. */
+  readonly hasCleaningModeSelect: boolean;
 }
 
 /**
@@ -31,11 +33,13 @@ function robotOf(vacuum: EntityRegistryEntry, entries: readonly EntityRegistryEn
   const related = deviceId === null ? [] : entries.filter((e) => e !== vacuum && e.deviceId === deviceId);
   const withKey = (key: string, domain: string) =>
     related.filter((e) => e.translationKey === key && e.entityId.startsWith(`${domain}.`));
+  const selects = withKey("prime_cleaning_mode", "select");
   return {
     vacuum,
     floorPlans: withKey("floor_plan", "image"),
     roomsMap: onlyOne(withKey("rooms_map", "image")),
-    primeCleaningMode: onlyOne(withKey("prime_cleaning_mode", "select")),
+    primeCleaningMode: onlyOne(selects),
+    hasCleaningModeSelect: selects.length > 0,
   };
 }
 

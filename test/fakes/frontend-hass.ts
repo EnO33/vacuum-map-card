@@ -4,6 +4,7 @@ import type { FrontendConnection, FrontendHass } from "../../src/adapters/hass/f
 import entityRegistryList from "../fixtures/ha-core/entity_registry_list.json" with { type: "json" };
 import floorRegistryList from "../fixtures/ha-core/floor_registry_list.json" with { type: "json" };
 import hassAreas from "../fixtures/ha-core/hass_areas.json" with { type: "json" };
+import hassDevices from "../fixtures/ha-core/hass_devices.json" with { type: "json" };
 import hassStates from "../fixtures/ha-core/hass_states_vacuum_docked.json" with { type: "json" };
 import repairsListIssues from "../fixtures/ha-core/synthetic/repairs_list_issues.json" with { type: "json" };
 
@@ -78,10 +79,11 @@ export class FakeFrontendHass implements FrontendHass {
   readonly calls: Parameters<FrontendHass["callService"]>[] = [];
   readonly wsCalls: { readonly type: string }[] = [];
   readonly connection = new FakeConnection();
-  /** `hass.areas`, `hass.states`, `hass.services` and `hass.user`, from the captures; replace them per test. */
+  /** `hass.areas`, `hass.states`, `hass.services`, `hass.devices` and `hass.user`, from the captures; replace them per test. */
   areas: unknown = structuredClone(hassAreas);
   states: unknown = structuredClone(hassStates);
   services: unknown = { vacuum: { clean_area: {}, start: {} } };
+  devices: unknown = structuredClone(hassDevices);
   user: unknown = { id: "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a", is_admin: false };
   behaviour: CallServiceBehaviour = { kind: "resolve", value: { context: { id: "01JAAAAAAAAAAAAAAAAAAAAAAA" } } };
   /** Answers a `callWS` message; replace it per test. By default, a list command from `fixtureLists`. */

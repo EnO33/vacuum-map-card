@@ -104,6 +104,7 @@ describe("findRobots", () => {
     ]);
     expect(one?.roomsMap).toBeUndefined();
     expect(one?.primeCleaningMode).toBeUndefined();
+    expect(one?.hasCleaningModeSelect).toBe(true);
   });
 
   it("gives a vacuum without device_id no related entity", async () => {
