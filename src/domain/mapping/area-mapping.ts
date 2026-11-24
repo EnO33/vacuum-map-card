@@ -10,7 +10,13 @@ import { MAX_AREA_MAPPING_KEYS, MAX_MAPPED_SEGMENTS, MAX_SEGMENTS_PER_AREA } fro
  */
 export type RawAreaMapping = ReadonlyMap<string, readonly string[]>;
 
-export type AreaMappingFailure = "too_many_keys" | "too_many_segments_in_area" | "too_many_segments" | "text_too_long";
+/** `unreadable`: the list could not be read at all (not the documented shape, or not available yet). */
+export type AreaMappingFailure =
+  | "too_many_keys"
+  | "too_many_segments_in_area"
+  | "too_many_segments"
+  | "text_too_long"
+  | "unreadable";
 
 export type SegmentArea =
   | { readonly kind: "one"; readonly areaId: string }
