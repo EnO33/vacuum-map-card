@@ -1,6 +1,5 @@
+import { shadowIndexOf } from "../../domain/eligibility/path-two";
 import { floorOfStoredMap, type MapFloor } from "../../domain/floors/map-to-floor";
-import { type AreaMappingResult, readAreaMapping } from "../../domain/mapping/area-mapping";
-import { type LastSeen, readLastSeen } from "../../domain/mapping/last-seen";
 import { type Pairing, pairRoomsMap } from "../../domain/plan/pairing";
 import { roomListOf } from "../../domain/plan/room-list";
 import { areaOfRoom } from "../../domain/plan/room-to-area";
@@ -9,11 +8,10 @@ import type { RoomsPlan, RoomsPlanResult } from "../../domain/plan/rooms-plan";
 import type { Area, Floor } from "../../domain/registry/types";
 import { supportsCleanArea } from "../../domain/robot/features";
 import type { StoredMap } from "../../domain/robot/stored-map";
-import { unsupported } from "../../domain/unsupported";
-import type { OptionsList } from "../ports/hass-port";
 import type { RoomsMap } from "../ports/room-source";
 import type { Placement, Plan, RobotModel, RobotRoom, RoomsMapIssue } from "./floor-model";
 import type { RobotInputs } from "./inputs";
+import { type RobotOptions, robotOptions } from "./robot-options";
 
 /** The registry data every robot is read against, with the known area ids built once. */
 export interface Registry {
@@ -31,7 +29,8 @@ export function robotModelOf(inputs: RobotInputs, registry: Registry, plansFor: 
   const id = robot.vacuumEntityId;
   const hasState = inputs.supportedFeatures !== undefined;
   const hasCleanArea = supportsCleanArea(inputs.supportedFeatures ?? 0);
-  const { mapping, lastSeen } = optionsOf(inputs, registry.areaIds);
+  const options = robotOptions(inputs.options, registry.areaIds);
+  const { mapping, lastSeen } = options;
   const context = { ...registry, mapping, hasCleanArea, mapOfSegment: (s: string) => robot.mapOfSegment(s) };
   const floorOf = cached((map: StoredMap) => floorOfStoredMap(map, context));
   const storedPlans = () =>
@@ -44,12 +43,15 @@ export function robotModelOf(inputs: RobotInputs, registry: Registry, plansFor: 
         content: roomListOf(map, context, context),
       }),
     );
-  const base = { vacuumEntityId: id, action: robot.action, hasCleanArea, hasState };
+  const base = { vacuumEntityId: id, action: robot.action, hasCleanArea, hasState, options };
 
   const outlines = outlinesOf(robot.roomsMap, (snapshot) => plansFor(id, snapshot));
   if (outlines.kind !== "plan") return { ...base, plans: storedPlans(), rooms: [], roomsMapIssue: outlines };
   const pairing = pairRoomsMap(robot, { mapping, lastSeen, floorOf });
-  const { plan: roomsMapPlan, rooms } = outlinesPlan(id, outlines.roomsMap, outlines.plan, pairing, context);
+  const { plan: roomsMapPlan, rooms } = outlinesPlan(id, outlines.roomsMap, outlines.plan, pairing, {
+    ...context,
+    lastSeen,
+  });
   const plans = pairing.kind === "paired" ? [roomsMapPlan] : [roomsMapPlan, ...storedPlans()];
   return { ...base, plans, rooms, roomsMapIssue: undefined };
 }
@@ -64,25 +66,6 @@ function cached<K, V>(compute: (key: K) => V): (key: K) => V {
     values.set(key, value);
     return value;
   };
-}
-
-/** `options.vacuum` read through #46; a list the port could not give is `unreadable`, never `absent`. */
-function optionsOf(
-  { options }: RobotInputs,
-  areaIds: ReadonlySet<string>,
-): { readonly mapping: AreaMappingResult; readonly lastSeen: LastSeen } {
-  if (options.kind !== "options") return { mapping: unsupported("unreadable"), lastSeen: unsupported("unreadable") };
-  const { areaMapping, lastSeenSegments } = options;
-  return {
-    mapping:
-      areaMapping.kind === "unsupported" ? unsupported("unreadable") : readAreaMapping(listOf(areaMapping), areaIds),
-    lastSeen:
-      lastSeenSegments.kind === "unsupported" ? unsupported("unreadable") : readLastSeen(listOf(lastSeenSegments)),
-  };
-}
-
-function listOf<T>(list: Exclude<OptionsList<T>, { kind: "unsupported" }>): T | undefined {
-  return list.kind === "list" ? list.list : undefined;
 }
 
 /** The rooms map's plan, or why it adds none (`buildRoomsPlan` applied first, as #49 asks). */
@@ -102,7 +85,7 @@ function outlinesPlan(
   roomsMap: RoomsMap,
   plan: RoomsPlan,
   pairing: Pairing,
-  context: Registry & { readonly mapping: AreaMappingResult },
+  context: Registry & RobotOptions,
 ): { readonly plan: Plan; readonly rooms: readonly RobotRoom[] } {
   const placement = placementOf(pairing);
   const floorId = placement.kind === "floor" ? placement.floorId : undefined;
@@ -116,11 +99,27 @@ function outlinesPlan(
     imageEntityId,
     regionId: room.regionId,
     name: room.name,
+    roomId: room.roomId,
     area,
     floorId,
   }));
   return {
-    plan: { robot, imageEntityId, pictureState, placement, content: { kind: "outlines", plan, rooms: views } },
+    plan: {
+      robot,
+      imageEntityId,
+      pictureState,
+      placement,
+      content: {
+        kind: "outlines",
+        plan,
+        rooms: views,
+        pairedRooms:
+          pairing.kind === "paired"
+            ? { mapId: pairing.mapId, segmentIdOf: pairing.segmentIdOf, rooms: [...plan.rooms.values()] }
+            : undefined,
+        shadows: shadowIndexOf(plan.rooms, context.lastSeen),
+      },
+    },
     rooms,
   };
 }

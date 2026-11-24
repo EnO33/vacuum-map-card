@@ -85,6 +85,7 @@ describe("buildFloorModel on the fixtures", () => {
         imageEntityId: "image.robot_one_rooms_map",
         regionId: "1",
         name: "Library",
+        roomId: "library",
         area: { kind: "none" },
         floorId: undefined,
       },
