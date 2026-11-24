@@ -1,0 +1,5 @@
+{
+  "card.loading": "Chargement des plans…",
+  "card.no_robot": "Aucun robot compatible trouvé",
+  "card.no_robot_hint": "Cette carte fonctionne avec les robots de l'intégration {integration}."
+}

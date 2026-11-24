@@ -1,0 +1,5 @@
+{
+  "card.loading": "Loading floor plans…",
+  "card.no_robot": "No supported robot found",
+  "card.no_robot_hint": "This card works with robots from the {integration} integration."
+}
