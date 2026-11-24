@@ -14,6 +14,7 @@ import areaRegistry from "../fixtures/ha-core/area_registry_list.json" with { ty
 import floorRegistry from "../fixtures/ha-core/floor_registry_list.json" with { type: "json" };
 import vacuumStates from "../fixtures/ha-core/hass_states_vacuum_docked.json" with { type: "json" };
 import { areaMappingOf, type EntityRegistryFixture, lastSeenOf, mappingFixtures } from "../helpers/area-mapping";
+import { areasOf, floorsOf } from "../helpers/registry";
 
 export interface FakeHassSettings {
   /** Services present, as `domain.service`. */
@@ -37,17 +38,8 @@ const vacuumOptionsOf: ReadonlyMap<string, VacuumOptions> = new Map(
   [mappingFixtures.vacuum, mappingFixtures.mop].map((entry) => [entry.entity_id, optionsOf(entry)]),
 );
 
-const floors: readonly Floor[] = floorRegistry.map(({ floor_id, name, aliases }) => ({
-  floorId: floor_id,
-  name,
-  aliases,
-}));
-const areas: ReadonlyMap<string, Area> = new Map(
-  areaRegistry.map(({ area_id, name, aliases, floor_id }) => [
-    area_id,
-    { areaId: area_id, name, aliases, floorId: floor_id },
-  ]),
-);
+const floors: readonly Floor[] = floorsOf(floorRegistry);
+const areas: ReadonlyMap<string, Area> = areasOf(areaRegistry);
 const vacuumStateOf = new Map(Object.entries(vacuumStates));
 
 export class FakeHass implements HassPort {

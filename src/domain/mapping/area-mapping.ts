@@ -70,6 +70,20 @@ export function areasOnMapping(mapping: AreaMapping): readonly string[] {
   return [...mapping.segmentsByArea.keys()];
 }
 
+/**
+ * The kept areas with at least one segment on a stored map, in stored order; `mapOfSegment` is the adapter's link
+ * from a segment id to its map (ADR 0002 « What an adapter reports » item 2).
+ */
+export function areasOfMap(
+  mapping: AreaMapping,
+  mapId: string,
+  mapOfSegment: (segmentId: string) => string | undefined,
+): readonly string[] {
+  return areasOnMapping(mapping).filter((areaId) =>
+    segmentsOfArea(mapping, areaId).some((segmentId) => mapOfSegment(segmentId) === mapId),
+  );
+}
+
 function refuseMapping(raw: RawAreaMapping): AreaMappingFailure | undefined {
   if (raw.size > MAX_AREA_MAPPING_KEYS) return "too_many_keys";
   let total = 0;

@@ -8,7 +8,7 @@ import type { ServiceCall, ServiceResult } from "./service-call";
 export interface VacuumState {
   /** The entity state (`docked`, `cleaning`, `unavailable`…). */
   readonly state: string;
-  /** The `supported_features` bit mask; `CLEAN_AREA` is checked by `app` (ADR 0003 « Path 1 »). */
+  /** The `supported_features` bit mask; `CLEAN_AREA` is read by `domain/robot/features.ts`. */
   readonly supportedFeatures: number;
 }
 
