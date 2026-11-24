@@ -37,7 +37,7 @@ export function createEntityRegistry(getHass: () => FrontendHass, schedule?: Sch
     event: "entity_registry_updated",
     parse: parseIndex,
     equal: (a, b) => a.list.length === b.list.length && a.list.every((entry, i) => sameAt(entry, b.list, i)),
-    ...(schedule === undefined ? {} : { schedule }),
+    schedule,
   });
   return {
     version: () => collection.value()?.list,

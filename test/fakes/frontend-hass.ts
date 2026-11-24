@@ -1,7 +1,10 @@
 // A fake of the frontend `hass` object, the shape the adapters read (`src/adapters/hass/frontend-hass.ts`). It
-// records calls and answers as configured; later issues extend it with states and registries.
+// records calls and answers as configured; later issues extend it with what they read.
 import type { FrontendConnection, FrontendHass } from "../../src/adapters/hass/frontend-hass";
 import entityRegistryList from "../fixtures/ha-core/entity_registry_list.json" with { type: "json" };
+import floorRegistryList from "../fixtures/ha-core/floor_registry_list.json" with { type: "json" };
+import hassAreas from "../fixtures/ha-core/hass_areas.json" with { type: "json" };
+import hassStates from "../fixtures/ha-core/hass_states_vacuum_docked.json" with { type: "json" };
 
 /** How `callService` answers: resolve with a value, reject with a value, or throw synchronously. */
 export interface CallServiceBehaviour {
@@ -12,6 +15,7 @@ export interface CallServiceBehaviour {
 /** The list commands the fake answers by default, from the anonymised captures of `test/fixtures/ha-core/`. */
 export const fixtureLists: Readonly<Record<string, unknown>> = {
   "config/entity_registry/list": entityRegistryList,
+  "config/floor_registry/list": floorRegistryList,
 };
 
 type ReadyListener = () => void;
@@ -72,6 +76,11 @@ export class FakeFrontendHass implements FrontendHass {
   readonly calls: Parameters<FrontendHass["callService"]>[] = [];
   readonly wsCalls: { readonly type: string }[] = [];
   readonly connection = new FakeConnection();
+  /** `hass.areas`, `hass.states`, `hass.services` and `hass.user`, from the captures; replace them per test. */
+  areas: unknown = structuredClone(hassAreas);
+  states: unknown = structuredClone(hassStates);
+  services: unknown = { vacuum: { clean_area: {}, start: {} } };
+  user: unknown = { id: "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a", is_admin: false };
   behaviour: CallServiceBehaviour = { kind: "resolve", value: { context: { id: "01JAAAAAAAAAAAAAAAAAAAAAAA" } } };
   /** Answers a `callWS` message; replace it per test. By default, a list command from `fixtureLists`. */
   answerWS: (message: { readonly type: string }) => Promise<unknown> = (message) =>

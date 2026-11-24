@@ -13,7 +13,7 @@ export interface WsCollectionOptions<T> {
   /** Parses the untrusted response; `undefined` refuses it, as a failed fetch. */
   readonly parse: (raw: unknown) => T | undefined;
   readonly equal: (a: T, b: T) => boolean;
-  readonly schedule?: Schedule;
+  readonly schedule?: Schedule | undefined;
 }
 
 /**
