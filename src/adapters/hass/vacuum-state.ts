@@ -1,6 +1,7 @@
 import type { VacuumState } from "../../app/ports/hass-port";
 import type { FrontendHass } from "./frontend-hass";
 import { boundedText, isObject, ownValue } from "./own-property";
+import { stateObjectOf } from "./picture-state";
 
 /**
  * `HassPort.vacuum()` over the live `hass.states`: `undefined` unless the entity id is an own key whose state object
@@ -10,10 +11,8 @@ import { boundedText, isObject, ownValue } from "./own-property";
 export function vacuumReader(getHass: () => FrontendHass): (entityId: string) => VacuumState | undefined {
   const read = new WeakMap<object, VacuumState | undefined>();
   return (entityId) => {
-    const states = getHass().states;
-    if (!isObject(states)) return undefined;
-    const stateObject = ownValue(states, entityId);
-    if (!isObject(stateObject)) return undefined;
+    const stateObject = stateObjectOf(getHass().states, entityId);
+    if (stateObject === undefined) return undefined;
     if (!read.has(stateObject)) read.set(stateObject, parseVacuumState(stateObject));
     return read.get(stateObject);
   };

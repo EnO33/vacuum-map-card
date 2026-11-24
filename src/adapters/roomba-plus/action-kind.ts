@@ -1,7 +1,7 @@
 import type { ActionKind } from "../../domain/robot/action-kind";
 import type { FrontendHass } from "../hass/frontend-hass";
 import { hasOwnString, isObject, ownValue } from "../hass/own-property";
-import { stateObjectOf } from "./picture-state";
+import { stateObjectOf } from "../hass/picture-state";
 import type { RobotEntities } from "./robot-entities";
 
 /**

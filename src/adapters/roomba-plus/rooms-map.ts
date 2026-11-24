@@ -1,6 +1,6 @@
 import type { RoomsMap, RoomsMapContent } from "../../app/ports/room-source";
 import type { FrontendHass } from "../hass/frontend-hass";
-import { pictureStateOf, stateObjectOf } from "./picture-state";
+import { pictureStateOf, stateObjectOf } from "../hass/picture-state";
 import type { RobotEntities } from "./robot-entities";
 import { NO_OUTLINES, roomsMapContentOf } from "./rooms-map-attributes";
 import { storedMapsOf } from "./stored-maps";

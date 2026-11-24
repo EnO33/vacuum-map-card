@@ -99,6 +99,9 @@ export class FakeFrontendHass implements FrontendHass {
     return kind === "resolve" ? Promise.resolve(value) : Promise.reject(value);
   }
 
+  /** Resolves a path against a fixed, invented base URL; replace it per test. */
+  hassUrl: (path?: string) => string = (path = "") => `https://ha.example.invalid${path}`;
+
   callWS(message: { readonly type: string }): Promise<unknown> {
     this.wsCalls.push(message);
     return this.answerWS(message);

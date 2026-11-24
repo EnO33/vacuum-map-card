@@ -17,6 +17,9 @@ export interface FrontendHass {
     returnResponse?: boolean,
   ): Promise<unknown>;
 
+  /** `hass.hassUrl(path)` (`src/types.ts` L306): the path made absolute against the Home Assistant base URL. */
+  hassUrl(path?: string): string;
+
   /** `hass.callWS(message)` (`src/types.ts` L278): resolves with the command's result, which is untrusted. */
   callWS(message: { readonly type: string }): Promise<unknown>;
 
