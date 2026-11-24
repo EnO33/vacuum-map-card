@@ -1,9 +1,9 @@
 import type { RoomSource, SourceRobot } from "../../app/ports/room-source";
 import type { EntityRegistryView } from "../hass/entity-registry";
 import type { FrontendHass } from "../hass/frontend-hass";
+import { stateObjectOf } from "../hass/picture-state";
 import { actionKindOf, deviceEntryOf } from "./action-kind";
 import { classifyRoombaPlusError } from "./error-kinds";
-import { stateObjectOf } from "./picture-state";
 import { findRobots, PLATFORM, type RobotEntities } from "./robot-entities";
 import { roomActionOf } from "./room-action";
 import { roomsMapReader } from "./rooms-map";

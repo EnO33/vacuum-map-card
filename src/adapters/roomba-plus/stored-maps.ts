@@ -2,8 +2,8 @@ import type { StoredMap } from "../../domain/robot/stored-map";
 import type { EntityRegistryEntry } from "../hass/entity-registry";
 import type { FrontendHass } from "../hass/frontend-hass";
 import { boundedId, isObject, ownValue } from "../hass/own-property";
+import { pictureStateOf, stateObjectOf } from "../hass/picture-state";
 import { safeMapName } from "./map-name";
-import { pictureStateOf, stateObjectOf } from "./picture-state";
 import type { RobotEntities } from "./robot-entities";
 
 /**

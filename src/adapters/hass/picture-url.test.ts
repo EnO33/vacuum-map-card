@@ -2,10 +2,14 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { FakeRoomSource } from "../../../test/fakes/fake-room-source";
 import { FakeFrontendHass } from "../../../test/fakes/frontend-hass";
 import floorPlan from "../../../test/fixtures/ha-core/hass_state_image_floor_plan.json" with { type: "json" };
+import roomsMapTwo from "../../../test/fixtures/roomba-plus/hass_state_rooms_map_mop_pending.json" with {
+  type: "json",
+};
 import roomsMapOne from "../../../test/fixtures/roomba-plus/hass_state_rooms_map_vacuum_aligned.json" with {
   type: "json",
 };
 import { expectNoConsoleOutput } from "../../../test/helpers/no-console";
+import type { RoomSource, SourceRobot } from "../../app/ports/room-source";
 import { MAX_TEXT_LENGTH } from "../../domain/text/limits";
 import { pictureUrl } from "./picture-url";
 
@@ -18,6 +22,13 @@ let hass: FakeFrontendHass;
 const sources = [new FakeRoomSource()];
 const urlOf = (entityId: string) => pictureUrl(() => hass, sources, entityId);
 
+/** A source with one robot of the fake, its stored maps and rooms map replaced. */
+function sourceWith(changes: Partial<SourceRobot>): readonly RoomSource[] {
+  const [robot] = new FakeRoomSource().robots();
+  if (robot === undefined) throw new Error("no robot");
+  return [{ integration: "test", robots: () => [{ ...robot, ...changes }] }];
+}
+
 function withState(entityId: string, state: unknown): void {
   hass.states = { [entityId]: state };
 }
@@ -26,7 +37,11 @@ expectNoConsoleOutput();
 
 beforeEach(() => {
   hass = new FakeFrontendHass();
-  hass.states = { [PLAN]: structuredClone(floorPlan), [ROOMS]: structuredClone(roomsMapOne) };
+  hass.states = {
+    [PLAN]: structuredClone(floorPlan),
+    [ROOMS]: structuredClone(roomsMapOne),
+    [roomsMapTwo.entity_id]: structuredClone(roomsMapTwo),
+  };
 });
 
 describe("pictureUrl", () => {
@@ -36,6 +51,9 @@ describe("pictureUrl", () => {
     );
     expect(urlOf(ROOMS)).toBe(
       `${BASE}/api/image_proxy/${ROOMS}?token=${TOKEN}&state=${encodeURIComponent(roomsMapOne.state)}`,
+    );
+    expect(urlOf(roomsMapTwo.entity_id)).toBe(
+      `${BASE}/api/image_proxy/${roomsMapTwo.entity_id}?token=${TOKEN}&state=${encodeURIComponent(roomsMapTwo.state)}`,
     );
   });
 
@@ -63,6 +81,36 @@ describe("pictureUrl", () => {
     expect(urlOf(PLAN)).toBe(`${BASE}/api/image_proxy/${PLAN}?token=t%26k%23n%3F%2F%2B%3D&state=a%26b%23c%3Fd%2Fe%2Bf`);
   });
 
+  it("encodes an entity id a source reports, so it cannot leave the path", () => {
+    const odd = "image.a/b?c#d";
+    const sources = sourceWith({
+      storedMaps: [
+        { floorPlanEntityId: odd, mapId: "M", mapName: undefined, pictureState: "available", ownAreaId: null },
+      ],
+    });
+    withState(odd, { state: "1", attributes: { access_token: "t" } });
+    expect(pictureUrl(() => hass, sources, odd)).toBe(`${BASE}/api/image_proxy/image.a%2Fb%3Fc%23d?token=t&state=1`);
+  });
+
+  it("gives nothing for a disabled rooms map, even with a state and a token", () => {
+    const [robot] = new FakeRoomSource().robots();
+    const roomsMap = robot?.roomsMap;
+    if (roomsMap === undefined) throw new Error("no rooms map");
+    const sources = sourceWith({ roomsMap: { ...roomsMap, pictureState: "disabled" } });
+    expect(pictureUrl(() => hass, sources, ROOMS)).toBeUndefined();
+  });
+
+  it("gives nothing for an entity that is not an image, even when a source reports it", () => {
+    const camera = "camera.robot_one_map";
+    const sources = sourceWith({
+      storedMaps: [
+        { floorPlanEntityId: camera, mapId: "M", mapName: undefined, pictureState: "available", ownAreaId: null },
+      ],
+    });
+    withState(camera, { state: "idle", attributes: { access_token: "t" } });
+    expect(pictureUrl(() => hass, sources, camera)).toBeUndefined();
+  });
+
   it("keeps no cache: a rotated token gives the new URL", () => {
     const first = urlOf(PLAN);
     withState(PLAN, { ...structuredClone(floorPlan), attributes: { access_token: "rotated" } });
@@ -72,7 +120,7 @@ describe("pictureUrl", () => {
 
   it.each<[string, unknown]>([
     ["no state", undefined],
-    ["an unavailable state", { state: "unavailable", attributes: { access_token: "t" } }],
+    ["an unavailable copy of the capture", { ...structuredClone(floorPlan), state: "unavailable" }],
     ["an unknown state", { state: "unknown", attributes: { access_token: "t" } }],
     ["a non-string state", { state: 3, attributes: { access_token: "t" } }],
     ["no attributes", { state: "1" }],
