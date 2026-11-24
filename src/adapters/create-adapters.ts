@@ -1,5 +1,7 @@
+import type { DisplayPort } from "../app/ports/display-port";
 import type { HassPort } from "../app/ports/hass-port";
 import type { RoomSource } from "../app/ports/room-source";
+import { createDisplay } from "./hass/display";
 import type { FrontendHass } from "./hass/frontend-hass";
 import { createHassPort, type HassPortOptions } from "./hass/hass-port";
 import { pictureUrl } from "./hass/picture-url";
@@ -10,6 +12,8 @@ export type AdaptersOptions = HassPortOptions;
 /** The one object the card wires (Epic 5): the ports `app` reads, the picture URL builder, and their lifecycle. */
 export interface Adapters {
   readonly hass: HassPort;
+  /** The user's language and the robots' names, for `ui` (#101). */
+  readonly display: DisplayPort;
   /** The room sources, the same array on every call; Roomba+ is the only one. */
   sources(): readonly RoomSource[];
   /** A plan picture's URL, only for an image a source reports; never cached (ADR 0005 « Plan pictures »). */
@@ -34,6 +38,7 @@ export function createAdapters(getHass: () => FrontendHass, options: AdaptersOpt
   ]);
   return {
     hass: portOnly(port),
+    display: createDisplay(getHass),
     sources: () => sources,
     pictureUrl: (entityId) => pictureUrl(getHass, sources, entityId),
     start: () => port.start(),

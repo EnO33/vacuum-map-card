@@ -36,6 +36,13 @@ export interface FrontendHass {
   readonly devices: unknown;
   /** `hass.user`: the signed-in user, with `is_admin`. Untrusted. */
   readonly user: unknown;
+  /** `hass.language`: the user's language code (`src/types.ts` L231-L250). Untrusted; `null` early. */
+  readonly language: unknown;
+  /**
+   * `hass.locale`: `FrontendLocaleData` (`src/data/translation.ts`), whose `language` is set together with
+   * `hass.language` (`src/state/connection-mixin.ts` L83-L86, `src/state/translations-mixin.ts` L263-L281). Untrusted.
+   */
+  readonly locale: unknown;
 }
 
 /** The members of the websocket `Connection` the adapters use (`lib/connection.ts`, 9.8.0). */

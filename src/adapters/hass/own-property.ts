@@ -11,7 +11,10 @@ export function boundedText(value: unknown): string | undefined {
   return typeof value === "string" && withinTextCap(value) ? value : undefined;
 }
 
-/** A registry id (floor, area): a non-empty string within the cap, matched the same way in every source, or `undefined`. */
+/**
+ * A non-empty string within the cap, or `undefined`: a registry id (floor, area), matched the same way in every source,
+ * or a display string (language code, robot name).
+ */
 export function boundedId(value: unknown): string | undefined {
   const id = boundedText(value);
   return id === "" ? undefined : id;

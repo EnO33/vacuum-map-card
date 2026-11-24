@@ -85,6 +85,9 @@ export class FakeFrontendHass implements FrontendHass {
   services: unknown = { vacuum: { clean_area: {}, start: {} } };
   devices: unknown = structuredClone(hassDevices);
   user: unknown = { id: "0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a", is_admin: false };
+  /** `hass.language` and `hass.locale`, set together to the same code as the frontend does; replace them per test. */
+  language: unknown = "en";
+  locale: unknown = { language: "en" };
   behaviour: CallServiceBehaviour = { kind: "resolve", value: { context: { id: "01JAAAAAAAAAAAAAAAAAAAAAAA" } } };
   /** Answers a `callWS` message; replace it per test. By default, a list command from `fixtureLists`. */
   answerWS: (message: { readonly type: string }) => Promise<unknown> = (message) =>
