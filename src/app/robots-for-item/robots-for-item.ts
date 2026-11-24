@@ -4,8 +4,9 @@ import { compareCodeUnits } from "../../domain/text/compare";
 import type { FloorModel, Plan, RobotModel } from "../floor-model/floor-model";
 import type { HassPort } from "../ports/hass-port";
 import type { RoomSource, SourceRobot } from "../ports/room-source";
-import { areaItemChoice, type Candidate, type Choice, joinChoice, roomChoice } from "./choice";
+import { areaItemChoice, type Candidate, type Choice, guardedCandidate, joinChoice, roomChoice } from "./choice";
 import { type RobotContext, robotContextOf } from "./robot-context";
+import { uniqueSourceRobots } from "./source-robots";
 
 /** An item of a shown plan: a room of a rooms map, or an area item of a room list. */
 export type ItemRef =
@@ -34,7 +35,7 @@ export function robotsForItem(
   if (!own) return [];
   const first = candidateOf(ownerContext, own.choice);
   const { areaId } = own;
-  if (areaId === undefined) return [first];
+  if (areaId === undefined) return [guardedCandidate(first)];
 
   const planFloorId = plan.placement.kind === "floor" ? plan.placement.floorId : undefined;
   const others = model.robots
@@ -45,7 +46,7 @@ export function robotsForItem(
       const candidate = source && joiningCandidate(robot, source, hass, areaId, planFloorId);
       return candidate ? [candidate] : [];
     });
-  return [first, ...others];
+  return [first, ...others].map(guardedCandidate);
 }
 
 /** Another robot as a candidate when it joins through the area (`decideJoinPath`); ports are read only if linked. */
@@ -76,14 +77,6 @@ function joiningCandidate(
   if (decision.kind === "path2" && ownName(decision.regionId) === undefined) return undefined;
   const choice = joinChoice(decision, (regionId) => ownName(regionId) ?? "");
   return { vacuumEntityId: robot.vacuumEntityId, action: robot.action, state: vacuum?.state, choice };
-}
-
-/** Source robots by vacuum id; an id reported by two sources is dropped, so rooms and actions never mix robots. */
-function uniqueSourceRobots(sources: readonly RoomSource[]): ReadonlyMap<string, SourceRobot> {
-  const counts = new Map<string, number>();
-  const robots = sources.flatMap((source) => source.robots());
-  for (const { vacuumEntityId } of robots) counts.set(vacuumEntityId, (counts.get(vacuumEntityId) ?? 0) + 1);
-  return new Map(robots.filter((r) => counts.get(r.vacuumEntityId) === 1).map((r) => [r.vacuumEntityId, r]));
 }
 
 /** The plan's own robot's choice, and the item's area (its link on that plan, or the area item's area). */

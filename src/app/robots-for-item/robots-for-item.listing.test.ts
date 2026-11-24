@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { FakeHass } from "../../../test/fakes/fake-hass";
 import { FakeRoomSource } from "../../../test/fakes/fake-room-source";
+import { withStates } from "../../../test/helpers/clean-state";
 import { withRobot } from "../../../test/helpers/sources";
 import { buildFloorModel } from "../floor-model/build-floor-model";
-import type { RobotModel, RoomView } from "../floor-model/floor-model";
+import type { FloorModel, RobotModel, RobotRoom, RoomView } from "../floor-model/floor-model";
 import type { RoomSource } from "../ports/room-source";
 import { type ItemRef, robotsForItem } from "./robots-for-item";
 
@@ -82,5 +83,50 @@ describe("robotsForItem listing rules", () => {
       robots: () => mopOnGround.robots().filter((r) => r.vacuumEntityId === "vacuum.robot_two"),
     };
     expect(robotsForItem(onGround, item, hass, [mopOnly]).map((c) => c.vacuumEntityId)).toEqual(["vacuum.robot_two"]);
+  });
+});
+
+describe("robotsForItem joining edge cases", () => {
+  const onGround = buildFloorModel(hass, [mopOnGround]);
+  const item: ItemRef = { kind: "room", imageEntityId: "image.robot_two_rooms_map", regionId: "1" };
+
+  function joiner(change: (robot: RobotModel) => Partial<RobotModel>): FloorModel {
+    const robots = onGround.robots.map((robot) =>
+      robot.vacuumEntityId === "vacuum.robot_one" ? { ...robot, ...change(robot) } : robot,
+    );
+    return { ...onGround, robots };
+  }
+
+  const room: RobotRoom = {
+    imageEntityId: "image.robot_one_rooms_map",
+    regionId: "1",
+    name: "Library",
+    roomId: "library",
+    area: { kind: "core", areaId: "library" },
+    floorId: "upper_floor",
+  };
+
+  it("lists a core room on another floor with its path 1 reason (ADR 0005: a rule 1 link joins)", () => {
+    const m = joiner((robot) => ({ plans: robot.plans.filter((p) => p.content.kind === "outlines"), rooms: [room] }));
+    expect(robotsForItem(m, item, hass, [mopOnGround])[1]).toMatchObject({
+      vacuumEntityId: "vacuum.robot_one",
+      choice: { kind: "not_startable", reasons: ["no_core_area"] },
+    });
+  });
+
+  it("refuses a same-floor room when the joiner has no rooms map to check names against", () => {
+    const m = joiner(() => ({ plans: [], rooms: [{ ...room, floorId: "ground_floor" }] }));
+    expect(robotsForItem(m, item, hass, [mopOnGround])[1]?.choice).toEqual({
+      kind: "not_startable",
+      reasons: ["no_core_area", "shadow_check_impossible"],
+    });
+  });
+
+  it("lists a joiner that is unavailable as not startable", () => {
+    const unavailable = withStates(new Map([["vacuum.robot_one", { state: "unavailable" }]]));
+    expect(robotsForItem(onGround, item, unavailable, [mopOnGround])[1]?.choice).toEqual({
+      kind: "not_startable",
+      reasons: ["unavailable"],
+    });
   });
 });
