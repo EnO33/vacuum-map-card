@@ -11,6 +11,7 @@ import {
   type AreaMapping,
   type AreaMappingResult,
   areaOfSegment,
+  areasOfMap,
   areasOnMapping,
   readAreaMapping,
   segmentsOfArea,
@@ -136,5 +137,16 @@ describe("readAreaMapping caps", () => {
     ["a segment id", [["a", ["s1", long]]]],
   ] satisfies [string, [string, string[]][]][])("refuses %s over the cap", (_, entries) => {
     expect(read(entries)).toEqual(unsupported("text_too_long"));
+  });
+});
+
+describe("areasOfMap", () => {
+  it("gives the kept areas with a segment on the map, in stored order", () => {
+    const mapping = fixtureMapping(mappingFixtures.vacuum);
+    const mapIds = ["MapA_q1W2e3", "MapB_z9X8c7"];
+    const mapOfSegment = (segmentId: string) => mapIds.find((mapId) => segmentId.startsWith(`${mapId}_`));
+    expect(areasOfMap(mapping, "MapA_q1W2e3", mapOfSegment)).toEqual(["library", "workshop"]);
+    expect(areasOfMap(mapping, "MapB_z9X8c7", mapOfSegment)).toEqual(["music_room", "studio"]);
+    expect(areasOfMap(mapping, "MapZ_none", mapOfSegment)).toEqual([]);
   });
 });
