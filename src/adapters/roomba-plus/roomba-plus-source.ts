@@ -1,8 +1,7 @@
 import type { RoomSource, SourceRobot } from "../../app/ports/room-source";
 import type { EntityRegistryView } from "../hass/entity-registry";
 import type { FrontendHass } from "../hass/frontend-hass";
-import { isObject, ownValue } from "../hass/own-property";
-import { actionKindOf } from "./action-kind";
+import { actionKindOf, deviceEntryOf } from "./action-kind";
 import { classifyRoombaPlusError } from "./error-kinds";
 import { stateObjectOf } from "./picture-state";
 import { findRobots, PLATFORM, type RobotEntities } from "./robot-entities";
@@ -19,23 +18,45 @@ export interface RoombaPlusSourceOptions {
 
 const NO_ROBOTS: readonly SourceRobot[] = Object.freeze([]);
 
-/** A built robot and the source objects it was built from, compared by identity. */
+/** A built robot and, compared by identity, the objects its maps and its action were read from. */
 interface Built {
-  readonly sources: readonly unknown[];
+  readonly mapSources: readonly unknown[];
+  readonly actionSources: readonly unknown[];
   readonly robot: SourceRobot;
 }
 
 /**
  * The Roomba+ `RoomSource` (ADR 0002). `robots()` returns the same array and robot objects while their sources keep
- * their identity: the registry list, the `hass.states` objects of each robot's vacuum, rooms map, floor plans and
- * cleaning mode select, and its `hass.devices` entry. A change renews only the robot it belongs to.
+ * their identity: the registry list, the `hass.states` objects of each robot's rooms map and floor plans, and those its
+ * action is read from (vacuum, cleaning mode select, `hass.devices` entry). A vacuum update that leaves the action as
+ * it was (a cleaning run updates the vacuum every few seconds) keeps the robot. A change renews only its robot.
  */
 export function createRoombaPlusSource({ registry, getHass }: RoombaPlusSourceOptions): RoomSource {
   const readRoomsMap = roomsMapReader(getHass);
-  let version: unknown;
+  let version: ReturnType<EntityRegistryView["version"]>;
   let entities: readonly RobotEntities[] = [];
   let built = new Map<string, Built>();
   let robots = NO_ROBOTS;
+
+  /** The robot of `entity`, reused when its sources are unchanged; `renewed` tells whether it is a new object. */
+  const robotOf = (entity: RobotEntities, hass: FrontendHass): { robot: SourceRobot; renewed: boolean } => {
+    const snapshot = () => hass;
+    const mapSources = mapSourcesOf(entity, hass);
+    const actionSources = actionSourcesOf(entity, hass);
+    const previous = built.get(entity.vacuum.entityId);
+    if (previous && sameSources(previous.mapSources, mapSources)) {
+      const sameAction =
+        sameSources(previous.actionSources, actionSources) || actionKindOf(entity, snapshot) === previous.robot.action;
+      if (sameAction) {
+        built.set(entity.vacuum.entityId, { ...previous, actionSources });
+        return { robot: previous.robot, renewed: false };
+      }
+    }
+    const robot = buildRobot(entity, snapshot, readRoomsMap);
+    built.set(entity.vacuum.entityId, { mapSources, actionSources, robot });
+    return { robot, renewed: true };
+  };
+
   return {
     integration: PLATFORM,
     robots() {
@@ -47,17 +68,10 @@ export function createRoombaPlusSource({ registry, getHass }: RoombaPlusSourceOp
         built = new Map();
       }
       const hass = getHass();
-      let renewed = entities.length !== robots.length;
-      const next = entities.map((entity) => {
-        const sources = sourcesOf(entity, hass);
-        const previous = built.get(entity.vacuum.entityId);
-        if (previous && sameSources(previous.sources, sources)) return previous.robot;
-        renewed = true;
-        const robot = buildRobot(entity, getHass, readRoomsMap);
-        built.set(entity.vacuum.entityId, { sources, robot });
-        return robot;
-      });
-      if (renewed) robots = Object.freeze(next);
+      const next = entities.map((entity) => robotOf(entity, hass));
+      if (next.length !== robots.length || next.some((n) => n.renewed)) {
+        robots = Object.freeze(next.map((n) => n.robot));
+      }
       return robots;
     },
   };
@@ -83,18 +97,22 @@ function buildRobot(
   });
 }
 
-/** The objects a robot is built from, in a fixed order. */
-function sourcesOf(entity: RobotEntities, hass: FrontendHass): readonly unknown[] {
-  const stateOf = (entityId: string | undefined) =>
-    entityId === undefined ? undefined : stateObjectOf(hass.states, entityId);
-  const deviceId = entity.vacuum.deviceId;
-  const devices = hass.devices;
+/** The state objects the stored maps and the rooms map are read from. */
+function mapSourcesOf(entity: RobotEntities, hass: FrontendHass): readonly unknown[] {
+  const stateOf = (entityId: string) => stateObjectOf(hass.states, entityId);
   return [
-    stateOf(entity.vacuum.entityId),
-    stateOf(entity.roomsMap?.entityId),
-    stateOf(entity.primeCleaningMode?.entityId),
-    deviceId !== null && isObject(devices) ? ownValue(devices, deviceId) : undefined,
+    entity.roomsMap === undefined ? undefined : stateOf(entity.roomsMap.entityId),
     ...entity.floorPlans.map((floorPlan) => stateOf(floorPlan.entityId)),
+  ];
+}
+
+/** The objects the action is read from: the vacuum and select states, and the device entry. */
+function actionSourcesOf(entity: RobotEntities, hass: FrontendHass): readonly unknown[] {
+  const select = entity.primeCleaningMode;
+  return [
+    stateObjectOf(hass.states, entity.vacuum.entityId),
+    select === undefined ? undefined : stateObjectOf(hass.states, select.entityId),
+    deviceEntryOf(hass.devices, entity.vacuum.deviceId),
   ];
 }
 

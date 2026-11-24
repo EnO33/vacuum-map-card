@@ -56,12 +56,16 @@ function modeOf(state: string): ActionKind | undefined {
  * other, else `undefined`.
  */
 function skuAction(devices: unknown, deviceId: string | null): ActionKind | undefined {
-  if (deviceId === null || !isObject(devices)) return undefined;
-  const device = ownValue(devices, deviceId);
+  const device = deviceEntryOf(devices, deviceId);
   if (!isObject(device)) return undefined;
   const sku = nonEmpty(ownValue(device, "model_id")) ?? nonEmpty(ownValue(device, "model"));
   if (sku === undefined) return undefined;
   return sku[0]?.toLowerCase() === "m" ? "mop" : "vacuum";
+}
+
+/** The robot's own entry of `hass.devices`, an own key, or `undefined`. */
+export function deviceEntryOf(devices: unknown, deviceId: string | null): unknown {
+  return deviceId === null || !isObject(devices) ? undefined : ownValue(devices, deviceId);
 }
 
 function nonEmpty(value: unknown): string | undefined {

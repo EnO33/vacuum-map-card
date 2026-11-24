@@ -119,8 +119,25 @@ describe("robots() identity", () => {
     expect(next[1]).not.toBe(first[1]);
   });
 
+  it("keeps a robot when a vacuum update leaves its action as it was, as during a cleaning run", async () => {
+    const { source } = await sourceOn(registryList);
+    const first = source.robots();
+    newStates("vacuum.robot_one");
+    newStates("vacuum.robot_two");
+    newStates("select.robot_two_prime_cleaning_mode");
+    expect(source.robots()).toBe(first);
+  });
+
+  it("renews a robot when a vacuum update changes its action", async () => {
+    const { source } = await sourceOn(registryList);
+    const [one] = source.robots();
+    states = { ...states, "vacuum.robot_one": { state: "cleaning", attributes: { detected_pad: null } } };
+    hass.states = states;
+    expect(source.robots()[0]).not.toBe(one);
+    expect(source.robots()[0]?.action).toBe("mop");
+  });
+
   it.each<[string, string]>([
-    ["vacuum", "vacuum.robot_one"],
     ["floor plan", "image.robot_one_floor_plan_mapa_q1w2e3"],
     ["rooms map", "image.robot_one_rooms_map"],
   ])("renews a robot when its %s state object changes", async (_, entityId) => {
@@ -130,14 +147,40 @@ describe("robots() identity", () => {
     expect(source.robots()[0]).not.toBe(one);
   });
 
-  it("renews a robot when its select state or its device entry changes", async () => {
+  it("renews a robot when its select or device decides another action, and keeps it otherwise", async () => {
     const { source } = await sourceOn(registryList);
     const [, two] = source.robots();
-    newStates("select.robot_two_prime_cleaning_mode");
-    const afterSelect = source.robots()[1];
-    expect(afterSelect).not.toBe(two);
+    states = {
+      ...states,
+      "vacuum.robot_two": { state: "docked", attributes: {} },
+      "select.robot_two_prime_cleaning_mode": { state: "turbo", attributes: { options: [] } },
+    };
+    hass.states = states;
+    const bySku = source.robots()[1];
+    expect(bySku).not.toBe(two);
+    expect(bySku?.action).toBe("vacuum");
+    newDevices({ "02020202020202020202020202020202": { model_id: "EXV0002" } });
+    expect(source.robots()[1]).toBe(bySku);
     newDevices({ "02020202020202020202020202020202": { model_id: "m6" } });
-    expect(source.robots()[1]).not.toBe(afterSelect);
+    expect(source.robots()[1]).not.toBe(bySku);
+    expect(source.robots()[1]?.action).toBe("mop");
+  });
+
+  it("keeps a robot without a rooms map", async () => {
+    const { source } = await sourceOn(registryList.filter((e) => e.translation_key !== "rooms_map"));
+    const first = source.robots();
+    expect(first.map((r) => r.roomsMap)).toStrictEqual([undefined, undefined]);
+    newStates();
+    expect(source.robots()).toBe(first);
+  });
+
+  it("drops a robot removed from the registry", async () => {
+    const { source } = await sourceOn(registryList);
+    expect(source.robots()).toHaveLength(2);
+    hass.answerWS = () => Promise.resolve(registryList.filter((e) => !e.entity_id.includes("robot_two")));
+    hass.connection.emit("entity_registry_updated");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(source.robots().map((r) => r.vacuumEntityId)).toStrictEqual(["vacuum.robot_one"]);
   });
 
   it("builds robots without hass.devices, and keeps them while it stays missing", async () => {
