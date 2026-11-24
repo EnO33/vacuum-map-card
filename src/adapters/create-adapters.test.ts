@@ -5,6 +5,7 @@ import { type AdaptersHarness, adaptersHarness, started } from "../../test/helpe
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
 import { buildFloorModel } from "../app/floor-model/build-floor-model";
 import type { Plan } from "../app/floor-model/floor-model";
+import type { DisplayPort } from "../app/ports/display-port";
 import type { HassPort } from "../app/ports/hass-port";
 import type { RoomSource } from "../app/ports/room-source";
 import { createAdapters } from "./create-adapters";
@@ -47,6 +48,15 @@ describe("createAdapters", () => {
     const list: readonly RoomSource[] = sources();
     expect(list.map((s) => s.integration)).toStrictEqual(["roomba_plus"]);
     expect(sources()).toBe(list);
+  });
+
+  it("gives a DisplayPort with its two members only, over the live hass", () => {
+    const display: DisplayPort = harness.adapters.display;
+    expect(Object.keys(display).sort()).toStrictEqual(["language", "robotName"]);
+    expect(Object.isFrozen(display)).toBe(true);
+    harness.hass.locale = { language: "fr" };
+    expect(display.language()).toBe("fr");
+    expect(display.robotName("vacuum.robot_one")).toBe("Robot One");
   });
 
   it("debounces updates on the injected timer", async () => {
