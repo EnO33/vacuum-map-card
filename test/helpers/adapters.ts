@@ -13,10 +13,10 @@ export const FIXTURE_SERVICES = { vacuum: { clean_area: {} }, roomba_plus: { cle
 
 /** The capture's entity registry list, the vacuum's second floor plan disabled when asked. */
 export function registryList(disabledFloorPlan = false): unknown[] {
-  const replaced = new Set(floorPlanDisabled.map((e) => e.entity_id));
+  const replacements = new Map<string, unknown>(floorPlanDisabled.map((e) => [e.entity_id, e]));
   const list = disabledFloorPlan
-    ? [...entityRegistryList.map((e) => (replaced.has(e.entity_id) ? floorPlanDisabled[0] : e))]
-    : [...entityRegistryList];
+    ? entityRegistryList.map((e) => replacements.get(e.entity_id) ?? e)
+    : entityRegistryList;
   return structuredClone(list);
 }
 
@@ -42,7 +42,7 @@ export function adaptersHarness(options: { readonly disabledFloorPlan?: boolean 
   return { hass, adapters: createAdapters(() => hass), lists };
 }
 
-/** Starts the adapters and waits for the three lists. */
+/** Starts the adapters and waits for the three lists (fake timers must be on). */
 export async function started(harness: AdaptersHarness): Promise<AdaptersHarness> {
   harness.adapters.start();
   await vi.advanceTimersByTimeAsync(0);

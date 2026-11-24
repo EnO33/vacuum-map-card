@@ -29,11 +29,22 @@ afterEach(() => {
 });
 
 describe("createAdapters", () => {
-  it("gives a HassPort, the Roomba+ source as the only one, and a bound pictureUrl", () => {
+  it("gives a HassPort with the port's members only, and the Roomba+ source as the only one", () => {
     const { hass, sources } = harness.adapters;
     const port: HassPort = hass;
+    expect(Object.keys(port).sort()).toStrictEqual([
+      "areas",
+      "callService",
+      "floors",
+      "hasService",
+      "isAdmin",
+      "segmentsChangedOpen",
+      "subscribe",
+      "vacuum",
+      "vacuumOptions",
+    ]);
+    expect(Object.isFrozen(port)).toBe(true);
     const list: readonly RoomSource[] = sources();
-    expect(port).toBe(hass);
     expect(list.map((s) => s.integration)).toStrictEqual(["roomba_plus"]);
     expect(sources()).toBe(list);
   });
@@ -46,15 +57,20 @@ describe("createAdapters", () => {
         return () => {};
       },
     });
-    adapters.start();
-    await vi.advanceTimersByTimeAsync(0);
-    harness.hass.connection.emit("floor_registry_updated");
-    expect(waits).toStrictEqual([500]);
-    adapters.stop();
+    try {
+      adapters.start();
+      await vi.advanceTimersByTimeAsync(0);
+      harness.hass.connection.emit("floor_registry_updated");
+      expect(waits).toStrictEqual([500]);
+    } finally {
+      adapters.stop();
+    }
   });
 
   it("fetches and subscribes once, however often started, and releases everything on stop", async () => {
     harness.adapters.start();
+    harness.adapters.start();
+    await vi.advanceTimersByTimeAsync(0);
     harness.adapters.start();
     await vi.advanceTimersByTimeAsync(0);
     const { hass } = harness;
@@ -70,6 +86,11 @@ describe("createAdapters", () => {
     expect(hass.connection.subscriptions).toHaveLength(0);
     expect(hass.connection.unsubscribed).toBe(3);
     expect(hass.connection.readyListeners).toBe(0);
+    const fetches = hass.wsCalls.length;
+    harness.adapters.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(hass.wsCalls).toHaveLength(fetches);
+    expect(hass.connection.subscriptions).toHaveLength(0);
   });
 });
 
@@ -111,6 +132,21 @@ describe("after load, the floor model on the real adapters", () => {
       new FakeRoomSource(),
     ]);
     expect(buildFloorModel(hass, sources())).toEqual(fake);
+  });
+
+  it("answers every port member through the narrowed HassPort", async () => {
+    const { hass } = (await started(harness)).adapters;
+    expect(hass.areas().get("greenhouse")?.floorId).toBeNull();
+    expect(hass.vacuum("vacuum.robot_one")?.state).toBe("docked");
+    expect(hass.hasService("roomba_plus", "clean_room")).toBe(true);
+    expect(hass.isAdmin()).toBe(false);
+    expect(hass.vacuumOptions("vacuum.robot_one").kind).toBe("options");
+    const listener = vi.fn();
+    const unsubscribe = hass.subscribe(listener);
+    unsubscribe();
+    harness.hass.connection.emit("repairs_issue_registry_updated");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(listener).not.toHaveBeenCalled();
   });
 
   it("builds a plan picture URL for a reported plan only", async () => {
