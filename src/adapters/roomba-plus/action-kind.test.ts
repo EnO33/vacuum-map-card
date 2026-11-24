@@ -119,10 +119,31 @@ describe("actionKindOf", () => {
       { select: { state: "unknown", attributes: null } },
       "clean",
     ],
+    ["step 4: a select without state, SKU m", { device: { model_id: "m611" } }, "mop"],
+    [
+      "step 4: an upper-case M SKU, as the integration reads it",
+      { select: select("turbo"), device: { model_id: "M611" } },
+      "mop",
+    ],
+    [
+      "step 4: model_id wins over model",
+      { select: select("turbo"), device: { model_id: "s955", model: "m611" } },
+      "vacuum",
+    ],
     ["nothing readable: no SKU", { select: select("turbo"), device: { model: "" } }, "clean"],
     ["nothing readable: options not an array", { select: select("unknown", "vacuum,mop"), device: undefined }, "clean"],
   ])("%s", async (_, c, expected) => {
     expect(await decide(c)).toBe(expected);
+  });
+
+  it("goes to the SKU, not to vacuum only, when the device has two cleaning mode selects", async () => {
+    const twoSelects = [
+      ...robotOne(true),
+      { ...robotOne(true)[1], entity_id: "select.robot_one_second_mode", id: "05" },
+    ];
+    hass.states = {};
+    hass.devices = { [DEVICE]: { model_id: "m611" } };
+    expect(await actionOf(twoSelects, ROBOT)).toBe("mop");
   });
 
   it("reads only own keys of hass.states and hass.devices", async () => {

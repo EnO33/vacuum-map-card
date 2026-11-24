@@ -22,6 +22,16 @@ export function isObject(value: unknown): value is object {
   return typeof value === "object" && value !== null;
 }
 
+/** Whether an untrusted array holds `item`, each index read as an own data property, without copying the array. */
+export function hasOwnString(value: unknown, item: string): boolean {
+  if (!Array.isArray(value)) return false;
+  const length = value.length;
+  for (let i = 0; i < length; i++) {
+    if (ownValue(value, String(i)) === item) return true;
+  }
+  return false;
+}
+
 /** The string items of an untrusted array, in order, each read as an own data property; `[]` for a non-array. */
 export function ownStrings(value: unknown): readonly string[] {
   if (!Array.isArray(value)) return Object.freeze([]);
