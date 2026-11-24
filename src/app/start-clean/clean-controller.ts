@@ -7,7 +7,7 @@ import type { ItemRef } from "../robots-for-item/robots-for-item";
 import { sourcedRobots } from "../robots-for-item/source-robots";
 import { classifyCleanError, type ErrorSource } from "./classify-error";
 import { type Intent, intentOf, type PrepareResult } from "./intent";
-import type { ConfirmOutcome, OutcomeListener, StoredOutcome } from "./outcomes";
+import type { ConfirmOutcome, OutcomeListener, SendingListener, StoredOutcome } from "./outcomes";
 
 export interface CleanControllerDeps {
   /** Reads the live `hass` on every call (not a snapshot), so the re-check sees the current state. */
@@ -30,6 +30,12 @@ export interface CleanController {
   acknowledge(vacuumEntityId: string): void;
   /** Returns the function that removes the listener. Outcomes stay stored with no listener. */
   onOutcome(listener: OutcomeListener): () => void;
+  /**
+   * Called in the caller's task when a `confirm` goes on to the re-check and the call, with the vacuum's state then;
+   * never for an answer that sends nothing (`busy`, `already_sent`, `discarded`). Its outcome follows through
+   * `onOutcome`. Returns the remover.
+   */
+  onSending(listener: SendingListener): () => void;
 }
 
 /**
@@ -47,17 +53,7 @@ export function createCleanController({ hass, sources }: CleanControllerDeps): C
   const inFlight = new Set<string>();
   const outcomes = new Map<string, StoredOutcome>();
   const listeners = new Set<OutcomeListener>();
-
-  const notify = (vacuumEntityId: string, outcome: StoredOutcome) => {
-    for (const listener of listeners) {
-      try {
-        listener(vacuumEntityId, outcome);
-      } catch {
-        // A failing listener never hides the outcome from the others; it stays stored.
-      }
-    }
-  };
-
+  const sendingListeners = new Set<SendingListener>();
   /** The re-check is synchronous, before the call's `await`; the call is built from the re-derived intent. */
   const send = async (intent: Intent): Promise<StoredOutcome> => {
     const now = prepare(intent.item, intent.vacuumEntityId);
@@ -90,13 +86,17 @@ export function createCleanController({ hass, sources }: CleanControllerDeps): C
       if (inFlight.has(id)) return Promise.resolve({ kind: "busy" });
       consumed.add(intent);
       inFlight.add(id);
+      // Read inside each listener's guard: nothing here may throw past `inFlight.add`, or the robot stays busy.
+      notify(sendingListeners, (listener) =>
+        listener({ vacuumEntityId: id, item: intent.item, vacuumState: hass.vacuum(id)?.state }),
+      );
       // `send` catches every failure from the call on; one here happened before anything was sent.
       return send(intent)
         .catch((): StoredOutcome => ({ kind: "changed" }))
         .then((outcome) => {
           outcomes.set(id, outcome);
           inFlight.delete(id);
-          notify(id, outcome);
+          notify(listeners, (listener) => listener(id, outcome));
           return outcome;
         });
     },
@@ -111,7 +111,22 @@ export function createCleanController({ hass, sources }: CleanControllerDeps): C
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
+    onSending(listener) {
+      sendingListeners.add(listener);
+      return () => sendingListeners.delete(listener);
+    },
   };
+}
+
+/** A failing listener never hides the news from the others; an outcome stays stored. */
+function notify<L>(listeners: ReadonlySet<L>, call: (listener: L) => void): void {
+  for (const listener of listeners) {
+    try {
+      call(listener);
+    } catch {
+      // Ignored: see above.
+    }
+  }
 }
 
 /** Path 1: one robot, one area (ADR 0003 « Path 1 », « Call »); path 2: the adapter's call as captured. */

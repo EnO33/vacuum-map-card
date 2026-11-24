@@ -1,14 +1,8 @@
-import type { CleanError } from "../../domain/clean/clean-error";
+import type { StoredOutcome } from "../../domain/clean/outcome";
+import type { ItemRef } from "../robots-for-item/robots-for-item";
 
-/**
- * What a confirmed start ended with, stored per robot until acknowledged. `accepted` means Home Assistant accepted
- * the call, never « cleaning »: progress comes only from later vacuum states (ADR 0003 « When the checks run »).
- */
-export type StoredOutcome =
-  | { readonly kind: "accepted" }
-  /** Something the intent captured differs now: nothing was sent, the user is asked to try again. */
-  | { readonly kind: "changed" }
-  | { readonly kind: "error"; readonly error: CleanError };
+// A plain value of the domain, so the progress of a room (`domain/clean/progress.ts`) can read it.
+export type { StoredOutcome } from "../../domain/clean/outcome";
 
 /** What `confirm` answers: a stored outcome, or why it sent nothing at once. */
 export type ConfirmOutcome =
@@ -21,3 +15,15 @@ export type ConfirmOutcome =
   | { readonly kind: "discarded" };
 
 export type OutcomeListener = (vacuumEntityId: string, outcome: StoredOutcome) => void;
+
+/**
+ * A start the controller goes on to send: which robot, which item, and the vacuum's state at that moment (`undefined`
+ * when it has none), never the path, map id, segments or call data of the intent.
+ */
+export interface Sending {
+  readonly vacuumEntityId: string;
+  readonly item: ItemRef;
+  readonly vacuumState: string | undefined;
+}
+
+export type SendingListener = (sending: Sending) => void;
