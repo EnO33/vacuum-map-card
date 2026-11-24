@@ -5,7 +5,7 @@ import { boundedText } from "./bounded-text";
 import { caseFold } from "./case-fold";
 import * as table from "./case-fold-table";
 import { safeIcon } from "./icon";
-import { registryNameKey } from "./registry-name";
+import { matchesRegistryName, registryNameKey } from "./registry-name";
 import { isPlainRegionId, mayShadow } from "./shadow-key";
 
 describe("caseFold", () => {
@@ -123,4 +123,16 @@ describe("safeIcon", () => {
       expect(safeIcon(icon)).toBeUndefined();
     },
   );
+});
+
+describe("matchesRegistryName", () => {
+  const entry = { name: "Ground floor", aliases: ["Rez-de-chaussée"] };
+
+  it.each([
+    ["the name, folded and without spaces", "ground FLOOR", true],
+    ["an alias", "rez-de-chaussée", true],
+    ["neither", "Upper floor", false],
+  ])("matches %s", (_, name, expected) => {
+    expect(matchesRegistryName(registryNameKey(name), entry)).toBe(expected);
+  });
 });
