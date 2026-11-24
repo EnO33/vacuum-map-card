@@ -254,7 +254,7 @@ Progress belongs to the robot that was started and shows on the room it was sent
 | Paused | On `paused` |
 | Done | On the first `returning`, `docked` or `idle` after `cleaning` |
 | Failed | On an `error` outcome whose robot cannot have started (`mayHaveStarted` is `no`), or on the `error` state after the start |
-| May have started | On an `error` outcome whose robot may have started (`mayHaveStarted` is `possibly` or `unknown`, « Errors »). The error is shown, and the rows above apply again from the next vacuum state |
+| May have started | On an `error` outcome whose robot may have started (`mayHaveStarted` is `possibly` or `unknown`, « Errors »). The error is shown, and the rows of this table apply again from the next vacuum state |
 | Not started | On a `changed` outcome: nothing was sent, and the user is asked to try again |
 | Status unknown | On `unavailable` or `unknown`, or when the vacuum leaves `hass.states`. It does not end the progress: when a state above comes back, its row applies again |
 

@@ -56,6 +56,7 @@ The result of the start shows on the card and the room after the dialog closes, 
 
 - The picker closes before the confirmation opens, so one Escape never closes two layers.
 - A card has at most one confirmation open at a time.
+- The picker closes without a choice on Escape or on a click outside it.
 - When the confirmation resolves (confirmed or cancelled), and when the picker closes without a choice, the card moves the focus back to the room. The standard confirmation lives outside the card, and the element that had the focus before it opened (a row of the closed picker) is gone.
 
 ### State colours
@@ -77,15 +78,15 @@ Colour is never the only signal: each state also has a text label.
 
 ### Selection accent
 
-The selected room and the active robot use `--primary-color`. Fills use `rgba(var(--rgb-primary-color), <alpha>)`. Source: [§ 6 « Theme CSS variables »](../research/ha-frontend.md#6-theme-css-variables).
+The selected room and the active robot use `--primary-color`. Where a fill in this accent is needed (for example the active robot's row), it uses `rgba(var(--rgb-primary-color), <alpha>)`. Source: [§ 6 « Theme CSS variables »](../research/ha-frontend.md#6-theme-css-variables).
 
 Selection, progress and focus can apply to one room at once, and in the default theme `--primary-color` (`#009ac7`) and the cleaning colour (`#009688`) are close. So each uses its own channel: selection is the room's stroke, progress is a light fill with its label, and focus is a ring outside the shape. All three stay distinguishable together.
 
 ### Focus
 
-Focus uses `--ha-color-focus` with a `--primary-color` fallback, 2 px wide, offset 2 px, on `:focus-visible`. There is no global `--ha-focus-ring`. On SVG shapes the card draws a stroke on focus until the live check of the Epic 5 research issue (#99) confirms `outline` there. Source: [§ 10 « Focus rings »](../research/ha-frontend.md#10-focus-rings).
+Focus uses `--ha-color-focus` with a `--primary-color` fallback, 2 px wide, offset 2 px, on `:focus-visible`. There is no global `--ha-focus-ring`. On SVG shapes, until the live check of the Epic 5 research issue (#99) confirms `outline` there, the card draws a separate shape around the focused room, never on the room's own stroke, which shows the selection. Source: [§ 10 « Focus rings »](../research/ha-frontend.md#10-focus-rings).
 
-The ring must reach 3:1 against the colours next to it (WCAG 1.4.11). In the default light theme `--ha-color-focus` (`#989898`) on the card background (`#ffffff`) is about 2.9:1, and over a plan picture it is unknown. This is open: the focus UI issue checks it, and the owner chooses the fix if it fails (« Open points »).
+The ring must reach 3:1 against the colours next to it (WCAG 1.4.11). In the default light theme `--ha-color-focus` (`#989898`) on the card background (`#ffffff`) is about 2.9:1, so it fails there; over a plan picture the contrast is unknown. The focus UI issue proposes a fix, for example a two-tone ring, and the owner chooses (« Open points »).
 
 ### Motion
 
@@ -109,5 +110,5 @@ A room outline scales with its plan, so a small room can be under 44 px on a pho
 
 These are left to the UI issue that builds each part. Any public choice among them goes to the owner:
 
-1. Focus ring contrast in the light theme and over plan pictures (« Focus »).
+1. Focus ring contrast: it fails in the light theme, and is unknown over plan pictures (« Focus »).
 2. How a room smaller than 44 px stays reachable, for example a larger hit area or the room list (« Touch targets »).
