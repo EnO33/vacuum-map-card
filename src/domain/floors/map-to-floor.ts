@@ -1,7 +1,7 @@
 import { type AreaMappingResult, areasOfMap } from "../mapping/area-mapping";
 import type { Area, Floor } from "../registry/types";
 import type { StoredMap } from "../robot/stored-map";
-import { registryNameKey } from "../text/registry-name";
+import { matchesRegistryName, registryNameKey } from "../text/registry-name";
 
 /** What a robot's stored maps are linked to floors with (ADR 0005 « Map to floor »). */
 export interface MapFloorContext {
@@ -85,6 +85,6 @@ function fromMapName(map: StoredMap, { floors }: MapFloorContext): ReadonlySet<s
   const { mapName } = map;
   if (map.pictureState === "disabled" || mapName === undefined || mapName === map.mapId) return new Set();
   const key = registryNameKey(mapName);
-  const named = floors.filter((floor) => [floor.name, ...floor.aliases].some((n) => registryNameKey(n) === key));
+  const named = floors.filter((floor) => matchesRegistryName(key, floor));
   return new Set(named.map((floor) => floor.floorId));
 }
