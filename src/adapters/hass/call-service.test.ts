@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, type MockInstance, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { FakeFrontendHass } from "../../../test/fakes/frontend-hass";
 import serviceErrors from "../../../test/fixtures/ha-core/synthetic/service_errors.json" with { type: "json" };
+import { expectNoConsoleOutput } from "../../../test/helpers/no-console";
 import type { ServiceCall, ServiceResult } from "../../app/ports/service-call";
 import { MAX_TEXT_LENGTH } from "../../domain/text/limits";
 import { callService } from "./call-service";
@@ -26,18 +27,8 @@ async function failingWith(value: unknown, kind: "reject" | "throw" = "reject"):
   return result;
 }
 
-const methods: ("log" | "info" | "warn" | "error" | "debug")[] = ["log", "info", "warn", "error", "debug"];
-let spies: MockInstance[] = [];
-
-beforeEach(() => {
-  spies = methods.map((method) => vi.spyOn(console, method));
-});
-
-afterEach(() => {
-  // Nothing is logged on any path.
-  for (const spy of spies) expect(spy).not.toHaveBeenCalled();
-  vi.restoreAllMocks();
-});
+// Nothing is logged on any path.
+expectNoConsoleOutput();
 
 describe("callService", () => {
   it("reads the live hass on every call, sending once with notifyOnError and returnResponse false", async () => {
