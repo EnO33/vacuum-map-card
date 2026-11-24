@@ -1,8 +1,12 @@
 import type { Adapters } from "../adapters/create-adapters";
 import { createDisplay } from "../adapters/hass/display";
 import { type FrontendHass, isFrontendHass } from "../adapters/hass/frontend-hass";
+import { type CardConfig, NO_OPTIONS } from "../app/config/card-config";
+import { type ConfiguredBuilder, createConfiguredBuilder } from "../app/config/configured-builder";
+import { createConfiguredSources } from "../app/config/configured-sources";
 import type { FloorModel } from "../app/floor-model/floor-model";
 import type { FloorModelBuilder } from "../app/floor-model/memo";
+import type { RoomSource } from "../app/ports/room-source";
 import { createProgressTracker } from "../app/progress/progress-tracker";
 import { type ItemRef, robotsForItem } from "../app/robots-for-item/robots-for-item";
 import { type CleanController, createCleanController } from "../app/start-clean/clean-controller";
@@ -28,7 +32,9 @@ export interface SessionDependencies {
 
 interface Running {
   readonly adapters: Adapters;
-  readonly build: FloorModelBuilder;
+  /** The sources of the `robots` option: the model, the picker and the controller read the same set. */
+  readonly sources: () => readonly RoomSource[];
+  readonly build: ConfiguredBuilder;
   /** One per attachment: its outcomes stay while the card is attached, whatever happens to the dialogs. */
   readonly controller: CleanController;
   /** Stops the card's progress from following this attachment's controller. */
@@ -70,6 +76,7 @@ export class CardSession {
   readonly #tracker = createProgressTracker();
   /** The language of the last accepted `hass`, read without the adapters, so every state speaks it. */
   readonly #display = createDisplay(() => this.#hass);
+  #config: CardConfig = NO_OPTIONS;
 
   constructor(dependencies: () => SessionDependencies, onChange: () => void) {
     this.#dependencies = dependencies;
@@ -116,6 +123,12 @@ export class CardSession {
     this.#refresh();
   }
 
+  /** The card's parsed options: `robots` narrows the sources, `floors` the model's floors. */
+  setConfig(config: CardConfig): void {
+    this.#config = config;
+    this.#refresh();
+  }
+
   connect(): void {
     this.#connected = true;
     this.#start();
@@ -134,11 +147,16 @@ export class CardSession {
     try {
       // Nothing can throw between `subscribe` and `#running`, so `#stop` always releases what was taken.
       const dependencies = this.#dependencies();
-      const build = dependencies.createModelBuilder();
+      const build = createConfiguredBuilder(dependencies.createModelBuilder());
       const adapters = dependencies.createAdapters(() => this.#latestHass());
-      const controller = createCleanController({ hass: adapters.hass, sources: () => adapters.sources() });
+      const sources = createConfiguredSources(
+        () => adapters.sources(),
+        () => this.#config.robots,
+      );
+      const controller = createCleanController({ hass: adapters.hass, sources });
       this.#running = {
         adapters,
+        sources,
         build,
         controller,
         stopFollowing: this.#tracker.follow(controller),
@@ -188,7 +206,7 @@ export class CardSession {
     try {
       const { adapters } = running;
       const tracker = this.#tracker;
-      const model = running.build(adapters.hass, adapters.sources());
+      const model = running.build(adapters.hass, running.sources(), this.#config.floors);
       tracker.observe(adapters.hass);
       if (model.loading) return model.loadFailed ? LOAD_FAILED : LOADING;
       const shown = this.#state.view.kind === "ready" ? this.#state.view : undefined;
@@ -201,9 +219,10 @@ export class CardSession {
         plans: planDisplaysOf(model, adapters),
         robotNames: kept(shown?.robotNames, robotNamesOf(model.robots, adapters)),
         isAdmin: adapters.hass.isAdmin(),
-        picked: kept(shown?.picked, this.#picked(model, adapters)),
+        picked: kept(shown?.picked, this.#picked(model, running)),
         gone: selection.kind === "gone" ? selection.name : undefined,
         progress: tracker.entries(),
+        narrowed: { robots: this.#config.robots !== undefined, floors: this.#config.floors !== undefined },
       };
     } catch {
       return FAILED;
@@ -214,12 +233,12 @@ export class CardSession {
    * The selected item with its robots (`robotsForItem`); `undefined` when nothing is selected. A failed read ends the
    * selection, so the picker closes and does not come back by itself.
    */
-  #picked(model: FloorModel, adapters: Adapters): PickedItem | undefined {
+  #picked(model: FloorModel, { adapters, sources }: Running): PickedItem | undefined {
     const selection = this.#selection;
     if (selection.kind !== "open" || selection.name === undefined) return undefined;
     const { item, name } = selection;
     try {
-      return { item, name, candidates: robotsForItem(model, item, adapters.hass, adapters.sources()) };
+      return { item, name, candidates: robotsForItem(model, item, adapters.hass, sources()) };
     } catch {
       this.#selection = NO_SELECTION;
       return undefined;

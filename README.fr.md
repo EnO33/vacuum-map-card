@@ -62,14 +62,28 @@ Le Marketplace crée aussi une entité de mise à jour nommée « Vacuum Map Car
 type: custom:vacuum-map-card
 ```
 
-La carte n'a encore aucune option. Options prévues (cible, pas définitive, ignorées par la 0.1.0) :
+C'est tout ce dont la carte a besoin : étages, pièces et robots sont découverts. Aucune option n'est obligatoire :
 
 ```yaml
-# Tout sera découvert par défaut : étages, pièces, robots.
-# Réglages facultatifs :
-floors: [ground_floor, first_floor]   # identifiants d'étages Home Assistant, dans l'ordre d'affichage
-robots: [vacuum.my_vacuum, vacuum.my_mop]
+type: custom:vacuum-map-card
+title: Ménage
+robots:
+  - vacuum.my_vacuum
+  - vacuum.my_mop
+floors:
+  - ground_floor
+  - first_floor
 ```
+
+| Option | Type | Par défaut | Effet |
+|---|---|---|---|
+| `title` | texte, 255 caractères au plus | aucun | Affiché en en-tête de la carte. Sans titre, la carte n'a pas d'en-tête. |
+| `robots` | liste d'identifiants d'entités aspirateur | tous les robots trouvés | Seuls les plans de ces robots sont affichés, et seuls ces robots peuvent être choisis pour nettoyer une pièce. |
+| `floors` | liste d'identifiants d'étages Home Assistant | tous les étages | Un filtre : seuls ces étages sont affichés, toujours dans l'ordre des étages de Home Assistant (pas celui de la liste), et les plans sans étage ne le sont pas. Un identifiant d'étage qui n'existe plus est ignoré. Si aucun étage listé n'a de plan, la carte le dit. |
+
+Une option vide (`title:` sans valeur, une liste vide) revient à ne pas la mettre. Une configuration incorrecte, par exemple une option inconnue, un robot qui n'est pas un identifiant d'entité `vacuum.` ou une entrée en double, est signalée par Home Assistant à la place de la carte, avec l'option concernée (message en anglais). Les clés communes à toutes les cartes de Home Assistant (comme `grid_options` ou `visibility`) et `card_mod` sont acceptées.
+
+`robots` et `floors` choisissent seulement ce que cette carte affiche et propose. Ce ne sont pas des permissions : elles n'empêchent personne de commander un robot ailleurs dans Home Assistant.
 
 Un éditeur visuel est prévu.
 

@@ -193,10 +193,10 @@ describe("VacuumMapCard sizing", () => {
   it("estimates its size synchronously from the number of plans and their lists or notes", async () => {
     const card = await mount(fixtureHass());
     expect(withExtras(card)).toBeGreaterThan(0);
-    expect(card.getCardSize()).toBe(1 + 5 * 7 + 2 * withExtras(card) + 1);
+    expect(card.getCardSize()).toBe(5 * 7 + 2 * withExtras(card) + 1);
     changeModel((model) => ({ ...model, floors: model.floors.slice(0, 1), noFloor: [] }));
     const one = await mount(fixtureHass());
-    expect(one.getCardSize()).toBe(1 + 7 + 2 * withExtras(one));
+    expect(one.getCardSize()).toBe(7 + 2 * withExtras(one));
   });
 
   it("counts the robots' notes, with or without plans", async () => {
@@ -206,15 +206,15 @@ describe("VacuumMapCard sizing", () => {
     });
     changeModel((model) => issues({ ...model, floors: model.floors.slice(0, 1), noFloor: [] }));
     const one = await mount(fixtureHass());
-    expect(one.getCardSize()).toBe(1 + 7 + 2 * withExtras(one) + 2);
+    expect(one.getCardSize()).toBe(7 + 2 * withExtras(one) + 2);
     changeModel((model) => issues({ ...model, floors: [], noFloor: [] }));
-    expect((await mount(fixtureHass())).getCardSize()).toBe(2 + 2);
+    expect((await mount(fixtureHass())).getCardSize()).toBe(1 + 2);
   });
 
   it("estimates a small size before the plans are read, and when there is none", async () => {
-    expect(newCard().getCardSize()).toBe(2);
+    expect(newCard().getCardSize()).toBe(1);
     changeModel((model) => ({ ...model, floors: [], noFloor: [] }));
-    expect((await mount(fixtureHass())).getCardSize()).toBe(2);
+    expect((await mount(fixtureHass())).getCardSize()).toBe(1);
   });
 
   it.each([

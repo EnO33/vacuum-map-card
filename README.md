@@ -62,14 +62,28 @@ The Marketplace also creates an update entity named « Vacuum Map Card ». A til
 type: custom:vacuum-map-card
 ```
 
-The card has no option yet. Planned options (target design, not final, ignored by 0.1.0):
+That is all the card needs: floors, rooms and robots are discovered. No option is required:
 
 ```yaml
-# Everything will be discovered by default: floors, rooms, robots.
-# Optional overrides:
-floors: [ground_floor, first_floor]   # Home Assistant floor ids, in display order
-robots: [vacuum.my_vacuum, vacuum.my_mop]
+type: custom:vacuum-map-card
+title: Cleaning
+robots:
+  - vacuum.my_vacuum
+  - vacuum.my_mop
+floors:
+  - ground_floor
+  - first_floor
 ```
+
+| Option | Type | Default | What it does |
+|---|---|---|---|
+| `title` | text, up to 255 characters | none | Shown as the card's header. Without a title the card has no header. |
+| `robots` | list of vacuum entity ids | every robot found | Only these robots' plans are shown, and only these robots can be picked to clean a room. |
+| `floors` | list of Home Assistant floor ids | every floor | A filter: only these floors are shown, always in Home Assistant's floor order (not the order of the list), and plans on no floor are not shown. A floor id that no longer exists is ignored. If no listed floor has a plan, the card says so. |
+
+An empty option (`title:` with no value, an empty list) is the same as leaving it out. A wrong configuration, such as an unknown option, a robot that is not a `vacuum.` entity id or an entry listed twice, is shown by Home Assistant in place of the card, with the option it is about. Home Assistant's own card keys (such as `grid_options` or `visibility`) and `card_mod` are accepted.
+
+`robots` and `floors` only choose what this card shows and offers. They are not permissions: they do not stop anyone from controlling a robot elsewhere in Home Assistant.
 
 A visual editor is planned.
 

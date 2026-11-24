@@ -1,8 +1,8 @@
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { createAdapters } from "../adapters/create-adapters";
+import { type CardConfig, NO_OPTIONS, parseConfig } from "../app/config/card-config";
 import { createFloorModelBuilder } from "../app/floor-model/memo";
 import { bodyStyles, cardBody } from "./card-body";
-import { CARD_NAME } from "./card-meta";
 import { CardSession, type SessionDependencies } from "./card-session";
 import { cardSize } from "./card-size";
 import { CardStart } from "./card-start";
@@ -78,7 +78,7 @@ export class VacuumMapCard extends LitElement {
   preview: unknown = false;
 
   #hass: unknown;
-  #config: unknown;
+  #config: CardConfig = NO_OPTIONS;
   /** The room or list button of the last selection: the picker's anchor and focus return. */
   #opener: Focusable | undefined;
   /** The status region's words beyond the view's: the last start's notice and the last progress change. */
@@ -117,14 +117,26 @@ export class VacuumMapCard extends LitElement {
     this.#session.setHass(value);
   }
 
-  /** Raw dashboard configuration: untrusted until a parser exists (card options, #115). */
-  get config(): unknown {
+  /**
+   * Read by the card picker for a new card (`docs/research/ha-frontend.md` § 8): no option, everything is discovered.
+   */
+  static getStubConfig(): Record<string, never> {
+    return {};
+  }
+
+  /** The parsed options. */
+  get config(): CardConfig {
     return this.#config;
   }
 
-  /** Required by Home Assistant: called when the card is created and when its configuration changes. */
+  /**
+   * Required by Home Assistant: called when the card is created and when its configuration changes. A wrong
+   * configuration throws, and Home Assistant shows the message instead of the card.
+   */
   setConfig(config: unknown): void {
-    this.#config = config;
+    this.#config = parseConfig(config);
+    this.#session.setConfig(this.#config);
+    this.requestUpdate();
   }
 
   /**
@@ -138,7 +150,7 @@ export class VacuumMapCard extends LitElement {
 
   /** Read by a masonry view, in 50 px units; synchronous so Home Assistant never waits for it. */
   getCardSize(): number {
-    return cardSize(this.#session.state.view);
+    return cardSize(this.#session.state.view, this.#config.title !== undefined);
   }
 
   override connectedCallback(): void {
@@ -162,11 +174,13 @@ export class VacuumMapCard extends LitElement {
     this.#status.update(this.#session.state.view);
   }
 
-  // The title is a light-DOM child of ha-card, so it stays readable when ha-card is not defined.
+  // The title, as text, is a light-DOM child of ha-card, so it stays readable when ha-card is not defined.
   // Do not style `.card-header` or `h1` here: these styles would override ha-card's native slotted header style.
   protected override render(): TemplateResult {
+    const { title } = this.#config;
+    const header = title === undefined ? nothing : html`<h1 class="card-header">${title}</h1>`;
     return html`<ha-card
-      ><h1 class="card-header">${CARD_NAME}</h1>
+      >${header}
       <div
         class="content"
         tabindex="-1"

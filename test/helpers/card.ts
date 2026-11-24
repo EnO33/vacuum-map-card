@@ -138,10 +138,11 @@ export function noRobotHarness(): AdaptersHarness {
   return harness;
 }
 
-export function newCard(): TestCard {
+/** A new card with the dashboard's `type` and `options`. */
+export function newCard(options: object = {}): TestCard {
   const card = document.createElement(TAG);
   if (!(card instanceof TestCard)) throw new Error("element is not a TestCard");
-  card.setConfig({ type: "custom:vacuum-map-card" });
+  card.setConfig({ type: "custom:vacuum-map-card", ...options });
   return card;
 }
 
@@ -158,8 +159,8 @@ export async function attach(card: TestCard): Promise<TestCard> {
 }
 
 /** A new card given `hass` before it is attached, as a dashboard does. */
-export async function mount(hass: unknown): Promise<TestCard> {
-  const card = newCard();
+export async function mount(hass: unknown, options: object = {}): Promise<TestCard> {
+  const card = newCard(options);
   card.hass = hass;
   return attach(card);
 }

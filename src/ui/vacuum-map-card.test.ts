@@ -22,8 +22,8 @@ const noop = () => undefined;
 useTestCard();
 
 describe("VacuumMapCard lifecycle", () => {
-  it("stores the configuration it receives", () => {
-    expect(newCard().config).toStrictEqual({ type: "custom:vacuum-map-card" });
+  it("has no option when the configuration has only its type", () => {
+    expect(newCard().config).toStrictEqual({ title: undefined, robots: undefined, floors: undefined });
   });
 
   it("starts the adapters once connected with a valid hass, and stops them when disconnected", async () => {
