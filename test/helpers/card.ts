@@ -5,6 +5,8 @@ import { type Adapters, createAdapters } from "../../src/adapters/create-adapter
 import type { FrontendHass } from "../../src/adapters/hass/frontend-hass";
 import { createFloorModelBuilder, type FloorModelBuilder } from "../../src/app/floor-model/memo";
 import type { SessionDependencies } from "../../src/ui/card-session";
+import { PLAN_PICTURE_ELEMENT, PlanPicture } from "../../src/ui/plan-picture";
+import { defineOnce } from "../../src/ui/register";
 import { VacuumMapCard } from "../../src/ui/vacuum-map-card";
 import type { FakeFrontendHass } from "../fakes/frontend-hass";
 import { type AdaptersHarness, adaptersHarness } from "./adapters";
@@ -55,7 +57,8 @@ function countingDependencies(): SessionDependencies {
 /** Defines the element, fakes the timers, resets the injected dependencies, and checks no timer is left. */
 export function useTestCard(): void {
   beforeAll(() => {
-    if (customElements.get(TAG) === undefined) customElements.define(TAG, TestCard);
+    defineOnce(customElements, TAG, TestCard);
+    defineOnce(customElements, PLAN_PICTURE_ELEMENT, PlanPicture);
   });
   beforeEach(() => {
     vi.useFakeTimers();

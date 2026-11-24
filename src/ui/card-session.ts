@@ -3,8 +3,10 @@ import { createDisplay } from "../adapters/hass/display";
 import { type FrontendHass, isFrontendHass } from "../adapters/hass/frontend-hass";
 import type { FloorModel } from "../app/floor-model/floor-model";
 import type { FloorModelBuilder } from "../app/floor-model/memo";
+import { sameValue } from "../app/floor-model/same-value";
 import type { Locale } from "../i18n/catalogs";
 import { resolveLocale } from "../i18n/locale";
+import { type PlanDisplays, planDisplaysOf } from "./plan-display";
 
 /** What the session makes for each attachment of the card; the card passes the real ones, tests pass fakes. */
 export interface SessionDependencies {
@@ -20,7 +22,13 @@ export type CardView =
   | { readonly kind: "loading" }
   | { readonly kind: "load_failed" }
   | { readonly kind: "failed" }
-  | { readonly kind: "ready"; readonly model: FloorModel; readonly integrations: readonly string[] };
+  | {
+      readonly kind: "ready";
+      readonly model: FloorModel;
+      readonly integrations: readonly string[];
+      /** Read again on every refresh, so a new image state gives a new picture URL (ADR 0005 « Plan pictures »). */
+      readonly plans: PlanDisplays;
+    };
 
 export interface CardState {
   readonly locale: Locale;
@@ -47,7 +55,7 @@ function attempt(action: () => void): void {
 
 function sameView(a: CardView, b: CardView): boolean {
   if (a.kind !== "ready" || b.kind !== "ready") return a.kind === b.kind;
-  return a.model === b.model && a.integrations === b.integrations;
+  return a.model === b.model && a.integrations === b.integrations && sameValue(a.plans, b.plans);
 }
 
 /**
@@ -154,7 +162,7 @@ export class CardSession {
       const { adapters } = running;
       const model = running.build(adapters.hass, adapters.sources());
       if (model.loading) return model.loadFailed ? LOAD_FAILED : LOADING;
-      return { kind: "ready", model, integrations: adapters.integrations };
+      return { kind: "ready", model, integrations: adapters.integrations, plans: planDisplaysOf(model, adapters) };
     } catch {
       return FAILED;
     }

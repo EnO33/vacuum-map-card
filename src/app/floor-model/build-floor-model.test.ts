@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FakeHass } from "../../../test/fakes/fake-hass";
 import { FakeRoomSource } from "../../../test/fakes/fake-room-source";
+import { withRobot } from "../../../test/helpers/sources";
 import { buildFloorModel } from "./build-floor-model";
 import type { Plan } from "./floor-model";
 
@@ -91,6 +92,27 @@ describe("buildFloorModel on the fixtures", () => {
       },
     ]);
     expect(vacuum?.roomsMapIssue).toBeUndefined();
+  });
+
+  it("names each plan after its stored map, numbered by the robot's stored maps; a rooms map not paired has neither", () => {
+    expect(model.robots.map((r) => r.plans.map((p) => [p.imageEntityId, p.mapName, p.mapNumber]))).toEqual([
+      [
+        ["image.robot_one_rooms_map", undefined, undefined],
+        ["image.robot_one_floor_plan_mapa_q1w2e3", "Ground floor", 1],
+        ["image.robot_one_floor_plan_mapb_z9x8c7", "Upper floor", 2],
+      ],
+      [
+        ["image.robot_two_rooms_map", undefined, undefined],
+        ["image.robot_two_floor_plan_mapc_k4l5m6", "Ground floor", 1],
+        ["image.robot_two_floor_plan_mapd_r7t8y9", "Upper level", 2],
+      ],
+    ]);
+  });
+
+  it("keeps a stored map's number when the rooms map adds no plan", () => {
+    const source = withRobot(new FakeRoomSource(), "vacuum.robot_two", () => ({ roomsMap: undefined }));
+    const mop = buildFloorModel(new FakeHass(), [source]).robots.find((r) => r.vacuumEntityId === "vacuum.robot_two");
+    expect(mop?.plans.map((p) => p.mapNumber)).toEqual([1, 2]);
   });
 
   it("is not loading once the registries are read", () => {

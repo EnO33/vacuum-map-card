@@ -35,10 +35,12 @@ export function robotModelOf(inputs: RobotInputs, registry: Registry, plansFor: 
   const floorOf = cached((map: StoredMap) => floorOfStoredMap(map, context));
   const storedPlans = () =>
     robot.storedMaps.map(
-      (map): Plan => ({
+      (map, index): Plan => ({
         robot: id,
         imageEntityId: map.floorPlanEntityId,
         pictureState: map.pictureState,
+        mapName: map.mapName,
+        mapNumber: index + 1,
         placement: toPlacement(floorOf(map)),
         content: roomListOf(map, context, context),
       }),
@@ -48,12 +50,16 @@ export function robotModelOf(inputs: RobotInputs, registry: Registry, plansFor: 
   const outlines = outlinesOf(robot.roomsMap, (snapshot) => plansFor(id, snapshot));
   if (outlines.kind !== "plan") return { ...base, plans: storedPlans(), rooms: [], roomsMapIssue: outlines };
   const pairing = pairRoomsMap(robot, { mapping, lastSeen, floorOf });
-  const { plan: roomsMapPlan, rooms } = outlinesPlan(id, outlines.roomsMap, outlines.plan, pairing, {
-    ...context,
-    lastSeen,
-  });
-  const plans = pairing.kind === "paired" ? [roomsMapPlan] : [roomsMapPlan, ...storedPlans()];
-  return { ...base, plans, rooms, roomsMapIssue: undefined };
+  const outlined = outlinesPlan(id, outlines.roomsMap, outlines.plan, pairing, { ...context, lastSeen });
+  const { rooms } = outlined;
+  if (pairing.kind !== "paired") {
+    const roomsMapPlan = { ...outlined.plan, mapName: undefined, mapNumber: undefined };
+    return { ...base, plans: [roomsMapPlan, ...storedPlans()], rooms, roomsMapIssue: undefined };
+  }
+  // A paired rooms map shows its stored map: it takes that map's name and number.
+  const index = robot.storedMaps.findIndex((map) => map.mapId === pairing.mapId);
+  const roomsMapPlan = { ...outlined.plan, mapName: robot.storedMaps[index]?.mapName, mapNumber: index + 1 };
+  return { ...base, plans: [roomsMapPlan], rooms, roomsMapIssue: undefined };
 }
 
 /** `compute` called at most once per key: pairing and the stored map plans share one floor link per map. */
@@ -86,7 +92,7 @@ function outlinesPlan(
   plan: RoomsPlan,
   pairing: Pairing,
   context: Registry & RobotOptions,
-): { readonly plan: Plan; readonly rooms: readonly RobotRoom[] } {
+): { readonly plan: Omit<Plan, "mapName" | "mapNumber">; readonly rooms: readonly RobotRoom[] } {
   const placement = placementOf(pairing);
   const floorId = placement.kind === "floor" ? placement.floorId : undefined;
   const segmentIdOf = pairing.kind === "paired" ? pairing.segmentIdOf : undefined;

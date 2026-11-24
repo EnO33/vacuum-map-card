@@ -33,10 +33,10 @@ describe("VacuumMapCard states", () => {
     expect(statusText(await mount(hass))).toBe(LOADING);
   });
 
-  it("lists the floor names outside the status region once the model is read", async () => {
+  it("shows the plans outside the status region once the model is read", async () => {
     const card = await mount(fixtureHass());
-    const items = [...shadowOf(card).querySelectorAll("li")].map((li) => li.textContent?.trim());
-    expect(items).toStrictEqual(["Ground floor", "Upper floor", "Plans without a floor"]);
+    expect(shadowOf(card).querySelectorAll("section")).toHaveLength(3);
+    expect(statusRegion(card)?.querySelector("section")).toBeNull();
     expect(statusText(card)).toBe("");
   });
 
@@ -74,7 +74,7 @@ describe("VacuumMapCard states", () => {
     }));
     const card = await mount(fixtureHass());
     expect(statusText(card)).toBe("No floor plan found.");
-    expect(shadowOf(card).querySelector("ul")).toBeNull();
+    expect(shadowOf(card).querySelector("section")).toBeNull();
   });
 
   it("speaks French when the user's language is French", async () => {

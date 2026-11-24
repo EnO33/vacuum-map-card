@@ -4,6 +4,9 @@ import { createFloorModelBuilder } from "../app/floor-model/memo";
 import { bodyStyles, cardBody } from "./card-body";
 import { CARD_NAME } from "./card-meta";
 import { CardSession, type CardView, type SessionDependencies } from "./card-session";
+import { cardSize } from "./card-size";
+import { layoutStyles } from "./floor-layout";
+import { planMessageStyles } from "./plan-picture";
 
 const FAILED: CardView = Object.freeze({ kind: "failed" });
 
@@ -18,9 +21,36 @@ export class VacuumMapCard extends LitElement {
       :host {
         display: block;
       }
+      /*
+       * A sections grid sizes the cell: the card fills it (docs/research/ha-frontend.md § 7), and the plans scroll
+       * inside it when the user sets fewer rows than they need.
+       */
+      :host([layout="grid"]),
+      :host([layout="grid"]) ha-card {
+        height: 100%;
+      }
+      :host([layout="grid"]) ha-card {
+        display: flex;
+        flex-direction: column;
+      }
+      :host([layout="grid"]) .content {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+      }
     `,
     bodyStyles,
+    layoutStyles,
+    planMessageStyles,
   ];
+
+  static override properties = { layout: { reflect: true } };
+
+  /**
+   * Set by Home Assistant: `"grid"` in a sections view (the card fills its cell), `"panel"` in a panel view, unset in
+   * masonry. Any value but `"grid"` lets the height follow the content.
+   */
+  declare layout: string | undefined;
 
   #hass: unknown;
   #config: unknown;
@@ -50,6 +80,20 @@ export class VacuumMapCard extends LitElement {
   /** Required by Home Assistant: called when the card is created and when its configuration changes. */
   setConfig(config: unknown): void {
     this.#config = config;
+  }
+
+  /**
+   * Read by a sections view (`LovelaceGridOptions`, `docs/research/ha-frontend.md` § 7): the section's full width so
+   * plans can sit side by side, the content's height, and at least half the section so a plan stays readable. A new
+   * object on each call; the user's `grid_options` override it.
+   */
+  getGridOptions(): { columns: number; rows: "auto"; min_columns: number } {
+    return { columns: 12, rows: "auto", min_columns: 6 };
+  }
+
+  /** Read by a masonry view, in 50 px units; synchronous so Home Assistant never waits for it. */
+  getCardSize(): number {
+    return cardSize(this.#session.state.view);
   }
 
   override connectedCallback(): void {

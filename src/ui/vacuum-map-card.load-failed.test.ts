@@ -38,7 +38,7 @@ describe("VacuumMapCard when a list cannot be fetched", () => {
       hass.connection.reconnect();
       await settle(card);
       expect(statusText(card)).toBe("");
-      expect(shadowOf(card).querySelector("li")?.textContent?.trim()).toBe("Ground floor");
+      expect(shadowOf(card).querySelector("section > h2")?.textContent?.trim()).toBe("Ground floor");
     },
   );
 

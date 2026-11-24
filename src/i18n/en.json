@@ -7,6 +7,15 @@
   "card.no_robot_hint": "This card works with robots from the {integration} integration.",
   "card.no_plan": "No floor plan found.",
   "card.no_floor": "Plans without a floor",
+  "plan.alt": "Floor plan, {name}",
+  "plan.generic_name": "Map {number}",
+  "plan.current_map": "Current map",
+  "plan.alt_no_floor": "Floor plan, {map}, {robot}",
+  "plan.disabled": "This floor plan is disabled in Home Assistant.",
+  "plan.unavailable": "This floor plan is unavailable.",
+  "plan.unknown": "This floor plan has no picture yet.",
+  "plan.no_picture": "This floor plan picture cannot be shown right now.",
+  "plan.load_failed": "The floor plan picture could not be loaded. The card tries again when the plan changes.",
   "confirm.cancel": "Cancel",
   "confirm.ok": "OK"
 }
