@@ -12,9 +12,13 @@ export interface SessionDependencies {
   createModelBuilder(): FloorModelBuilder;
 }
 
-/** What the card shows: `ready` only once the model is no longer loading. */
+/**
+ * What the card shows: `ready` only once the model is no longer loading; `load_failed` while it is loading because a
+ * list could not be fetched (`FloorModel.loadFailed`), until a later fetch succeeds.
+ */
 export type CardView =
   | { readonly kind: "loading" }
+  | { readonly kind: "load_failed" }
   | { readonly kind: "failed" }
   | { readonly kind: "ready"; readonly model: FloorModel; readonly integrations: readonly string[] };
 
@@ -25,6 +29,7 @@ export interface CardState {
 
 const LOADING: CardView = Object.freeze({ kind: "loading" });
 const FAILED: CardView = Object.freeze({ kind: "failed" });
+const LOAD_FAILED: CardView = Object.freeze({ kind: "load_failed" });
 
 interface Running {
   readonly adapters: Adapters;
@@ -148,7 +153,8 @@ export class CardSession {
     try {
       const { adapters } = running;
       const model = running.build(adapters.hass, adapters.sources());
-      return model.loading ? LOADING : { kind: "ready", model, integrations: adapters.integrations };
+      if (model.loading) return model.loadFailed ? LOAD_FAILED : LOADING;
+      return { kind: "ready", model, integrations: adapters.integrations };
     } catch {
       return FAILED;
     }

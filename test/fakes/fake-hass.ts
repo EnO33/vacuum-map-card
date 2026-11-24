@@ -28,6 +28,8 @@ export interface FakeHassSettings {
   readonly floors?: readonly Floor[];
   /** Before the floor list is read: `floors()` gives `undefined`. */
   readonly floorsNotLoaded?: boolean;
+  /** A list the model waits for could not be fetched: `fetchFailed()` gives `true`. */
+  readonly fetchFailed?: boolean;
   readonly areas?: ReadonlyMap<string, Area>;
   readonly vacuumOptions?: ReadonlyMap<string, VacuumOptions | Unsupported<VacuumOptionsFailure>>;
 }
@@ -61,6 +63,10 @@ export class FakeHass implements HassPort {
   floors(): readonly Floor[] | undefined {
     if (this.#settings.floorsNotLoaded) return undefined;
     return this.#settings.floors ?? floors;
+  }
+
+  fetchFailed(): boolean {
+    return this.#settings.fetchFailed ?? false;
   }
 
   areas(): ReadonlyMap<string, Area> {

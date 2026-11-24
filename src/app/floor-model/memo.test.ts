@@ -71,6 +71,15 @@ describe("createFloorModelBuilder", () => {
     expect(build(new FakeHass({ areas }), [new FakeRoomSource()])).not.toBe(first);
   });
 
+  it("changes the model when a failed fetch starts or ends", () => {
+    const build = createFloorModelBuilder();
+    const loading = build(new FakeHass({ floorsNotLoaded: true }), [new FakeRoomSource()]);
+    const failed = build(new FakeHass({ floorsNotLoaded: true, fetchFailed: true }), [new FakeRoomSource()]);
+    expect(failed).not.toBe(loading);
+    expect(failed.loadFailed).toBe(true);
+    expect(build(new FakeHass({ floorsNotLoaded: true }), [new FakeRoomSource()]).loadFailed).toBe(false);
+  });
+
   it("does not solve again for a change that does not touch any rooms map", () => {
     const build = createFloorModelBuilder();
     build(new FakeHass(), [new FakeRoomSource()]);

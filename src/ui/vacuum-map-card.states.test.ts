@@ -136,6 +136,7 @@ describe("VacuumMapCard errors", () => {
   it("shows a short error when rendering the model throws", async () => {
     const throwing: FloorModel = {
       loading: false,
+      loadFailed: false,
       floors: [],
       noFloor: [],
       get robots(): never {

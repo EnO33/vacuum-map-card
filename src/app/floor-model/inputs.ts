@@ -18,6 +18,8 @@ export interface RobotInputs {
 export interface FloorModelInputs {
   /** `undefined` before the floor list is read. */
   readonly floors: readonly Floor[] | undefined;
+  /** `HassPort.fetchFailed()`: a list the model waits for could not be fetched. */
+  readonly fetchFailed: boolean;
   /** `false` while a source has not read its robots yet. */
   readonly sourcesLoaded: boolean;
   readonly areas: ReadonlyMap<string, Area>;
@@ -27,6 +29,7 @@ export interface FloorModelInputs {
 export function readInputs(hass: HassPort, sources: readonly RoomSource[]): FloorModelInputs {
   return {
     floors: hass.floors(),
+    fetchFailed: hass.fetchFailed(),
     sourcesLoaded: sources.every((source) => source.loaded()),
     areas: hass.areas(),
     robots: sources
@@ -43,6 +46,7 @@ export function readInputs(hass: HassPort, sources: readonly RoomSource[]): Floo
 export function comparable(inputs: FloorModelInputs): unknown {
   return {
     floors: inputs.floors,
+    fetchFailed: inputs.fetchFailed,
     sourcesLoaded: inputs.sourcesLoaded,
     areas: inputs.areas,
     robots: inputs.robots.map(({ robot, supportedFeatures, options }) => ({

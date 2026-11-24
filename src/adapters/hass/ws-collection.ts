@@ -29,7 +29,13 @@ export interface WsCollection<T> {
    * a reconnection until a fetch made after it is applied (equal or not). A failed fetch leaves it `false`.
    */
   settled(): boolean;
-  /** Calls `listener` once each time the value changes; returns the function that removes it. */
+  /**
+   * Whether the list could not be read: no fetch has succeeded yet and the latest one answered failed (rejected, threw,
+   * or `parse` refused it). The next successful fetch, after a reconnection or an update event, ends it. Once a value is
+   * read it stays `false`: a failed re-fetch keeps that value and leaves `settled()` false instead. Never says why.
+   */
+  failed(): boolean;
+  /** Calls `listener` once each time the value or `failed()` changes; returns the function that removes it. */
   onChange(listener: () => void): () => void;
   start(): void;
   stop(): void;
@@ -37,7 +43,10 @@ export interface WsCollection<T> {
 
 type State = "idle" | "started" | "stopped";
 
-/** Never throws and never logs: a failed fetch keeps the previous value, a failed subscription is dropped. */
+/**
+ * Never throws and never logs: a failed fetch keeps the previous value (or marks the list `failed` while it has none), a
+ * failed subscription is dropped.
+ */
 export function createWsCollection<T>(options: WsCollectionOptions<T>): WsCollection<T> {
   return new ListCollection(options);
 }
@@ -54,6 +63,7 @@ class ListCollection<T> implements WsCollection<T> {
   /** Update signals received (events and reconnections), and the last one an applied answer covers. */
   #signals = 0;
   #covered = -1;
+  #failed = false;
   #connection: FrontendConnection | undefined;
   #unsubscribe: (() => Promise<void>) | undefined;
   readonly #refetch = () => void this.#fetch();
@@ -78,6 +88,10 @@ class ListCollection<T> implements WsCollection<T> {
 
   settled(): boolean {
     return this.#covered === this.#signals;
+  }
+
+  failed(): boolean {
+    return this.#failed;
   }
 
   onChange(listener: () => void): () => void {
@@ -125,16 +139,33 @@ class ListCollection<T> implements WsCollection<T> {
     let next: T | undefined;
     try {
       const raw = await getHass().callWS({ type: command });
-      if (request <= this.#applied || this.#state !== "started") return;
+      if (this.#outdated(request)) return;
       next = parse(raw);
-      if (next === undefined) return;
-      this.#applied = request;
-      this.#covered = signals;
-      if (this.#current !== undefined && equal(this.#current, next)) return;
     } catch {
+      // Handled below as a refused answer.
+    }
+    if (this.#outdated(request)) return;
+    if (next === undefined) {
+      this.#fail();
       return;
     }
+    this.#applied = request;
+    this.#covered = signals;
+    this.#failed = false;
+    if (this.#current !== undefined && equal(this.#current, next)) return;
     this.#current = next;
+    this.#listeners.notify();
+  }
+
+  /** Whether an answer to `request` comes too late: a newer one was applied, or the collection is not started. */
+  #outdated(request: number): boolean {
+    return request <= this.#applied || this.#state !== "started";
+  }
+
+  /** A failed answer only matters while nothing was read: then the list is `failed`, notified once. */
+  #fail(): void {
+    if (this.#current !== undefined || this.#failed) return;
+    this.#failed = true;
     this.#listeners.notify();
   }
 

@@ -1,5 +1,7 @@
 {
   "card.loading": "Loading floor plans…",
+  "card.load_failed": "Could not load the floor plans.",
+  "card.load_failed_hint": "The card tries again when Home Assistant reconnects. You can also reload the page.",
   "card.error": "The floor plans could not be shown. Reload the page to try again.",
   "card.no_robot": "No supported robot found",
   "card.no_robot_hint": "This card works with robots from the {integration} integration.",

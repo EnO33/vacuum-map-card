@@ -93,6 +93,11 @@ export interface FloorModel {
    * so the UI shows a loading state rather than fixes the user does not need.
    */
   readonly loading: boolean;
+  /**
+   * `true` while `loading` and a list it waits for could not be fetched (`HassPort.fetchFailed`), so the UI says it
+   * could not load rather than loading forever. A later successful fetch ends it; it is never `true` once loaded.
+   */
+  readonly loadFailed: boolean;
   readonly floors: readonly FloorView[];
   readonly noFloor: readonly Plan[];
   readonly robots: readonly RobotModel[];

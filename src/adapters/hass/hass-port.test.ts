@@ -148,3 +148,60 @@ describe("subscribe", () => {
     expect(after).not.toHaveBeenCalled();
   });
 });
+
+describe("fetchFailed", () => {
+  const FLOORS = "config/floor_registry/list";
+  const ENTITIES = "config/entity_registry/list";
+  const ISSUES = "repairs/list_issues";
+
+  /** Every list from the fixtures, except the `commands`, whose fetch rejects. */
+  function failing(...commands: string[]): void {
+    const fixtures = hass.answerWS;
+    hass.answerWS = (message) =>
+      commands.includes(message.type) ? Promise.reject(new Error("Connection lost")) : fixtures(message);
+  }
+
+  it.each([FLOORS, ENTITIES])(
+    "is true while %s could not be read, notifies, and ends on a later success",
+    async (command) => {
+      const fixtures = hass.answerWS;
+      failing(command);
+      const listener = vi.fn();
+      port.subscribe(listener);
+      port.start();
+      expect(port.fetchFailed()).toBe(false);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(port.fetchFailed()).toBe(true);
+      expect(listener).toHaveBeenCalledTimes(3);
+      hass.answerWS = fixtures;
+      hass.connection.reconnect();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(port.fetchFailed()).toBe(false);
+      expect(listener).toHaveBeenCalledTimes(4);
+    },
+  );
+
+  it("is false when only the repair issues could not be read: they never keep the card loading", async () => {
+    failing(ISSUES);
+    port.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(port.fetchFailed()).toBe(false);
+    expect(port.segmentsChangedOpen("vacuum.robot_two")).toBe(true);
+  });
+
+  it("stays false while a list never answers, and once read when a re-fetch fails", async () => {
+    const fixtures = hass.answerWS;
+    hass.answerWS = (message) => (message.type === FLOORS ? new Promise(() => undefined) : fixtures(message));
+    port.start();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(port.fetchFailed()).toBe(false);
+    hass.answerWS = fixtures;
+    hass.connection.reconnect();
+    await vi.advanceTimersByTimeAsync(0);
+    failing(FLOORS, ENTITIES);
+    hass.connection.reconnect();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(port.fetchFailed()).toBe(false);
+    expect(port.floors()).toBeDefined();
+  });
+});
