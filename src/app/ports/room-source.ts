@@ -55,7 +55,10 @@ export interface SourceRobot {
   roomAction(regionId: string): ServiceCall | undefined;
   /** Whether the room action resolves names before ids, so the shadow check of ADR 0003 « Path 2 » applies. */
   readonly roomActionMatchesNamesFirst: boolean;
-  /** The kind of a refusal raised by this integration, or `undefined` for one it does not know. */
+  /**
+   * The kind of a refusal raised by this integration before its start command, or `undefined` for any other error:
+   * the card then reports it as unknown, possibly started (`mayHaveStartedAfter`, #55).
+   */
   classifyError(error: ServiceError): IntegrationErrorKind | undefined;
 }
 

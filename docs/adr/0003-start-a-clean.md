@@ -176,12 +176,14 @@ Core cases ([`ha-core-vacuum.md` « Errors »](../research/ha-core-vacuum.md#err
 | 2. `return_response` sent | `service_does_not_support_response` | Same as 1 (never sent by the card) | No |
 | 3. Robot lacks area cleaning | `service_not_supported` | This robot cannot clean by area | No |
 | 4. User not allowed to control the robot | `home_assistant_error`, message `Unauthorized`, no key | You are not allowed to control this robot; ask an administrator | No |
-| 5. Robot has no registry entry | `unknown_error` | The robot is not set up for area cleaning | No |
+| 5. Robot has no registry entry | `unknown_error` | Shown as an unknown error (see the note below) | Unknown |
 | 6. No mapping saved | `area_mapping_not_configured` | The robot's rooms are not linked to areas; how to link them in Home Assistant | No |
 | 7. Area not mapped | `areas_not_mapped` | This area is not linked to the robot | Possibly, with several areas; never with the card's one area per call |
 | 8. The integration refused | the integration's key (Roomba+ table below) | The integration's reason, mapped below | Integration-specific |
-| 9. The integration does not implement area cleaning | `unknown_error` | Same as 5 | No |
+| 9. The integration does not implement area cleaning | `unknown_error` | Same as 5 | Unknown |
 | 10. Service missing | `not_found` / `service_not_found` | This Home Assistant version cannot clean by area | No |
+
+`unknown_error` (cases 5 and 9) is also the code core sends for any unexpected exception in the called service ([commands.py#L397-L399](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/components/websocket_api/commands.py#L397-L399)), including one raised after the integration sent the start command (Roomba+ 4.6.5 records the command after `send_command("start")` outside any `try`). The card cannot tell these apart, so `unknown_error` is shown as an unknown error that may have started the robot, without its message, which is the exception text (owner decision, 2026-11-24, reviews of #55).
 
 Roomba+ cases, `translation_domain` `roomba_plus`, websocket code usually `service_validation_error` ([`roomba-plus.md` « `roomba_plus.clean_room` »](../research/roomba-plus.md#roomba_plusclean_room), [« `async_clean_segments` »](../research/roomba-plus.md#async_clean_segments-what-vacuumclean_area-calls-and-the--active-map-filter-)).
 
