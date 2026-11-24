@@ -11,9 +11,10 @@
   "scripts": {
     "lint": "biome check",
     "format": "biome check --write",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p demo",
     "test": "vitest run --coverage",
-    "build": "vite build && node scripts/size.mjs"
+    "build": "vite build && node scripts/size.mjs",
+    "demo": "vite --config demo/vite.config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",
