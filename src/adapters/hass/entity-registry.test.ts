@@ -189,8 +189,8 @@ describe("defensive parsing", () => {
     });
   });
 
-  it("reads non-string optional fields as absent", async () => {
-    await loaded([raw({ unique_id: 1, area_id: 2, device_id: 7, translation_key: false })]);
+  it("reads non-string optional fields, and an empty area_id, as absent", async () => {
+    await loaded([raw({ unique_id: 1, area_id: "", device_id: 7, translation_key: false })]);
     expect(registry.entry("sensor.robot_one_battery")).toMatchObject({
       uniqueId: undefined,
       areaId: null,

@@ -1,7 +1,7 @@
 import type { Floor } from "../../domain/registry/types";
 import type { Schedule } from "./debounce";
 import type { FrontendHass } from "./frontend-hass";
-import { isObject, ownStrings, ownValue } from "./own-property";
+import { boundedId, isObject, ownStrings, ownValue } from "./own-property";
 import { createWsCollection, type WsCollection } from "./ws-collection";
 
 /** The floor registry list, kept current: `value()` is `HassPort.floors()`. */
@@ -24,8 +24,8 @@ export function createFloorList(getHass: () => FrontendHass, schedule?: Schedule
 
 /**
  * The frozen floors of an untrusted list, or `undefined` (a failed fetch) when it is not an array. An entry needs a
- * non-empty string `floor_id` and a string `name`; a repeated `floor_id` keeps the first. Names and aliases are
- * registry names, kept whole.
+ * `floor_id` (`boundedId`) and a string `name`; a repeated `floor_id` keeps the first. Names and aliases are registry
+ * names, kept whole.
  */
 function parseFloors(raw: unknown): readonly Floor[] | undefined {
   if (!Array.isArray(raw)) return undefined;
@@ -42,9 +42,9 @@ function parseFloors(raw: unknown): readonly Floor[] | undefined {
 
 function parseFloor(raw: unknown): Floor | undefined {
   if (!isObject(raw)) return undefined;
-  const floorId = ownValue(raw, "floor_id");
+  const floorId = boundedId(ownValue(raw, "floor_id"));
   const name = ownValue(raw, "name");
-  if (typeof floorId !== "string" || floorId === "" || typeof name !== "string") return undefined;
+  if (floorId === undefined || typeof name !== "string") return undefined;
   return Object.freeze({ floorId, name, aliases: ownStrings(ownValue(raw, "aliases")) });
 }
 
@@ -52,6 +52,10 @@ function sameFloors(a: readonly Floor[], b: readonly Floor[]): boolean {
   return a.length === b.length && a.every((floor, i) => sameFloor(floor, b[i]));
 }
 
+/**
+ * Aliases are compared in order although core stores them as a set: a reorder after a restart only costs one extra
+ * notification, never a missed change.
+ */
 function sameFloor(a: Floor, b: Floor | undefined): boolean {
   return (
     b !== undefined &&

@@ -46,7 +46,8 @@ export type VacuumOptionsFailure = "not_loaded" | "registry_entry_unreadable" | 
  * - map ids and segment ids are sensitive: never logged, never put in a reason;
  * - integration strings are within ADR 0002 « Parsing limits » item 3 (255 UTF-16 code units) and never cut, except
  *   the `options.vacuum` lists, passed through whole because the domain readers of #46 own their caps; registry
- *   floor and area names and aliases are kept whole;
+ *   floor and area names and aliases are kept whole, while floor and area ids are within the cap everywhere (an entry
+ *   with an over-cap id is skipped, an over-cap reference reads as none), so the same id matches in every source;
  * - no admin-only command is used (ADR 0005 « Permissions »).
  *
  * Reads keep their identity while their source does, so `app` can tell by reference that nothing changed: `floors`

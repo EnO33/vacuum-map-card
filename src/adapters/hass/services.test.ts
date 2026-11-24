@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { FakeFrontendHass } from "../../../test/fakes/frontend-hass";
 import { serviceReader } from "./services";
-import { adminReader } from "./user";
 
 let hass: FakeFrontendHass;
 
@@ -26,6 +25,9 @@ describe("serviceReader", () => {
     expect(hasService("vacuum", "clean_area")).toBe(false);
     expect(hasService("vacuum", "toString")).toBe(false);
     expect(hasService("__proto__", "x")).toBe(false);
+    hass.services = JSON.parse('{"__proto__": {"x": {}}, "vacuum": {"__proto__": {}}}');
+    expect(hasService("__proto__", "x")).toBe(true);
+    expect(hasService("vacuum", "__proto__")).toBe(true);
   });
 
   it.each<[string, unknown]>([
@@ -45,34 +47,5 @@ describe("serviceReader", () => {
     other.services = { vacuum: { clean_area: {} } };
     hass = other;
     expect(hasService("vacuum", "clean_area")).toBe(true);
-  });
-});
-
-describe("adminReader", () => {
-  const isAdmin = adminReader(() => hass);
-
-  it("is true only for is_admin true", () => {
-    hass.user = { is_admin: true };
-    expect(isAdmin()).toBe(true);
-  });
-
-  it.each<[string, unknown]>([
-    ["a non-admin", { is_admin: false }],
-    ["a truthy string", { is_admin: "true" }],
-    ["a missing flag", {}],
-    ["a missing user", undefined],
-    ["a null user", null],
-    ["an inherited flag", Object.create({ is_admin: true })],
-  ])("is false for %s", (_, user) => {
-    hass.user = user;
-    expect(isAdmin()).toBe(false);
-  });
-
-  it("reads hass again on each call", () => {
-    expect(isAdmin()).toBe(false);
-    const other = new FakeFrontendHass();
-    other.user = { is_admin: true };
-    hass = other;
-    expect(isAdmin()).toBe(true);
   });
 });

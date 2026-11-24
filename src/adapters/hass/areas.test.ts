@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { FakeFrontendHass } from "../../../test/fakes/frontend-hass";
+import { MAX_TEXT_LENGTH } from "../../domain/text/limits";
 import { areasReader } from "./areas";
 
 let hass: FakeFrontendHass;
@@ -73,11 +74,21 @@ describe("areasReader", () => {
     hass.areas = {
       a: area("a", { aliases: [null, "Den"], floor_id: 4 }),
       b: area("b", { aliases: "Den", floor_id: undefined }),
+      c: area("c", { floor_id: "" }),
+      d: area("d", { floor_id: "f".repeat(MAX_TEXT_LENGTH + 1) }),
     };
     expect([...areas().values()]).toStrictEqual([
       { areaId: "a", name: "Area a", aliases: ["Den"], floorId: null },
       { areaId: "b", name: "Area b", aliases: [], floorId: null },
+      { areaId: "c", name: "Area c", aliases: [], floorId: null },
+      { areaId: "d", name: "Area d", aliases: [], floorId: null },
     ]);
+  });
+
+  it("skips an area whose id is over the cap, as the entity registry drops such an area_id", () => {
+    const long = "a".repeat(MAX_TEXT_LENGTH + 1);
+    hass.areas = { [long]: area(long), kept: area("kept") };
+    expect([...areas().keys()]).toStrictEqual(["kept"]);
   });
 
   it("never runs a getter of an entry", () => {

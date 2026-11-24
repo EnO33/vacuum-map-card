@@ -5,6 +5,7 @@ import floorWithoutAreas from "../../../test/fixtures/ha-core/synthetic/floor_re
   type: "json",
 };
 import { expectNoConsoleOutput } from "../../../test/helpers/no-console";
+import { MAX_TEXT_LENGTH } from "../../domain/text/limits";
 import { createFloorList, type FloorList } from "./floors";
 
 let hass: FakeFrontendHass;
@@ -90,6 +91,7 @@ describe("createFloorList", () => {
     ["with an empty floor_id", floor("")],
     ["with a numeric floor_id", floor("x", { floor_id: 1 })],
     ["without a string name", floor("x", { name: null })],
+    ["with an over-cap floor_id", floor("f".repeat(MAX_TEXT_LENGTH + 1))],
   ])("skips an entry %s", async (_, entry) => {
     await loaded([entry, floor("kept")]);
     expect(floors.value()?.map((f) => f.floorId)).toStrictEqual(["kept"]);
@@ -103,6 +105,20 @@ describe("createFloorList", () => {
   it("treats a non-array response as a failed fetch", async () => {
     await loaded({ floors: [] });
     expect(floors.value()).toBeUndefined();
+  });
+});
+
+describe("live hass", () => {
+  it("reads hass again on each re-fetch", async () => {
+    await loaded([floor("a")]);
+    const other = new FakeFrontendHass();
+    other.answerWS = () => Promise.resolve([floor("b")]);
+    const first = hass;
+    hass = other;
+    first.connection.emit("floor_registry_updated");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(other.wsCalls).toStrictEqual([{ type: "config/floor_registry/list" }]);
+    expect(floors.value()?.map((f) => f.floorId)).toStrictEqual(["b"]);
   });
 });
 

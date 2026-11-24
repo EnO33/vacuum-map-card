@@ -11,6 +11,12 @@ export function boundedText(value: unknown): string | undefined {
   return typeof value === "string" && withinTextCap(value) ? value : undefined;
 }
 
+/** A registry id (floor, area): a non-empty string within the cap, matched the same way in every source, or `undefined`. */
+export function boundedId(value: unknown): string | undefined {
+  const id = boundedText(value);
+  return id === "" ? undefined : id;
+}
+
 /** A non-null object, the only kind of value whose own properties are read. */
 export function isObject(value: unknown): value is object {
   return typeof value === "object" && value !== null;
