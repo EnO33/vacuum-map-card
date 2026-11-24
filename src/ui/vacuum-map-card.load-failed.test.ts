@@ -7,9 +7,9 @@ import { expectNoConsoleOutput } from "../../test/helpers/no-console";
 import { bodyStyles } from "./card-body";
 
 const FAILED_EN =
-  "Could not load the floor plans. The card tries again when Home Assistant reconnects. You can also reload the page.";
+  "Could not load the floor plans. The card tries again when the connection to Home Assistant comes back. You can also reload the page.";
 const FAILED_FR =
-  "Impossible de charger les plans. La carte réessaie quand Home Assistant se reconnecte. Vous pouvez aussi recharger la page.";
+  "Impossible de charger les plans. La carte réessaiera quand la connexion à Home Assistant sera rétablie. Vous pouvez aussi recharger la page.";
 const SECRET = "boom /api/websocket?token=abc vacuum.robot_one";
 
 useTestCard();

@@ -65,8 +65,8 @@ export interface HassPort {
   /**
    * Whether a list the floor model waits for (the floor list or the entity registry list) could not be read: it has no
    * value yet and its latest fetch failed (a websocket error, a refusal, or an answer that is not the documented shape).
-   * `false` while a fetch is still pending, and again once a later fetch succeeds (after a reconnection or an update
-   * event; there is no retry timer), then `subscribe` notifies. No error text crosses the port. The repair issue list is
+   * `false` until such a failure; then `true` until a later fetch succeeds (after a reconnection or an update event;
+   * there is no retry timer), and `subscribe` notifies each change. No error text crosses the port. The repair issue list is
    * not counted: until it is read, `segmentsChangedOpen` keeps its safe side and the card does not wait for it.
    */
   fetchFailed(): boolean;

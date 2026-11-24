@@ -1,7 +1,7 @@
 {
   "card.loading": "Chargement des plans…",
   "card.load_failed": "Impossible de charger les plans.",
-  "card.load_failed_hint": "La carte réessaie quand Home Assistant se reconnecte. Vous pouvez aussi recharger la page.",
+  "card.load_failed_hint": "La carte réessaiera quand la connexion à Home Assistant sera rétablie. Vous pouvez aussi recharger la page.",
   "card.error": "Les plans n'ont pas pu être affichés. Rechargez la page pour réessayer.",
   "card.no_robot": "Aucun robot compatible trouvé",
   "card.no_robot_hint": "Cette carte fonctionne avec les robots de l'intégration {integration}.",

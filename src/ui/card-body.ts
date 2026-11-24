@@ -35,7 +35,7 @@ export const bodyStyles = css`
 
 /**
  * The card's body for a view. The status region is the same element in every view, so a screen reader announces each
- * message that replaces the previous one (loading, then no robot, error or no plan); the floor list stays outside it.
+ * message that replaces the previous one (loading or « could not load », then no robot, error or no plan); the floor list stays outside it.
  * Every value inserted is text, never markup.
  */
 export function cardBody(view: CardView, locale: Locale): TemplateResult {

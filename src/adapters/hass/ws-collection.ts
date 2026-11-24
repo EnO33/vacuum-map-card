@@ -13,6 +13,7 @@ export interface WsCollectionOptions<T> {
   readonly event: string;
   /** Parses the untrusted response; `undefined` refuses it, as a failed fetch. */
   readonly parse: (raw: unknown) => T | undefined;
+  /** Compares two parsed lists; it must not throw (it runs outside the fetch's `try`). */
   readonly equal: (a: T, b: T) => boolean;
   readonly schedule?: Schedule | undefined;
 }
@@ -30,9 +31,10 @@ export interface WsCollection<T> {
    */
   settled(): boolean;
   /**
-   * Whether the list could not be read: no fetch has succeeded yet and the latest one answered failed (rejected, threw,
-   * or `parse` refused it). The next successful fetch, after a reconnection or an update event, ends it. Once a value is
-   * read it stays `false`: a failed re-fetch keeps that value and leaves `settled()` false instead. Never says why.
+   * Whether the list could not be read: no fetch has succeeded yet, and the latest request sent so far failed (rejected,
+   * threw, or `parse` refused it). Once `true`, it stays so until a later fetch succeeds (after a reconnection or an
+   * update event), even while that fetch is pending. Once a value is read it stays `false`: a failed re-fetch keeps that
+   * value and leaves `settled()` false instead. Never says why.
    */
   failed(): boolean;
   /** Calls `listener` once each time the value or `failed()` changes; returns the function that removes it. */
@@ -146,7 +148,8 @@ class ListCollection<T> implements WsCollection<T> {
     }
     if (this.#outdated(request)) return;
     if (next === undefined) {
-      this.#fail();
+      // A newer request still pending may succeed: only the latest request's failure counts.
+      if (request === this.#latest) this.#fail();
       return;
     }
     this.#applied = request;

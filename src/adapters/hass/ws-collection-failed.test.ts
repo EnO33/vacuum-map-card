@@ -101,6 +101,22 @@ describe("failed", () => {
     expect(collection.value()).toStrictEqual({ names: ["old"] });
   });
 
+  it("stays false when an older request fails while a newer one is pending", async () => {
+    const older = deferred();
+    const newer = deferred();
+    const answers = [older, newer];
+    hass.answerWS = () => answers.shift()?.promise ?? Promise.reject(new Error("unexpected"));
+    collection.start();
+    hass.connection.reconnect();
+    older.reject(new Error("Connection lost"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(collection.failed()).toBe(false);
+    expect(changes).not.toHaveBeenCalled();
+    newer.reject(new Error("Connection lost"));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(collection.failed()).toBe(true);
+  });
+
   it("ignores a failure answering after stop", async () => {
     const late = deferred();
     hass.answerWS = () => late.promise;
