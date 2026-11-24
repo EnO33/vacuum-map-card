@@ -7,13 +7,13 @@ import type { RoomSource, SourceRobot } from "../../src/app/ports/room-source";
 import type { ActionKind } from "../../src/domain/robot/action-kind";
 import type { IntegrationErrorKind } from "../../src/domain/robot/integration-error";
 import type { StoredMap } from "../../src/domain/robot/stored-map";
-import { withinTextCap } from "../../src/domain/text/limits";
 import entityRegistry from "../fixtures/roomba-plus/entity_registry_list.json" with { type: "json" };
 import floorPlanStates from "../fixtures/roomba-plus/hass_states_floor_plans.json" with { type: "json" };
 import disabledFloorPlan from "../fixtures/roomba-plus/synthetic/entity_registry_list_floor_plan_disabled.json" with {
   type: "json",
 };
 import { snapshotFixtures, snapshotOf } from "../helpers/rooms-snapshot";
+import { fixtureMaps, mapOfSegmentIn, segmentIdIn } from "../helpers/stored-maps";
 
 export interface FakeRoomSourceSettings {
   /** Use `synthetic/entity_registry_list_floor_plan_disabled.json`: the vacuum's second floor plan is disabled. */
@@ -38,8 +38,8 @@ const ROBOTS: readonly FakeRobot[] = [
     vacuumEntityId: "vacuum.robot_one",
     action: "vacuum",
     maps: new Map([
-      ["image.robot_one_floor_plan_mapa_q1w2e3", "MapA_q1W2e3"],
-      ["image.robot_one_floor_plan_mapb_z9x8c7", "MapB_z9X8c7"],
+      [fixtureMaps.mapA.floorPlanEntityId, fixtureMaps.mapA.mapId],
+      [fixtureMaps.mapB.floorPlanEntityId, fixtureMaps.mapB.mapId],
     ]),
     roomsMapEntityId: "image.robot_one_rooms_map",
     roomsFixture: "vacuumAligned",
@@ -48,8 +48,8 @@ const ROBOTS: readonly FakeRobot[] = [
     vacuumEntityId: "vacuum.robot_two",
     action: "mop",
     maps: new Map([
-      ["image.robot_two_floor_plan_mapc_k4l5m6", "MapC_k4L5m6"],
-      ["image.robot_two_floor_plan_mapd_r7t8y9", "MapD_r7T8y9"],
+      [fixtureMaps.mapC.floorPlanEntityId, fixtureMaps.mapC.mapId],
+      [fixtureMaps.mapD.floorPlanEntityId, fixtureMaps.mapD.mapId],
     ]),
     roomsMapEntityId: "image.robot_two_rooms_map",
     roomsFixture: "mopPending",
@@ -89,11 +89,8 @@ export class FakeRoomSource implements RoomSource {
         pictureState: "available",
         content: { kind: "snapshot", snapshot: snapshotOf(snapshotFixtures[robot.roomsFixture]) },
       },
-      mapOfSegment: (segmentId) => mapIdsLongestFirst(robot).find((mapId) => segmentId.startsWith(`${mapId}_`)),
-      segmentOf: (mapId, regionId) => {
-        const segmentId = `${mapId}_${regionId}`;
-        return withinTextCap(segmentId) ? segmentId : undefined;
-      },
+      mapOfSegment: mapOfSegmentIn([...robot.maps.values()]),
+      segmentOf: segmentIdIn,
       roomAction: (regionId) => ({
         domain: INTEGRATION,
         service: "clean_room",
@@ -110,8 +107,4 @@ export class FakeRoomSource implements RoomSource {
   robots(): readonly SourceRobot[] {
     return this.#robots;
   }
-}
-
-function mapIdsLongestFirst(robot: FakeRobot): string[] {
-  return [...robot.maps.values()].sort((a, b) => b.length - a.length);
 }

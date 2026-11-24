@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import areaRegistry from "../../../test/fixtures/ha-core/area_registry_list.json" with { type: "json" };
 import floorRegistry from "../../../test/fixtures/ha-core/floor_registry_list.json" with { type: "json" };
 import vacuumStates from "../../../test/fixtures/ha-core/hass_states_vacuum_docked.json" with { type: "json" };
-import floorPlanStates from "../../../test/fixtures/roomba-plus/hass_states_floor_plans.json" with { type: "json" };
 import { areaMappingOf, knownAreaIds, mappingFixtures } from "../../../test/helpers/area-mapping";
 import { areasOf, floorsOf } from "../../../test/helpers/registry";
+import { fixtureMaps, mapOfSegmentIn } from "../../../test/helpers/stored-maps";
 import { readAreaMapping } from "../mapping/area-mapping";
 import type { Area } from "../registry/types";
 import { supportsCleanArea } from "../robot/features";
@@ -14,14 +14,6 @@ import { floorOfArea, floorOfStoredMap, type MapFloorContext } from "./map-to-fl
 
 const floors = floorsOf(floorRegistry);
 const areas = areasOf(areaRegistry);
-const floorPlanStateOf = new Map(Object.entries(floorPlanStates));
-
-/** A stored map of the fixtures (map ids from `test/fixtures/roomba-plus/README.md`), enabled, with no own area. */
-function storedMap(floorPlanEntityId: string, mapId: string): StoredMap {
-  const mapName = floorPlanStateOf.get(floorPlanEntityId)?.attributes.map_name;
-  return { floorPlanEntityId, mapId, mapName, pictureState: "available", ownAreaId: null };
-}
-
 /** A robot's context; segments link to its maps in the Roomba+ Classic format `<map id>_<region id>`. */
 function contextOf(robot: "vacuum" | "mop", mapIds: readonly string[]): MapFloorContext {
   const entityId = robot === "vacuum" ? "vacuum.robot_one" : "vacuum.robot_two";
@@ -31,14 +23,11 @@ function contextOf(robot: "vacuum" | "mop", mapIds: readonly string[]): MapFloor
     areas,
     mapping: readAreaMapping(areaMappingOf(mappingFixtures[robot]), knownAreaIds),
     hasCleanArea: supportsCleanArea(features),
-    mapOfSegment: (segmentId) => mapIds.find((mapId) => segmentId.startsWith(`${mapId}_`)),
+    mapOfSegment: mapOfSegmentIn(mapIds),
   };
 }
 
-const mapA = storedMap("image.robot_one_floor_plan_mapa_q1w2e3", "MapA_q1W2e3");
-const mapB = storedMap("image.robot_one_floor_plan_mapb_z9x8c7", "MapB_z9X8c7");
-const mapC = storedMap("image.robot_two_floor_plan_mapc_k4l5m6", "MapC_k4L5m6");
-const mapD = storedMap("image.robot_two_floor_plan_mapd_r7t8y9", "MapD_r7T8y9");
+const { mapA, mapB, mapC, mapD } = fixtureMaps;
 const vacuumContext = contextOf("vacuum", [mapA.mapId, mapB.mapId]);
 const mopContext = contextOf("mop", [mapC.mapId, mapD.mapId]);
 const NO_FLOOR = { kind: "no_floor", reasons: ["assign_area_to_floor_plan", "add_floor_alias"] };
