@@ -1,0 +1,88 @@
+/*
+ * Home Assistant's theme variables, light and dark, as the frontend defines them on `html` at 20261028.6
+ * (docs/research/ha-frontend.md § 6). The light text colours resolve `--ha-color-text-primary` and
+ * `--ha-color-text-secondary` (`src/resources/theme/color/semantic.globals.ts` L13-L14 and `core.globals.ts` L31-L35).
+ */
+:root {
+  color-scheme: light;
+  font-size: 14px;
+  font-family: var(--ha-font-family-body);
+
+  --ha-font-family-body: Roboto, Noto, sans-serif;
+  --ha-font-size-scale: 1;
+  --ha-font-size-xs: calc(10px * var(--ha-font-size-scale));
+  --ha-font-size-s: calc(12px * var(--ha-font-size-scale));
+  --ha-font-size-m: calc(14px * var(--ha-font-size-scale));
+  --ha-font-size-l: calc(16px * var(--ha-font-size-scale));
+  --ha-font-size-xl: calc(20px * var(--ha-font-size-scale));
+  --ha-font-size-2xl: calc(24px * var(--ha-font-size-scale));
+  --ha-font-weight-normal: 400;
+  --ha-font-weight-medium: 500;
+  --ha-font-weight-bold: 700;
+  --ha-line-height-condensed: 1.2;
+  --ha-line-height-normal: 1.6;
+
+  --ha-space-1: 4px;
+  --ha-space-2: 8px;
+  --ha-space-3: 12px;
+  --ha-space-4: 16px;
+  --ha-space-5: 20px;
+  --ha-space-6: 24px;
+  --ha-space-11: 44px;
+  --ha-space-12: 48px;
+  --ha-border-radius-sm: 4px;
+  --ha-border-radius-md: 8px;
+  --ha-border-radius-lg: 12px;
+  --ha-border-radius-xl: 16px;
+  --ha-border-radius-pill: 9999px;
+  --ha-border-radius-circle: 50%;
+
+  --ha-animation-duration-instant: 75ms;
+  --ha-animation-duration-fast: 150ms;
+  --ha-animation-duration-normal: 250ms;
+  --ha-animation-duration-slow: 350ms;
+
+  --primary-color: #009ac7;
+  --rgb-primary-color: 0, 154, 199;
+  --ha-color-focus: #989898;
+  --error-color: #db4437;
+  --warning-color: #ffa600;
+  --success-color: #43a047;
+  --info-color: #039be5;
+  --rgb-error-color: 219, 68, 55;
+  --rgb-warning-color: 255, 166, 0;
+  --rgb-success-color: 67, 160, 71;
+  --rgb-info-color: 3, 155, 229;
+  --state-active-color: #ffc107;
+  --state-inactive-color: #9e9e9e;
+  --state-unavailable-color: var(--disabled-text-color);
+  --state-vacuum-active-color: #009688;
+  --state-vacuum-error-color: #f44336;
+
+  --primary-background-color: #fafafa;
+  --card-background-color: #ffffff;
+  --primary-text-color: #141414;
+  --secondary-text-color: #5e5e5e;
+  --disabled-text-color: #bdbdbd;
+  --divider-color: rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --primary-background-color: #111111;
+  --card-background-color: #1c1c1c;
+  --primary-text-color: #e1e1e1;
+  --secondary-text-color: #9b9b9b;
+  --disabled-text-color: #6f6f6f;
+  --divider-color: rgba(225, 225, 225, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ha-animation-duration-instant: 1ms;
+    --ha-animation-duration-fast: 1ms;
+    --ha-animation-duration-normal: 1ms;
+    --ha-animation-duration-slow: 1ms;
+  }
+}

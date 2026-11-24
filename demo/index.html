@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vacuum Map Card demo</title>
+    <link rel="stylesheet" href="./theme.css" />
+    <style>
+      body {
+        margin: 0;
+        padding: var(--ha-space-4);
+        background: var(--primary-background-color);
+        color: var(--primary-text-color);
+      }
+      form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ha-space-2) var(--ha-space-6);
+        margin-bottom: var(--ha-space-4);
+      }
+      fieldset {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--ha-space-3);
+        margin: 0;
+        padding: var(--ha-space-2) var(--ha-space-3);
+        border: 1px solid var(--divider-color);
+        border-radius: var(--ha-border-radius-md);
+      }
+      legend {
+        color: var(--secondary-text-color);
+      }
+      label {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--ha-space-1);
+        min-height: 44px;
+      }
+      .stage {
+        max-width: 100%;
+      }
+      :root[data-width="phone"] .stage {
+        width: 400px;
+      }
+      :root[data-width="tablet"] .stage {
+        width: 800px;
+      }
+      .calls {
+        margin-top: var(--ha-space-4);
+        color: var(--secondary-text-color);
+      }
+      .calls h2 {
+        margin: 0;
+        font-size: var(--ha-font-size-l);
+        font-weight: var(--ha-font-weight-medium);
+      }
+      .calls p {
+        margin: var(--ha-space-1) 0 0;
+      }
+      .calls ol {
+        margin: var(--ha-space-1) 0 0;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <form aria-label="Demo settings">
+      <fieldset>
+        <legend>Theme</legend>
+        <label><input type="radio" name="theme" value="light" /> Light</label>
+        <label><input type="radio" name="theme" value="dark" /> Dark</label>
+      </fieldset>
+      <fieldset>
+        <legend>Card width</legend>
+        <label><input type="radio" name="width" value="phone" /> Phone (400 px)</label>
+        <label><input type="radio" name="width" value="tablet" /> Tablet (800 px)</label>
+        <label><input type="radio" name="width" value="wide" /> Wide</label>
+      </fieldset>
+      <fieldset>
+        <legend>Answer to a clean</legend>
+        <label><input type="radio" name="outcome" value="accepted" /> Accepted</label>
+        <label><input type="radio" name="outcome" value="refused" /> Refused</label>
+        <label><input type="radio" name="outcome" value="never" /> Never answers</label>
+      </fieldset>
+    </form>
+    <main class="stage">
+      <vacuum-map-card></vacuum-map-card>
+    </main>
+    <section class="calls" aria-labelledby="calls-title">
+      <h2 id="calls-title">Actions sent (fake, nothing leaves the page)</h2>
+      <p class="calls-empty">None yet.</p>
+      <ol></ol>
+    </section>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

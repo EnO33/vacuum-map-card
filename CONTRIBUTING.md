@@ -28,6 +28,16 @@ pnpm run build
 node --test scripts/test-hooks.mjs
 ```
 
+### Demo page
+
+```
+pnpm run demo
+```
+
+Serves a development-only page at http://localhost:5173 (this machine only; the command stops if that port is taken) that renders the card from `src/` on a fake `hass` built from the anonymised fixtures of `test/fixtures/`, with invented plan pictures from `demo/plans/`. The page switches the theme (Home Assistant's light and dark variables), the card width (phone 400 px, tablet 800 px, wide) and how a clean is answered (accepted, refused, or never answered). Choices are kept in the address, for example `?theme=dark&width=phone&outcome=refused`. Actions only reach the fake and are listed under the card; nothing leaves the page.
+
+Screenshots in a pull request come from this page (light and dark), never from a real home. Nothing under `demo/` is bundled: `pnpm run build` fails if a file outside `src/` and the dependencies reaches `dist/`.
+
 ## Versioning
 
 Semantic versioning. Patch: fixes, docs, internal refactors. Minor: a new feature, option or integration adapter. Major: a breaking change for users (removed or renamed option, raised minimum Home Assistant version).

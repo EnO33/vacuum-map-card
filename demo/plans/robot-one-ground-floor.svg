@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="Demo plan, Ground floor">
+  <!-- Invented demo plan, drawn from the invented outlines of test/fixtures/roomba-plus/. Not a real home. -->
+  <style>
+    polygon { fill: #e3e8ec; stroke: #56636b; stroke-width: 4; stroke-linejoin: round; }
+    text { fill: #37434a; font: 500 18px sans-serif; text-anchor: middle; dominant-baseline: middle; }
+  </style>
+  <polygon points="4,595 512,595 512,345.6 318,345.6 318,4 4,4 4,262.6 59.4,262.6 59.4,318 4,318"/>
+  <text x="179.5" y="305">Library</text>
+</svg>
