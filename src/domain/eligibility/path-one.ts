@@ -55,6 +55,8 @@ export type PathOne =
       readonly roomNames: readonly string[];
       /** Kept only as a value for linking; never shown or put in a reason. */
       readonly mapId: string;
+      /** The area's segments, in stored order, each with the name shown for it (values for linking and the intent). */
+      readonly segments: readonly { readonly segmentId: string; readonly name: string }[];
     }
   | { readonly kind: "refused"; readonly reason: PathOneRefusal };
 
@@ -82,14 +84,14 @@ export function pathOne(item: PathOneItem, context: PathOneContext): PathOne {
   }
 
   const nameOf = namesFor(mapId, context);
-  const roomNames: string[] = [];
+  const segments: { readonly segmentId: string; readonly name: string }[] = [];
   for (const segmentId of segmentIds) {
     const name = nameOf(segmentId);
     if (name === undefined || name.trim() === "") return refused("segment_unnamed");
-    roomNames.push(name);
+    segments.push({ segmentId, name });
   }
   if (context.segmentsChangedOpen) return refused("segments_changed_open");
-  return { kind: "path1", areaId: area.areaId, roomNames, mapId };
+  return { kind: "path1", areaId: area.areaId, roomNames: segments.map((s) => s.name), mapId, segments };
 }
 
 /** Conditions 3 (an area item) and 4 (a room): the area, or why there is none. */

@@ -47,6 +47,7 @@ describe("decideJoinPath", () => {
       areaId: "library",
       roomNames: ["Library"],
       mapId: "MapA_q1W2e3",
+      segments: [{ segmentId: "MapA_q1W2e3_1", name: "Library" }],
     });
   });
 

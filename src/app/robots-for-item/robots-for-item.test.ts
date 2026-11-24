@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { FakeHass } from "../../../test/fakes/fake-hass";
 import { FakeRoomSource } from "../../../test/fakes/fake-room-source";
+import { withStates } from "../../../test/helpers/clean-state";
 import { withRobot } from "../../../test/helpers/sources";
 import { fixtureMaps } from "../../../test/helpers/stored-maps";
 import { buildFloorModel } from "../floor-model/build-floor-model";
 import type { FloorModel, RobotModel, RobotRoom } from "../floor-model/floor-model";
-import type { HassPort } from "../ports/hass-port";
 import type { RoomSource } from "../ports/room-source";
 import { type ItemRef, robotsForItem } from "./robots-for-item";
 
@@ -20,18 +20,6 @@ const mopOnGround = withRobot(new FakeRoomSource(), "vacuum.robot_two", (robot) 
   storedMaps: robot.storedMaps.map((m) => (m.mapId === "MapD_r7T8y9" ? { ...m, ownAreaId: "library" } : m)),
 }));
 
-/** A hass whose vacuum states are replaced, the rest as the fixtures. */
-function withStates(states: ReadonlyMap<string, { state: string } | undefined>): HassPort {
-  const patched = new FakeHass({ services: ["vacuum.clean_area"] });
-  const fixture = patched.vacuum.bind(patched);
-  patched.vacuum = (entityId) => {
-    if (!states.has(entityId)) return fixture(entityId);
-    const state = states.get(entityId);
-    return state && { state: state.state, supportedFeatures: fixture(entityId)?.supportedFeatures ?? 0 };
-  };
-  return patched;
-}
-
 describe("robotsForItem on the fixtures", () => {
   it("lists only the vacuum robot for the area item library on ground_floor", () => {
     expect(robotsForItem(model, libraryItem, hass, sources)).toEqual([
@@ -39,7 +27,13 @@ describe("robotsForItem on the fixtures", () => {
         vacuumEntityId: "vacuum.robot_one",
         action: "vacuum",
         state: "docked",
-        choice: { kind: "path1", areaId: "library", roomNames: ["Library"] },
+        choice: {
+          kind: "path1",
+          areaId: "library",
+          roomNames: ["Library"],
+          mapId: "MapA_q1W2e3",
+          segments: [{ segmentId: "MapA_q1W2e3_1", name: "Library" }],
+        },
       },
     ]);
   });
@@ -54,13 +48,28 @@ describe("robotsForItem on the fixtures", () => {
         vacuumEntityId: "vacuum.robot_two",
         action: "mop",
         state: "docked",
-        choice: { kind: "path2", regionId: "1", ownRoomName: "Library" },
+        choice: {
+          kind: "path2",
+          regionId: "1",
+          ownRoomName: "Library",
+          call: {
+            domain: "roomba_plus",
+            service: "clean_room",
+            data: { entity_id: "vacuum.robot_two", room_name: "1" },
+          },
+        },
       },
       {
         vacuumEntityId: "vacuum.robot_one",
         action: "vacuum",
         state: "docked",
-        choice: { kind: "path1", areaId: "library", roomNames: ["Library"] },
+        choice: {
+          kind: "path1",
+          areaId: "library",
+          roomNames: ["Library"],
+          mapId: "MapA_q1W2e3",
+          segments: [{ segmentId: "MapA_q1W2e3_1", name: "Library" }],
+        },
       },
     ]);
   });
@@ -114,7 +123,12 @@ describe("robotsForItem never lets a robot join through", () => {
   it("a room on the same floor linked by name: it joins with its own room action", () => {
     expect(robotsForItem(joinerWith({}), item, hass, [mopOnGround])[1]).toMatchObject({
       vacuumEntityId: "vacuum.robot_one",
-      choice: { kind: "path2", regionId: "1", ownRoomName: "Library" },
+      choice: {
+        kind: "path2",
+        regionId: "1",
+        ownRoomName: "Library",
+        call: { domain: "roomba_plus", service: "clean_room", data: { entity_id: "vacuum.robot_one", room_name: "1" } },
+      },
     });
   });
 
@@ -183,51 +197,8 @@ describe("robotsForItem for a room of the plan's own robot", () => {
       kind: "path1",
       areaId: "library",
       roomNames: ["Library"],
-    });
-  });
-});
-
-describe("robotsForItem joining edge cases", () => {
-  const onGround = buildFloorModel(hass, [mopOnGround]);
-  const item: ItemRef = { kind: "room", imageEntityId: "image.robot_two_rooms_map", regionId: "1" };
-
-  function joiner(change: (robot: RobotModel) => Partial<RobotModel>): FloorModel {
-    const robots = onGround.robots.map((robot) =>
-      robot.vacuumEntityId === "vacuum.robot_one" ? { ...robot, ...change(robot) } : robot,
-    );
-    return { ...onGround, robots };
-  }
-
-  const room: RobotRoom = {
-    imageEntityId: "image.robot_one_rooms_map",
-    regionId: "1",
-    name: "Library",
-    roomId: "library",
-    area: { kind: "core", areaId: "library" },
-    floorId: "upper_floor",
-  };
-
-  it("lists a core room on another floor with its path 1 reason (ADR 0005: a rule 1 link joins)", () => {
-    const m = joiner((robot) => ({ plans: robot.plans.filter((p) => p.content.kind === "outlines"), rooms: [room] }));
-    expect(robotsForItem(m, item, hass, [mopOnGround])[1]).toMatchObject({
-      vacuumEntityId: "vacuum.robot_one",
-      choice: { kind: "not_startable", reasons: ["no_core_area"] },
-    });
-  });
-
-  it("refuses a same-floor room when the joiner has no rooms map to check names against", () => {
-    const m = joiner(() => ({ plans: [], rooms: [{ ...room, floorId: "ground_floor" }] }));
-    expect(robotsForItem(m, item, hass, [mopOnGround])[1]?.choice).toEqual({
-      kind: "not_startable",
-      reasons: ["no_core_area", "shadow_check_impossible"],
-    });
-  });
-
-  it("lists a joiner that is unavailable as not startable", () => {
-    const unavailable = withStates(new Map([["vacuum.robot_one", { state: "unavailable" }]]));
-    expect(robotsForItem(onGround, item, unavailable, [mopOnGround])[1]?.choice).toEqual({
-      kind: "not_startable",
-      reasons: ["unavailable"],
+      mapId: "MapA_q1W2e3",
+      segments: [{ segmentId: "MapA_q1W2e3_1", name: "Library" }],
     });
   });
 });

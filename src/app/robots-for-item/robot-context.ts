@@ -31,7 +31,7 @@ export function robotContextOf(model: RobotModel, source: SourceRobot, hass: Has
   return { model, source, vacuum: hass.vacuum(id), pathOne, outlines };
 }
 
-function outlinesOf(model: RobotModel): OutlinesContent | undefined {
+export function outlinesOf(model: RobotModel): OutlinesContent | undefined {
   for (const { content } of model.plans) if (content.kind === "outlines") return content;
   return undefined;
 }

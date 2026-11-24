@@ -44,6 +44,7 @@ describe("pathOne on the fixtures", () => {
       areaId: "library",
       roomNames: ["Library"],
       mapId: "MapA_q1W2e3",
+      segments: [{ segmentId: "MapA_q1W2e3_1", name: "Library" }],
     });
   });
 
@@ -171,6 +172,10 @@ describe("pathOne for a room of a paired rooms map", () => {
       areaId: "library",
       roomNames: ["Reading room", "Nook"],
       mapId: "MapA_q1W2e3",
+      segments: [
+        { segmentId: "MapA_q1W2e3_1", name: "Reading room" },
+        { segmentId: "MapA_q1W2e3_3", name: "Nook" },
+      ],
     });
   });
 
