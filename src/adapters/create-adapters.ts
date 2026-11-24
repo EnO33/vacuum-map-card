@@ -38,7 +38,7 @@ export function createAdapters(getHass: () => FrontendHass, options: AdaptersOpt
   ]);
   return {
     hass: portOnly(port),
-    display: Object.freeze(createDisplay(getHass)),
+    display: createDisplay(getHass),
     sources: () => sources,
     pictureUrl: (entityId) => pictureUrl(getHass, sources, entityId),
     start: () => port.start(),

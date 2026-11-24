@@ -2,10 +2,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { FakeFrontendHass } from "../../../test/fakes/frontend-hass";
 import imagePlan from "../../../test/fixtures/ha-core/hass_state_image_floor_plan.json" with { type: "json" };
 import { roombaPlusStates } from "../../../test/helpers/roomba-plus-states";
+import { MAX_TEXT_LENGTH } from "../../domain/text/limits";
 import { createDisplay } from "./display";
 
-const OVER_CAP = "x".repeat(256);
-const AT_CAP = "x".repeat(255);
+const OVER_CAP = "x".repeat(MAX_TEXT_LENGTH + 1);
+const AT_CAP = "x".repeat(MAX_TEXT_LENGTH);
 
 let hass: FakeFrontendHass;
 
