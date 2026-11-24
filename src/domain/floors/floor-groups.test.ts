@@ -5,7 +5,7 @@ import withBasement from "../../../test/fixtures/ha-core/synthetic/floor_registr
 };
 import { floorsOf } from "../../../test/helpers/registry";
 import type { Floor } from "../registry/types";
-import { type FloorGroup, groupByFloor, type PlacedPlan } from "./floor-groups";
+import { type FloorGroup, groupByFloor, type PlacedPlan, planShownOnFloor } from "./floor-groups";
 
 function plan(vacuumEntityId: string, planEntityId: string, floorId?: string): PlacedPlan {
   return { vacuumEntityId, planEntityId, floorId };
@@ -62,5 +62,24 @@ describe("groupByFloor", () => {
 
   it("gives no group at all without plans", () => {
     expect(groupByFloor(floorsOf(floorRegistry), [])).toEqual([]);
+  });
+});
+
+describe("planShownOnFloor", () => {
+  const shown = (vacuumEntityId: string, planEntityId: string, outlines: boolean) => ({
+    vacuumEntityId,
+    planEntityId,
+    floorId: "ground_floor",
+    outlines,
+  });
+
+  it("prefers outlines, then the smallest vacuum entity id, then the smallest plan entity id", () => {
+    const a = shown("vacuum.b", "image.z", true);
+    const b = shown("vacuum.a", "image.y", false);
+    const c = shown("vacuum.a", "image.x", false);
+    expect(planShownOnFloor([b, a, c])).toBe(a);
+    expect(planShownOnFloor([b, c])).toBe(c);
+    expect(planShownOnFloor([shown("vacuum.b", "image.a", false), b])).toBe(b);
+    expect(planShownOnFloor([])).toBeUndefined();
   });
 });

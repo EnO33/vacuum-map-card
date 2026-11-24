@@ -24,6 +24,12 @@ export interface FakeHassSettings {
   readonly admin?: boolean;
   /** What every `callService` resolves to. */
   readonly result?: ServiceResult;
+  /** Replace the fixture floors, areas or vacuum options. */
+  readonly floors?: readonly Floor[];
+  /** Before the floor list is read: `floors()` gives `undefined`. */
+  readonly floorsNotLoaded?: boolean;
+  readonly areas?: ReadonlyMap<string, Area>;
+  readonly vacuumOptions?: ReadonlyMap<string, VacuumOptions | Unsupported<VacuumOptionsFailure>>;
 }
 
 function optionsOf(entry: EntityRegistryFixture): VacuumOptions {
@@ -53,11 +59,12 @@ export class FakeHass implements HassPort {
   }
 
   floors(): readonly Floor[] | undefined {
-    return floors;
+    if (this.#settings.floorsNotLoaded) return undefined;
+    return this.#settings.floors ?? floors;
   }
 
   areas(): ReadonlyMap<string, Area> {
-    return areas;
+    return this.#settings.areas ?? areas;
   }
 
   vacuum(entityId: string): VacuumState | undefined {
@@ -70,7 +77,8 @@ export class FakeHass implements HassPort {
   }
 
   vacuumOptions(entityId: string): VacuumOptions | Unsupported<VacuumOptionsFailure> {
-    return vacuumOptionsOf.get(entityId) ?? unsupported("registry_entry_unreadable");
+    const options = this.#settings.vacuumOptions ?? vacuumOptionsOf;
+    return options.get(entityId) ?? unsupported("registry_entry_unreadable");
   }
 
   segmentsChangedOpen(entityId: string): boolean {

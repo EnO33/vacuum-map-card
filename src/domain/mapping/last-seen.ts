@@ -8,7 +8,8 @@ export interface LastSeenSegment {
   readonly name: string;
 }
 
-export type LastSeenFailure = "too_many_entries" | "duplicate_segment_id" | "text_too_long";
+/** `unreadable`: the list could not be read at all (not the documented shape, or not available yet). */
+export type LastSeenFailure = "too_many_entries" | "duplicate_segment_id" | "text_too_long" | "unreadable";
 
 /**
  * The name each segment was last seen with, read apart from `area_mapping` so that refusing one never hides the

@@ -32,6 +32,16 @@ export function groupByFloor<P extends PlacedPlan>(floors: readonly Floor[], pla
   return groups;
 }
 
+/**
+ * The one plan a floor shows (ADR 0005 « Room to area », last paragraph): a plan with outlines before a picture-only
+ * plan, then the smallest vacuum entity id, then the smallest plan entity id, in code-unit order.
+ */
+export function planShownOnFloor<P extends PlacedPlan & { readonly outlines: boolean }>(
+  plans: readonly P[],
+): P | undefined {
+  return [...plans].sort((a, b) => Number(b.outlines) - Number(a.outlines) || byVacuumThenPlan(a, b))[0];
+}
+
 function byVacuumThenPlan(a: PlacedPlan, b: PlacedPlan): number {
   return compareCodeUnits(a.vacuumEntityId, b.vacuumEntityId) || compareCodeUnits(a.planEntityId, b.planEntityId);
 }

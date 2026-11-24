@@ -31,7 +31,10 @@ export interface RoomsMap {
   readonly content: RoomsMapContent;
 }
 
-/** One robot as its integration's adapter reports it. */
+/**
+ * One robot as its integration's adapter reports it. Its functions depend only on `storedMaps` and the integration's
+ * fixed rules, so `app` can memoise on the data alone.
+ */
 export interface SourceRobot {
   /** Found by the registry entry's `platform` (ADR 0003 « Eligibility »). */
   readonly vacuumEntityId: string;
