@@ -6,7 +6,7 @@ import { MAX_PLAN_ROOMS } from "../../domain/plan/rooms-plan";
 import { unsupported } from "../../domain/unsupported";
 import { boundedText, isObject, ownValue } from "../hass/own-property";
 
-const NO_OUTLINES: RoomsMapContent = Object.freeze({ kind: "no_outlines" });
+export const NO_OUTLINES: RoomsMapContent = Object.freeze({ kind: "no_outlines" });
 const MALFORMED: RoomsMapContent = Object.freeze(unsupported("malformed_attributes"));
 
 /** Thrown inside the parser only, to give up on the whole rooms map at the first malformed value. */
@@ -20,6 +20,15 @@ class Malformed extends Error {}
  * duplicates, the icon pattern) stay with the domain, so its reasons stay precise.
  */
 export function roomsMapContentOf(stateObject: unknown): RoomsMapContent {
+  try {
+    return contentOf(stateObject);
+  } catch {
+    // A malformed value, or a hostile object whose traps throw: never an exception that breaks the dashboard.
+    return MALFORMED;
+  }
+}
+
+function contentOf(stateObject: unknown): RoomsMapContent {
   if (!isObject(stateObject)) return NO_OUTLINES;
   const state = boundedText(ownValue(stateObject, "state"));
   const attributes = ownValue(stateObject, "attributes");
@@ -27,28 +36,23 @@ export function roomsMapContentOf(stateObject: unknown): RoomsMapContent {
   const rooms = ownValue(attributes, "rooms");
   const calibration = ownValue(attributes, "calibration_points");
   if (rooms === undefined || rooms === null || calibration === undefined || calibration === null) return NO_OUTLINES;
-  try {
-    const checked = checkedRoomsOf(rooms);
-    const pairs = calibrationOf(calibration);
-    return Object.freeze({
-      kind: "snapshot",
-      snapshot: Object.freeze({ state, calibration: pairs, rooms: Object.freeze(checked.map(roomOf)) }),
-    });
-  } catch {
-    // A malformed value, or a hostile object whose traps throw: never an exception that breaks the dashboard.
-    return MALFORMED;
-  }
+  const checked = checkedRoomsOf(rooms);
+  const pairs = calibrationOf(calibration);
+  return Object.freeze({
+    kind: "snapshot",
+    snapshot: Object.freeze({ state, calibration: pairs, rooms: Object.freeze(checked.map(roomOf)) }),
+  });
 }
 
-/** A room value with its outline, read once and size-checked. */
+/** A room value with its outline and the outline length, each read once and size-checked. */
 interface CheckedRoom {
   readonly raw: object;
-  readonly outline: readonly unknown[] | undefined;
+  readonly outline: { readonly items: readonly unknown[]; readonly length: number } | undefined;
 }
 
 /** The rooms in attribute order, after every size check (room count, then each outline length); nothing copied yet. */
 function checkedRoomsOf(rooms: unknown): readonly CheckedRoom[] {
-  if (!isObject(rooms) || Array.isArray(rooms)) throw new Malformed();
+  if (!isPlainObject(rooms)) throw new Malformed();
   const keys = Object.keys(rooms);
   if (keys.length > MAX_PLAN_ROOMS) throw new Malformed();
   return keys.map((key) => {
@@ -56,8 +60,10 @@ function checkedRoomsOf(rooms: unknown): readonly CheckedRoom[] {
     if (!isObject(raw)) throw new Malformed();
     const outline = ownValue(raw, "outline");
     if (outline === undefined) return { raw, outline };
-    if (!Array.isArray(outline) || outline.length > MAX_OUTLINE_POINTS) throw new Malformed();
-    return { raw, outline };
+    if (!Array.isArray(outline)) throw new Malformed();
+    const length = outline.length;
+    if (length > MAX_OUTLINE_POINTS) throw new Malformed();
+    return { raw, outline: { items: outline, length } };
   });
 }
 
@@ -82,11 +88,17 @@ function requiredText(raw: object, name: string): string {
   return text;
 }
 
-/** `[[x, y], …]` with `typeof` number values; the length was checked before. */
-function pointsOf(outline: readonly unknown[]): readonly Point[] {
+/** `[[x, y], …]` with `typeof` number values, up to the length checked before. */
+function pointsOf({
+  items,
+  length,
+}: {
+  readonly items: readonly unknown[];
+  readonly length: number;
+}): readonly Point[] {
   const points: Point[] = [];
-  for (let i = 0; i < outline.length; i++) {
-    const pair = ownValue(outline, String(i));
+  for (let i = 0; i < length; i++) {
+    const pair = ownValue(items, String(i));
     if (!Array.isArray(pair) || pair.length !== 2) throw new Malformed();
     points.push(Object.freeze({ x: numberAt(pair, "0"), y: numberAt(pair, "1") }));
   }
@@ -95,14 +107,23 @@ function pointsOf(outline: readonly unknown[]): readonly Point[] {
 
 /** At most `CALIBRATION_PAIRS` items `{vacuum: {x, y}, map: {x, y}}`; fewer are passed on for the domain to refuse. */
 function calibrationOf(raw: unknown): readonly CalibrationPair[] {
-  if (!Array.isArray(raw) || raw.length > CALIBRATION_PAIRS) throw new Malformed();
+  if (!Array.isArray(raw)) throw new Malformed();
+  const length = raw.length;
+  if (length > CALIBRATION_PAIRS) throw new Malformed();
   const pairs: CalibrationPair[] = [];
-  for (let i = 0; i < raw.length; i++) {
+  for (let i = 0; i < length; i++) {
     const item = ownValue(raw, String(i));
     if (!isObject(item)) throw new Malformed();
     pairs.push(Object.freeze({ vacuum: pointOf(ownValue(item, "vacuum")), map: pointOf(ownValue(item, "map")) }));
   }
   return Object.freeze(pairs);
+}
+
+/** A JSON object: not an array, a `Map` or a class instance. */
+function isPlainObject(value: unknown): value is object {
+  if (!isObject(value) || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function pointOf(raw: unknown): Point {

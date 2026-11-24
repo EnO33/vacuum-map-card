@@ -71,6 +71,30 @@ describe("roomsMapReader", () => {
     expect(one && roomsMapReader(() => hass)(one)?.shownMapId).toBe("MapA_q1W2e3");
   });
 
+  it.each<[string, string | null]>([
+    ["an orphan with an unmatched unique_id", "roomba_plus_OTHER_floor_plan_MapX"],
+    ["an orphan without unique_id", null],
+  ])("reports no shown map when a second floor plan entry is %s", async (_, uniqueId) => {
+    const orphan = {
+      ...registryList.find((e) => e.entity_id === "image.robot_one_floor_plan_mapb_z9x8c7"),
+      unique_id: uniqueId,
+    };
+    const list = registryList.filter((e) => e.entity_id !== "image.robot_one_floor_plan_mapb_z9x8c7");
+    hass.states = { "image.robot_one_rooms_map": structuredClone(aligned) };
+    const [one] = await robotsOf([...list, orphan]);
+    expect(one?.floorPlans).toHaveLength(2);
+    expect(one && roomsMapReader(() => hass)(one)?.shownMapId).toBeUndefined();
+  });
+
+  it("reports no shown map when the only floor plan entry gives no stored map", async () => {
+    const list = registryList
+      .filter((e) => e.entity_id !== "image.robot_one_floor_plan_mapb_z9x8c7")
+      .map((e) => (e.entity_id === "image.robot_one_floor_plan_mapa_q1w2e3" ? { ...e, unique_id: "orphan" } : e));
+    hass.states = { "image.robot_one_rooms_map": structuredClone(aligned) };
+    const [one] = await robotsOf(list);
+    expect(one && roomsMapReader(() => hass)(one)?.shownMapId).toBeUndefined();
+  });
+
   it("is no_outlines with an unknown picture when the entity has no state", async () => {
     expect(roomsMapReader(() => hass)(await robotOne(undefined))).toMatchObject({
       pictureState: "unknown",
