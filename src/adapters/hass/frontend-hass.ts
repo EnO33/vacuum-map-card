@@ -1,3 +1,5 @@
+import { isObject } from "./own-property";
+
 /**
  * The part of the frontend `hass` object the adapters use (frontend 20261028.6, `src/types.ts`). Only what the card
  * calls is typed; everything the card reads back from it is untrusted and parsed at this boundary. Later adapter
@@ -52,4 +54,30 @@ export interface FrontendConnection {
   /** `ready` fires when the connection is back after a reconnection. */
   addEventListener(eventType: "ready", listener: () => void): void;
   removeEventListener(eventType: "ready", listener: () => void): void;
+}
+
+// Checked on every `hass` set, so built once.
+const HASS_FUNCTIONS: readonly string[] = Object.freeze(["callWS", "callService", "hassUrl"]);
+const CONNECTION_FUNCTIONS: readonly string[] = Object.freeze([
+  "subscribeEvents",
+  "addEventListener",
+  "removeEventListener",
+]);
+
+/** Whether every named member is a function, own or inherited (the frontend's `hass` has them as own properties). */
+function hasFunctions(value: unknown, names: readonly string[]): value is object {
+  return isObject(value) && names.every((name) => typeof Reflect.get(value, name) === "function");
+}
+
+/**
+ * The boundary check of the value set as the card's `hass`: an object with the functions the adapters call. Its other
+ * fields are not checked here: they may be `null` early (`docs/research/ha-frontend.md` § 1) and every read parses them.
+ */
+export function isFrontendHass(value: unknown): value is FrontendHass {
+  try {
+    return hasFunctions(value, HASS_FUNCTIONS) && hasFunctions(Reflect.get(value, "connection"), CONNECTION_FUNCTIONS);
+  } catch {
+    // The reads run getters (methods may be inherited); one that throws means the value is not a usable `hass`.
+    return false;
+  }
 }

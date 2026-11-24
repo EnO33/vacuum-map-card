@@ -78,6 +78,19 @@ describe("buildFloorModel variants", () => {
     expect(buildFloorModel(hass, [new FakeRoomSource()]).loading).toBe(true);
   });
 
+  it("is loading before a source has read its robots, so « no robot » is never shown early", () => {
+    const source = new FakeRoomSource();
+    const notRead = {
+      integration: source.integration,
+      integrationName: source.integrationName,
+      robots: () => [],
+      loaded: () => false,
+    };
+    const model = buildFloorModel(new FakeHass(), [notRead]);
+    expect(model.loading).toBe(true);
+    expect(buildFloorModel(new FakeHass(), [{ ...notRead, loaded: () => true }]).loading).toBe(false);
+  });
+
   it("keeps a disabled floor plan as a plan with its state", () => {
     const model = buildFloorModel(new FakeHass(), [new FakeRoomSource({ disabledFloorPlans: true })]);
     const plans = model.robots.flatMap((r) => r.plans);

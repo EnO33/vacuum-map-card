@@ -60,6 +60,10 @@ const floorPlanStateOf = new Map(Object.entries(floorPlanStates));
 
 export class FakeRoomSource implements RoomSource {
   readonly integration = INTEGRATION;
+  readonly integrationName = "Roomba+";
+  loaded(): boolean {
+    return true;
+  }
   readonly #robots: readonly SourceRobot[];
 
   /** Robots are built once, so `robots()` keeps the same objects, as the port asks. */

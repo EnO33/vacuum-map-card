@@ -10,5 +10,14 @@ export function withRobot(
   const robots = source
     .robots()
     .map((robot) => (robot.vacuumEntityId === entityId ? { ...robot, ...change(robot) } : robot));
-  return { integration: source.integration, robots: () => robots };
+  return { ...pick(source), robots: () => robots };
+}
+
+/** The source's members other than `robots`, bound to it. */
+function pick(source: RoomSource): Omit<RoomSource, "robots"> {
+  return {
+    integration: source.integration,
+    integrationName: source.integrationName,
+    loaded: () => source.loaded(),
+  };
 }

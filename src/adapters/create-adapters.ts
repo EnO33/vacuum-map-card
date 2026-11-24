@@ -14,6 +14,8 @@ export interface Adapters {
   readonly hass: HassPort;
   /** The user's language and the robots' names, for `ui` (#101). */
   readonly display: DisplayPort;
+  /** The sources' integration names, the same array on every read, for the « no supported robot » state (#102). */
+  readonly integrations: readonly string[];
   /** The room sources, the same array on every call; Roomba+ is the only one. */
   sources(): readonly RoomSource[];
   /** A plan picture's URL, only for an image a source reports; never cached (ADR 0005 « Plan pictures »). */
@@ -39,6 +41,7 @@ export function createAdapters(getHass: () => FrontendHass, options: AdaptersOpt
   return {
     hass: portOnly(port),
     display: createDisplay(getHass),
+    integrations: Object.freeze(sources.map((source) => source.integrationName)),
     sources: () => sources,
     pictureUrl: (entityId) => pictureUrl(getHass, sources, entityId),
     start: () => port.start(),

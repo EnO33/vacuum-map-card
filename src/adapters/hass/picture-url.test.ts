@@ -26,7 +26,9 @@ const urlOf = (entityId: string) => pictureUrl(() => hass, sources, entityId);
 function sourceWith(changes: Partial<SourceRobot>): readonly RoomSource[] {
   const [robot] = new FakeRoomSource().robots();
   if (robot === undefined) throw new Error("no robot");
-  return [{ integration: "test", robots: () => [{ ...robot, ...changes }] }];
+  return [
+    { integration: "test", integrationName: "Test", loaded: () => true, robots: () => [{ ...robot, ...changes }] },
+  ];
 }
 
 function withState(entityId: string, state: unknown): void {
@@ -151,6 +153,8 @@ describe("pictureUrl", () => {
     const throwing = [
       {
         integration: "broken",
+        integrationName: "Broken",
+        loaded: () => true,
         robots: () => {
           throw new Error("boom");
         },
