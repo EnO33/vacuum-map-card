@@ -1,7 +1,7 @@
 /**
  * Why an integration refused a start, one kind per row of ADR 0003 « Errors », Roomba+ table, named neutrally so the
  * card's text does not depend on one integration's keys. Each adapter maps its own keys to these (Epic 4); a key it
- * does not know gives no kind, and the card falls back to the core cases.
+ * does not know gives no kind, and the card shows an unknown error.
  */
 export type IntegrationErrorKind =
   /** The robot has no room map (Roomba+ `not_smart_map`). */
