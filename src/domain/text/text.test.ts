@@ -126,11 +126,11 @@ describe("safeIcon", () => {
 });
 
 describe("matchesRegistryName", () => {
-  const entry = { name: "Ground floor", aliases: ["Rez-de-chaussée"] };
+  const entry = { name: "Ground floor", aliases: ["Ñandú-Wing"] };
 
   it.each([
     ["the name, folded and without spaces", "ground FLOOR", true],
-    ["an alias", "rez-de-chaussée", true],
+    ["an alias", "ñandú-WING", true],
     ["neither", "Upper floor", false],
   ])("matches %s", (_, name, expected) => {
     expect(matchesRegistryName(registryNameKey(name), entry)).toBe(expected);
