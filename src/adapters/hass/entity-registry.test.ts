@@ -142,18 +142,21 @@ describe("createEntityRegistry", () => {
     expect(registry.entry("sensor.robot_one_battery")?.disabled).toBe(true);
   });
 
-  it("keeps hidden entities and never reads has_entity_name", async () => {
-    const entry = raw({ hidden_by: "user" });
-    Object.defineProperty(entry, "has_entity_name", {
-      enumerable: true,
-      get: () => {
-        throw new Error("read");
+  it("keeps hidden entities and never reads has_entity_name or hidden_by", async () => {
+    const read: (string | symbol)[] = [];
+    const entry = new Proxy(raw({ hidden_by: "user" }), {
+      getOwnPropertyDescriptor(target, key) {
+        read.push(key);
+        return Reflect.getOwnPropertyDescriptor(target, key);
       },
     });
     hass.answerWS = () => Promise.resolve([entry]);
     registry.start();
     await vi.advanceTimersByTimeAsync(0);
     expect(registry.entry("sensor.robot_one_battery")).toBeDefined();
+    expect(read).toContain("entity_id");
+    expect(read).not.toContain("has_entity_name");
+    expect(read).not.toContain("hidden_by");
   });
 });
 
@@ -177,7 +180,17 @@ describe("defensive parsing", () => {
 
   it("drops over-cap or non-string optional fields, never cuts them", async () => {
     const long = "x".repeat(MAX_TEXT_LENGTH + 1);
-    await loaded([raw({ unique_id: long, area_id: long, device_id: 7, translation_key: long })]);
+    await loaded([raw({ unique_id: long, area_id: long, device_id: long, translation_key: long })]);
+    expect(registry.entry("sensor.robot_one_battery")).toMatchObject({
+      uniqueId: undefined,
+      areaId: null,
+      deviceId: null,
+      translationKey: null,
+    });
+  });
+
+  it("reads non-string optional fields as absent", async () => {
+    await loaded([raw({ unique_id: 1, area_id: 2, device_id: 7, translation_key: false })]);
     expect(registry.entry("sensor.robot_one_battery")).toMatchObject({
       uniqueId: undefined,
       areaId: null,

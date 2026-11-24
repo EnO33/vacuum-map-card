@@ -43,6 +43,8 @@ class ListCollection<T> implements WsCollection<T> {
   #state: State = "idle";
   #current: T | undefined;
   #latest = 0;
+  /** The request whose answer the value reflects: an answer to an older one is never applied. */
+  #applied = 0;
   #connection: FrontendConnection | undefined;
   #unsubscribe: (() => Promise<void>) | undefined;
   readonly #refetch = () => void this.#fetch();
@@ -66,17 +68,19 @@ class ListCollection<T> implements WsCollection<T> {
     };
   }
 
+  /** Does nothing while `hass` or its connection cannot be read: the collection stays idle, so a later start works. */
   start(): void {
     if (this.#state !== "idle") return;
-    this.#state = "started";
+    let connection: FrontendConnection;
     try {
-      const connection = this.#options.getHass().connection;
-      this.#connection = connection;
+      connection = this.#options.getHass().connection;
       connection.addEventListener("ready", this.#refetch);
-      this.#subscribe(connection);
     } catch {
-      // No connection yet: the fetch below fails the same way and the value stays `undefined`.
+      return;
     }
+    this.#state = "started";
+    this.#connection = connection;
+    this.#subscribe(connection);
     this.#refetch();
   }
 
@@ -94,14 +98,20 @@ class ListCollection<T> implements WsCollection<T> {
     this.#unsubscribe = undefined;
   }
 
-  /** Fetches the whole list; only the answer to the latest request, while started, can replace the value. */
+  /**
+   * Fetches the whole list. While started, an answer replaces the value unless an answer to a newer request was
+   * already applied; so a failed newer request leaves an older answer usable, and an older answer never wins.
+   */
   async #fetch(): Promise<void> {
     const request = ++this.#latest;
     const { getHass, command, parse, equal } = this.#options;
     let next: T | undefined;
     try {
-      next = parse(await getHass().callWS({ type: command }));
-      if (next === undefined || request !== this.#latest || this.#state !== "started") return;
+      const raw = await getHass().callWS({ type: command });
+      if (request <= this.#applied || this.#state !== "started") return;
+      next = parse(raw);
+      if (next === undefined) return;
+      this.#applied = request;
       if (this.#current !== undefined && equal(this.#current, next)) return;
     } catch {
       return;
@@ -112,6 +122,9 @@ class ListCollection<T> implements WsCollection<T> {
 
   #notify(): void {
     for (const listener of [...this.#listeners]) {
+      // A listener may stop the collection or remove another listener.
+      if (this.#state !== "started") return;
+      if (!this.#listeners.has(listener)) continue;
       try {
         listener();
       } catch {
@@ -121,13 +134,17 @@ class ListCollection<T> implements WsCollection<T> {
   }
 
   #subscribe(connection: FrontendConnection): void {
-    connection.subscribeEvents(this.#onEvent, this.#options.event).then(
-      (unsubscribeEvents) => {
-        if (this.#state === "started") this.#unsubscribe = unsubscribeEvents;
-        else release(unsubscribeEvents);
-      },
-      () => {},
-    );
+    try {
+      connection.subscribeEvents(this.#onEvent, this.#options.event).then(
+        (unsubscribeEvents) => {
+          if (this.#state === "started") this.#unsubscribe = unsubscribeEvents;
+          else release(unsubscribeEvents);
+        },
+        () => {},
+      );
+    } catch {
+      // No subscription: `ready` still re-fetches.
+    }
   }
 }
 

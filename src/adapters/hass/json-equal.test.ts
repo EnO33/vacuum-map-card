@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { jsonEqual } from "./json-equal";
+import { jsonEqual, MAX_JSON_DEPTH } from "./json-equal";
 
 describe("jsonEqual", () => {
   it.each<[string, unknown, unknown]>([
@@ -25,6 +25,12 @@ describe("jsonEqual", () => {
     ["objects with a different nested value", { a: { b: 1 } }, { a: { b: 2 } }],
   ])("is false for %s", (_, a, b) => {
     expect(jsonEqual(a, b)).toBe(false);
+  });
+
+  it("counts values nested deeper than the limit as different, so a hostile depth cannot overflow the stack", () => {
+    const nest = (depth: number): unknown => (depth === 0 ? 1 : { a: nest(depth - 1) });
+    expect(jsonEqual(nest(MAX_JSON_DEPTH), nest(MAX_JSON_DEPTH))).toBe(true);
+    expect(jsonEqual(nest(MAX_JSON_DEPTH + 1), nest(MAX_JSON_DEPTH + 1))).toBe(false);
   });
 
   it("never runs a getter", () => {

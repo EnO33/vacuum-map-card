@@ -8,7 +8,8 @@ export type { EntityRegistryEntry } from "./entity-registry-entry";
 /**
  * The full entity registry list, disabled entries included, kept current for `HassPort` and every room source
  * (`docs/research/ha-core-registries.md` « Gaps for this card », Epic 4, item 2). Only the parsed entries are kept,
- * indexed by `Map`s, and nothing is logged (item 7).
+ * indexed by `Map`s, and nothing is logged (item 7). Single use, like its collection: `start` does nothing until
+ * `hass` can be read, and a stopped registry is replaced by a new one, never restarted.
  */
 export interface EntityRegistry {
   /** The parsed list in registry order; the same object while an update leaves it equal, so consumers can memoise. */

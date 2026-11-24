@@ -136,6 +136,8 @@
                     "group": [
                       "../roomba-plus",
                       "../roomba-plus/**",
+                      "../../roomba-plus",
+                      "../../roomba-plus/**",
                       "**/adapters/roomba-plus",
                       "**/adapters/roomba-plus/**"
                     ],
