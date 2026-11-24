@@ -35,6 +35,8 @@ Planned as epic #74 (issues #75 to #84), covering both adapters: Home Assistant 
 
 ## Epic 5: UI
 
+Planned as epic #97 (issues #98 to #116). The list below is the original idea; the epic is the source of truth. The mop pad state in the robot picker moved to « Later » (owner decision 2026-11-24).
+
 - Card layout: floors side by side (responsive: stacked on narrow screens), plan images, SVG room layer with labels.
 - Room interaction: hover/focus, keyboard navigation, robot picker (popover / bottom sheet), confirmation dialog, progress state.
 - Degraded states: plan disabled (how to enable), no outlines on this floor (room list), robot unavailable.
@@ -46,5 +48,6 @@ Planned as epic #74 (issues #75 to #84), covering both adapters: Home Assistant 
 
 ## Later
 
+- Mop pad state in the robot picker (ADR 0003 point 4; meaning of the Roomba+ pad values to verify first).
 - Live robot position and path (adapter-dependent), more adapters (Valetudo, Roborock, Dreame, Ecovacs: research first), room cleaning history overlay, multi-room selection.
 - Upstream: draft an issue for Roomba+ asking for outlines and calibration on every stored map (owner posts it).
