@@ -15,9 +15,15 @@ const at = (phase: ProgressPhase, extra: Partial<Progress> = {}): Progress => ({
   ...extra,
 });
 
-/** Runs the events from no progress, starting with the confirm. */
+/** Runs the events from no progress, starting with a confirm while the robot is docked. */
+function raw(...events: readonly ProgressEvent[]): Progress {
+  return events.reduce(nextProgress, nextProgress(SENDING, { kind: "confirm_started", state: "docked" }));
+}
+
+/** What a progress shows: its phase, error and status flag, without what it keeps to read the next state. */
 function run(...events: readonly ProgressEvent[]): Progress {
-  return events.reduce(nextProgress, nextProgress(SENDING, { kind: "confirm_started" }));
+  const { phase, error, statusUnknown } = raw(...events);
+  return error ? { phase, error, statusUnknown } : { phase, statusUnknown };
 }
 
 describe("nextProgress", () => {
@@ -155,37 +161,80 @@ describe("nextProgress", () => {
     // `busy`, `already_sent` and `discarded` never reach the progress: the controller sends nothing and stores
     // nothing, so no start begins (`app/progress/progress-tracker.test.ts`).
     it("an outcome after the one that ended sending", () => {
-      const starting = run(outcome({ kind: "accepted" }));
+      const starting = raw(outcome({ kind: "accepted" }));
       expect(nextProgress(starting, outcome({ kind: "changed" }))).toBe(starting);
     });
 
     it.each(["cleaning", "paused", "error", "unavailable", undefined])("%s once the progress has ended", (state) => {
       for (const ended of [
-        run(outcome({ kind: "accepted" }), vacuum("cleaning"), vacuum("docked")),
-        run(outcome({ kind: "changed" })),
-        run(outcome({ kind: "error", error: notLinked })),
+        raw(outcome({ kind: "accepted" }), vacuum("cleaning"), vacuum("docked")),
+        raw(outcome({ kind: "changed" })),
+        raw(outcome({ kind: "error", error: notLinked })),
       ]) {
         expect(nextProgress(ended, vacuum(state))).toBe(ended);
       }
     });
 
     it("the same state again", () => {
-      const cleaning = run(outcome({ kind: "accepted" }), vacuum("cleaning"));
+      const cleaning = raw(outcome({ kind: "accepted" }), vacuum("cleaning"));
       expect(nextProgress(cleaning, vacuum("cleaning"))).toBe(cleaning);
       const unknown = nextProgress(cleaning, vacuum("unavailable"));
       expect(nextProgress(unknown, vacuum("unknown"))).toBe(unknown);
-      const sending = run(vacuum("docked"));
-      expect(nextProgress(sending, vacuum("docked"))).toBe(sending);
+      const sending = raw(vacuum("idle"));
+      expect(nextProgress(sending, vacuum("idle"))).toBe(sending);
     });
   });
 
-  it("starts over on a new confirm, whatever the progress was", () => {
-    const failed = run(outcome({ kind: "error", error: notLinked }));
-    expect(nextProgress(failed, { kind: "confirm_started" })).toEqual({ phase: "sending", statusUnknown: false });
+  describe("the state at the confirm", () => {
+    it("starts over on a new confirm, whatever the progress was", () => {
+      const failed = raw(outcome({ kind: "error", error: notLinked }));
+      expect(nextProgress(failed, { kind: "confirm_started", state: "error" })).toEqual({
+        phase: "sending",
+        statusUnknown: false,
+      });
+    });
+
+    it.each(["unknown", "unavailable", undefined])("flags status unknown from a confirm while %s", (state) => {
+      const sending = nextProgress(SENDING, { kind: "confirm_started", state });
+      expect(sending).toEqual({ phase: "sending", statusUnknown: true });
+      expect(nextProgress(sending, outcome({ kind: "accepted" }))).toEqual({ phase: "starting", statusUnknown: true });
+      expect(nextProgress(sending, outcome({ kind: "error", error: unknownError }))).toEqual({
+        phase: "may_have_started",
+        error: unknownError,
+        statusUnknown: true,
+      });
+    });
+  });
+
+  describe("paused before any cleaning", () => {
+    it("waits again on a return or a dock, never done", () => {
+      expect(run(outcome({ kind: "accepted" }), vacuum("paused"), vacuum("docked"))).toEqual(at("starting"));
+      expect(run(outcome({ kind: "accepted" }), vacuum("paused"), vacuum("returning"))).toEqual(at("starting"));
+    });
+
+    it("is done once it cleaned", () => {
+      expect(run(outcome({ kind: "accepted" }), vacuum("paused"), vacuum("cleaning"), vacuum("docked"))).toEqual(
+        at("done"),
+      );
+    });
+
+    it("remembers the cleaning through status unknown and pauses", () => {
+      expect(
+        run(
+          outcome({ kind: "accepted" }),
+          vacuum("cleaning"),
+          vacuum("unavailable"),
+          vacuum("paused"),
+          vacuum("cleaning"),
+          vacuum("paused"),
+          vacuum("idle"),
+        ),
+      ).toEqual(at("done"));
+    });
   });
 
   it("never puts more than the phase, the error and the status flag in what it shows", () => {
-    expect(Object.keys(run(outcome({ kind: "error", error: notLinked }))).sort()).toEqual([
+    expect(Object.keys(raw(outcome({ kind: "error", error: notLinked }))).sort()).toEqual([
       "error",
       "phase",
       "statusUnknown",

@@ -1,72 +1,17 @@
 import { describe, expect, it } from "vitest";
+import { FakeProgressController, FakeVacuumStates } from "../../../test/fakes/fake-progress";
 import type { CleanError } from "../../domain/clean/clean-error";
-import type { HassPort } from "../ports/hass-port";
 import type { ItemRef } from "../robots-for-item/robots-for-item";
-import type { Intent } from "../start-clean/intent";
-import type { OutcomeListener, SendingListener, StoredOutcome } from "../start-clean/outcomes";
-import { createProgressTracker, type ProgressController } from "./progress-tracker";
+import { createProgressTracker } from "./progress-tracker";
 
 const kitchen: ItemRef = { kind: "room", imageEntityId: "image.robot_one_rooms_map", regionId: "1" };
 const hall: ItemRef = { kind: "area", imageEntityId: "image.robot_one_floor_plan_a", areaId: "hall" };
 const notLinked: CleanError = { kind: "rooms_not_linked", mayHaveStarted: "no" };
 
-function intentFor(vacuumEntityId: string, item: ItemRef): Intent {
-  return {
-    vacuumEntityId,
-    action: "vacuum",
-    item,
-    path: { path: 1, areaId: "hall", roomNames: ["Hall"], mapId: "map", segments: [] },
-  };
-}
-
-/** A controller the test drives: `send` and `answer` stand for a confirm that sends and its stored outcome. */
-class FakeController implements ProgressController {
-  readonly acknowledged: string[] = [];
-  readonly #sending = new Set<SendingListener>();
-  readonly #outcome = new Set<OutcomeListener>();
-  onSending(listener: SendingListener) {
-    this.#sending.add(listener);
-    return () => this.#sending.delete(listener);
-  }
-  onOutcome(listener: OutcomeListener) {
-    this.#outcome.add(listener);
-    return () => this.#outcome.delete(listener);
-  }
-  acknowledge(vacuumEntityId: string): void {
-    this.acknowledged.push(vacuumEntityId);
-  }
-  send(intent: Intent): void {
-    for (const listener of this.#sending) listener(intent);
-  }
-  answer(vacuumEntityId: string, outcome: StoredOutcome): void {
-    for (const listener of this.#outcome) listener(vacuumEntityId, outcome);
-  }
-  started(intent: Intent, outcome: StoredOutcome = { kind: "accepted" }): void {
-    this.send(intent);
-    this.answer(intent.vacuumEntityId, outcome);
-  }
-}
-
-/** Vacuum states the test sets; the tracker reads only `vacuum`. */
-class States implements Pick<HassPort, "vacuum"> {
-  readonly #states = new Map<string, string>();
-  reads = 0;
-  set(entityId: string, state: string | undefined): this {
-    if (state === undefined) this.#states.delete(entityId);
-    else this.#states.set(entityId, state);
-    return this;
-  }
-  vacuum(entityId: string) {
-    this.reads += 1;
-    const state = this.#states.get(entityId);
-    return state === undefined ? undefined : { state, supportedFeatures: 0 };
-  }
-}
-
 function setup() {
-  const controller = new FakeController();
+  const controller = new FakeProgressController();
   const tracker = createProgressTracker(controller);
-  const states = new States().set("vacuum.one", "docked").set("vacuum.two", "docked");
+  const states = new FakeVacuumStates().set("vacuum.one", "docked").set("vacuum.two", "docked");
   return { controller, tracker, states };
 }
 
@@ -80,7 +25,7 @@ describe("createProgressTracker", () => {
 
   it("shows sending on the item while the call runs, then starting once accepted", () => {
     const { tracker, controller } = setup();
-    controller.send(intentFor("vacuum.one", kitchen));
+    controller.send("vacuum.one", kitchen);
     expect(tracker.forItem(kitchen)).toEqual([
       { vacuumEntityId: "vacuum.one", item: kitchen, phase: "sending", statusUnknown: false },
     ]);
@@ -92,7 +37,7 @@ describe("createProgressTracker", () => {
   it("follows the vacuum states the card observes", () => {
     const { tracker, controller, states } = setup();
     tracker.observe(states);
-    controller.started(intentFor("vacuum.one", kitchen));
+    controller.started("vacuum.one", kitchen);
     tracker.observe(states.set("vacuum.one", "cleaning"));
     expect(phases(tracker.forItem(kitchen))).toEqual(["cleaning"]);
     tracker.observe(states.set("vacuum.one", "unavailable"));
@@ -103,32 +48,45 @@ describe("createProgressTracker", () => {
 
   it("applies a state reported while sending once the call is accepted", () => {
     const { tracker, controller, states } = setup();
-    controller.send(intentFor("vacuum.one", kitchen));
+    controller.send("vacuum.one", kitchen);
     tracker.observe(states.set("vacuum.one", "cleaning"));
     controller.answer("vacuum.one", { kind: "accepted" });
     expect(phases(tracker.forItem(kitchen))).toEqual(["cleaning"]);
   });
 
-  it("counts the first state a new start sees, even when the robot's state string did not change", () => {
-    const { tracker, controller, states } = setup();
-    controller.started(intentFor("vacuum.one", kitchen));
-    tracker.observe(states.set("vacuum.one", "cleaning"));
-    controller.send(intentFor("vacuum.one", hall));
-    tracker.observe(states);
+  it.each(["error", "cleaning", "paused"])(
+    "reads a robot that was %s at the confirm only once its state changes",
+    (was) => {
+      const { tracker, controller, states } = setup();
+      states.set("vacuum.one", was);
+      controller.send("vacuum.one", kitchen, was);
+      tracker.observe(states);
+      controller.answer("vacuum.one", { kind: "accepted" });
+      tracker.observe(states);
+      expect(phases(tracker.forItem(kitchen))).toEqual(["starting"]);
+      tracker.observe(states.set("vacuum.one", "docked"));
+      tracker.observe(states.set("vacuum.one", "cleaning"));
+      expect(phases(tracker.forItem(kitchen))).toEqual(["cleaning"]);
+    },
+  );
+
+  it("flags status unknown from a confirm while the state is unknown", () => {
+    const { tracker, controller } = setup();
+    controller.send("vacuum.one", kitchen, "unknown");
     controller.answer("vacuum.one", { kind: "accepted" });
-    expect(phases(tracker.forItem(hall))).toEqual(["cleaning"]);
+    expect(tracker.forItem(kitchen)).toMatchObject([{ phase: "starting", statusUnknown: true }]);
   });
 
   it("flags status unknown when the vacuum leaves the states", () => {
     const { tracker, controller, states } = setup();
-    controller.started(intentFor("vacuum.one", kitchen));
+    controller.started("vacuum.one", kitchen);
     tracker.observe(states.set("vacuum.one", undefined));
     expect(tracker.forItem(kitchen)).toMatchObject([{ phase: "starting", statusUnknown: true }]);
   });
 
   it("keeps the error of a refused start, and only the item, phase and error", () => {
     const { tracker, controller } = setup();
-    controller.started(intentFor("vacuum.one", kitchen), { kind: "error", error: notLinked });
+    controller.started("vacuum.one", kitchen, { kind: "error", error: notLinked });
     const [entry] = tracker.forItem(kitchen);
     expect(entry).toEqual({
       vacuumEntityId: "vacuum.one",
@@ -142,14 +100,14 @@ describe("createProgressTracker", () => {
 
   it("shows not started on a changed outcome", () => {
     const { tracker, controller } = setup();
-    controller.started(intentFor("vacuum.one", kitchen), { kind: "changed" });
+    controller.started("vacuum.one", kitchen, { kind: "changed" });
     expect(phases(tracker.forItem(kitchen))).toEqual(["not_started"]);
   });
 
   it("lists every robot sent to the item, by vacuum entity id", () => {
     const { tracker, controller } = setup();
-    controller.started(intentFor("vacuum.two", kitchen));
-    controller.started(intentFor("vacuum.one", kitchen), { kind: "changed" });
+    controller.started("vacuum.two", kitchen);
+    controller.started("vacuum.one", kitchen, { kind: "changed" });
     expect(tracker.forItem(kitchen).map((e) => [e.vacuumEntityId, e.phase])).toEqual([
       ["vacuum.one", "not_started"],
       ["vacuum.two", "starting"],
@@ -158,8 +116,8 @@ describe("createProgressTracker", () => {
 
   it("replaces a robot's entry with its new start", () => {
     const { tracker, controller } = setup();
-    controller.started(intentFor("vacuum.one", kitchen));
-    controller.started(intentFor("vacuum.one", hall), { kind: "changed" });
+    controller.started("vacuum.one", kitchen);
+    controller.started("vacuum.one", hall, { kind: "changed" });
     expect(tracker.forItem(kitchen)).toEqual([]);
     expect(phases(tracker.forItem(hall))).toEqual(["not_started"]);
   });
@@ -173,7 +131,7 @@ describe("createProgressTracker", () => {
   describe("observe", () => {
     it("feeds a robot's state only when its string changed", () => {
       const { tracker, controller, states } = setup();
-      controller.started(intentFor("vacuum.one", kitchen));
+      controller.started("vacuum.one", kitchen);
       tracker.observe(states.set("vacuum.one", "cleaning"));
       tracker.observe(states.set("vacuum.one", "paused"));
       const paused = tracker.forItem(kitchen);
@@ -192,8 +150,8 @@ describe("createProgressTracker", () => {
   describe("identity", () => {
     it("returns the same array while nothing changed for the item", () => {
       const { tracker, controller, states } = setup();
-      controller.started(intentFor("vacuum.one", kitchen));
-      controller.started(intentFor("vacuum.two", hall));
+      controller.started("vacuum.one", kitchen);
+      controller.started("vacuum.two", hall);
       const before = tracker.forItem(kitchen);
       expect(tracker.forItem(kitchen)).toBe(before);
       tracker.observe(states.set("vacuum.two", "cleaning"));
@@ -204,7 +162,7 @@ describe("createProgressTracker", () => {
 
     it("keeps the array when only a state held while sending changed", () => {
       const { tracker, controller, states } = setup();
-      controller.send(intentFor("vacuum.one", kitchen));
+      controller.send("vacuum.one", kitchen);
       const sending = tracker.forItem(kitchen);
       tracker.observe(states.set("vacuum.one", "docked"));
       tracker.observe(states.set("vacuum.one", "idle"));
@@ -214,7 +172,7 @@ describe("createProgressTracker", () => {
     it("returns the same empty array for items without progress", () => {
       const { tracker, controller } = setup();
       expect(tracker.forItem(kitchen)).toBe(tracker.forItem(hall));
-      controller.started(intentFor("vacuum.one", kitchen));
+      controller.started("vacuum.one", kitchen);
       expect(tracker.forItem(hall)).toEqual([]);
       expect(tracker.forItem(hall)).toBe(tracker.forItem(hall));
     });
@@ -223,25 +181,30 @@ describe("createProgressTracker", () => {
   describe("dismiss", () => {
     it("removes the entry and acknowledges the outcome", () => {
       const { tracker, controller } = setup();
-      controller.started(intentFor("vacuum.one", kitchen));
+      controller.started("vacuum.one", kitchen);
       tracker.dismiss("vacuum.one");
       expect(tracker.forItem(kitchen)).toEqual([]);
       expect(controller.acknowledged).toEqual(["vacuum.one"]);
     });
 
-    it("ignores the late outcome of a dismissed start", () => {
+    it("ignores the late outcome of a start dismissed while sending, and acknowledges it", () => {
       const { tracker, controller } = setup();
-      controller.send(intentFor("vacuum.one", kitchen));
+      controller.send("vacuum.one", kitchen);
       tracker.dismiss("vacuum.one");
+      expect(controller.acknowledged).toEqual(["vacuum.one"]);
       controller.answer("vacuum.one", { kind: "accepted" });
       expect(tracker.forItem(kitchen)).toEqual([]);
+      expect(controller.acknowledged).toEqual(["vacuum.one", "vacuum.one"]);
+      controller.started("vacuum.one", hall);
+      expect(controller.acknowledged).toHaveLength(2);
+      expect(phases(tracker.forItem(hall))).toEqual(["starting"]);
     });
   });
 
   it("stops listening once closed", () => {
     const { tracker, controller } = setup();
     tracker.close();
-    controller.started(intentFor("vacuum.one", kitchen));
+    controller.started("vacuum.one", kitchen);
     expect(tracker.forItem(kitchen)).toEqual([]);
   });
 });

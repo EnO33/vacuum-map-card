@@ -52,13 +52,18 @@ export function createProgressTracker(controller: ProgressController): ProgressT
   const lastState = new Map<string, string | undefined>();
   const lists = new Map<string, readonly ProgressEntry[]>();
 
-  const stopSending = controller.onSending(({ vacuumEntityId, item }) => {
-    const progress = nextProgress(SENDING, { kind: "confirm_started" });
+  /** Robots dismissed while their call was in flight: their outcome is acknowledged when it comes. */
+  const dismissedSending = new Set<string>();
+
+  const stopSending = controller.onSending(({ vacuumEntityId, item, vacuumState }) => {
+    const progress = nextProgress(SENDING, { kind: "confirm_started", state: vacuumState });
     shown.set(vacuumEntityId, { key: keyOf(item), progress, entry: entryOf(vacuumEntityId, item, progress) });
-    // The next observed state counts, even unchanged: it is the first one this start sees.
-    lastState.delete(vacuumEntityId);
+    // The state before the start is the baseline: a robot already in `error` or `cleaning` is read only once it changes.
+    lastState.set(vacuumEntityId, vacuumState);
+    dismissedSending.delete(vacuumEntityId);
   });
   const stopOutcome = controller.onOutcome((vacuumEntityId, outcome) => {
+    if (dismissedSending.delete(vacuumEntityId)) controller.acknowledge(vacuumEntityId);
     const start = shown.get(vacuumEntityId);
     if (start) apply(start, { kind: "outcome", outcome });
   });
@@ -77,6 +82,7 @@ export function createProgressTracker(controller: ProgressController): ProgressT
       return listFor(shown, lists, keyOf(item));
     },
     dismiss(vacuumEntityId) {
+      if (shown.get(vacuumEntityId)?.progress.phase === "sending") dismissedSending.add(vacuumEntityId);
       shown.delete(vacuumEntityId);
       lastState.delete(vacuumEntityId);
       controller.acknowledge(vacuumEntityId);

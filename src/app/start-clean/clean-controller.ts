@@ -31,8 +31,9 @@ export interface CleanController {
   /** Returns the function that removes the listener. Outcomes stay stored with no listener. */
   onOutcome(listener: OutcomeListener): () => void;
   /**
-   * Called in the caller's task when a `confirm` goes on to the re-check and the call; never for an answer that sends
-   * nothing (`busy`, `already_sent`, `discarded`). Its outcome follows through `onOutcome`. Returns the remover.
+   * Called in the caller's task when a `confirm` goes on to the re-check and the call, with the vacuum's state then;
+   * never for an answer that sends nothing (`busy`, `already_sent`, `discarded`). Its outcome follows through
+   * `onOutcome`. Returns the remover.
    */
   onSending(listener: SendingListener): () => void;
 }
@@ -85,7 +86,10 @@ export function createCleanController({ hass, sources }: CleanControllerDeps): C
       if (inFlight.has(id)) return Promise.resolve({ kind: "busy" });
       consumed.add(intent);
       inFlight.add(id);
-      notify(sendingListeners, (listener) => listener(intent));
+      // Read inside each listener's guard: nothing here may throw past `inFlight.add`, or the robot stays busy.
+      notify(sendingListeners, (listener) =>
+        listener({ vacuumEntityId: id, item: intent.item, vacuumState: hass.vacuum(id)?.state }),
+      );
       // `send` catches every failure from the call on; one here happened before anything was sent.
       return send(intent)
         .catch((): StoredOutcome => ({ kind: "changed" }))

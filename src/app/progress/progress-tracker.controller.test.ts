@@ -59,4 +59,13 @@ describe("progress with the clean controller", () => {
     expect(controller.outcomeOf("vacuum.robot_one")).toBeUndefined();
     expect(tracker.forItem(item)).toEqual([]);
   });
+
+  it("leaves no stored outcome for a start dismissed while sending", async () => {
+    const { controller, tracker, intent } = setup();
+    const answer = controller.confirm(intent());
+    tracker.dismiss("vacuum.robot_one");
+    await answer;
+    expect(controller.outcomeOf("vacuum.robot_one")).toBeUndefined();
+    expect(tracker.forItem(item)).toEqual([]);
+  });
 });

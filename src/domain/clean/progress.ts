@@ -20,10 +20,13 @@ export interface Progress {
   readonly statusUnknown: boolean;
   /** While sending: the latest vacuum state reported since the confirm, applied once the outcome allows. */
   readonly held?: { readonly state: string | undefined };
+  /** The vacuum reported `cleaning` since the start: only then does a return or a dock read as done. */
+  readonly cleaned?: true;
 }
 
 export type ProgressEvent =
-  | { readonly kind: "confirm_started" }
+  /** `state`: the vacuum's state when the confirm went on to the call; only a later, different one is fed. */
+  | { readonly kind: "confirm_started"; readonly state: string | undefined }
   | { readonly kind: "outcome"; readonly outcome: StoredOutcome }
   /** A new state of the vacuum entity; `undefined` when it left `hass.states`. */
   | { readonly kind: "vacuum_state"; readonly state: string | undefined };
@@ -37,7 +40,7 @@ export const SENDING: Progress = Object.freeze({ phase: "sending", statusUnknown
 export function nextProgress(progress: Progress, event: ProgressEvent): Progress {
   switch (event.kind) {
     case "confirm_started":
-      return SENDING;
+      return isKnown(event.state) ? SENDING : { ...SENDING, statusUnknown: true };
     case "outcome":
       return progress.phase === "sending" ? afterOutcome(progress, event.outcome) : progress;
     case "vacuum_state":
@@ -48,13 +51,13 @@ export function nextProgress(progress: Progress, event: ProgressEvent): Progress
 function afterOutcome(sending: Progress, outcome: StoredOutcome): Progress {
   switch (outcome.kind) {
     case "accepted":
-      return replay({ phase: "starting", statusUnknown: false }, sending.held);
+      return replay({ phase: "starting", statusUnknown: sending.statusUnknown }, sending.held);
     case "changed":
       return { phase: "not_started", statusUnknown: false };
     case "error": {
       const { error } = outcome;
       if (error.mayHaveStarted === "no") return { phase: "failed", error, statusUnknown: false };
-      return replay({ phase: "may_have_started", error, statusUnknown: false }, sending.held);
+      return replay({ phase: "may_have_started", error, statusUnknown: sending.statusUnknown }, sending.held);
     }
   }
 }
@@ -80,7 +83,7 @@ function afterState(progress: Progress, state: string | undefined): Progress {
     case "cleaning":
     case "paused":
     case "may_have_started":
-      return isKnown(state) ? moved(progress, phaseOn(phase, state)) : flagged(progress);
+      return isKnown(state) ? moved(progress, phaseOn(progress, phase, state)) : flagged(progress);
   }
 }
 
@@ -94,11 +97,16 @@ function flagged(progress: Progress): Progress {
 
 function moved(progress: Progress, phase: ProgressPhase): Progress {
   if (phase === progress.phase) return progress.statusUnknown ? { ...progress, statusUnknown: false } : progress;
+  if (progress.cleaned || phase === "cleaning") return { phase, statusUnknown: false, cleaned: true };
   return { phase, statusUnknown: false };
 }
 
 /** The row of « Progress on a room » a known vacuum state gives while the job may be under way. */
-function phaseOn(phase: "starting" | "cleaning" | "paused" | "may_have_started", state: string): ProgressPhase {
+function phaseOn(
+  { cleaned }: Progress,
+  phase: "starting" | "cleaning" | "paused" | "may_have_started",
+  state: string,
+): ProgressPhase {
   switch (state) {
     case "cleaning":
       return "cleaning";
@@ -107,7 +115,9 @@ function phaseOn(phase: "starting" | "cleaning" | "paused" | "may_have_started",
     case "error":
       return "failed";
     default:
-      // `returning`, `docked`, `idle`: the end of a job under way; before it started, nothing to read yet.
-      return phase === "cleaning" || phase === "paused" ? "done" : phase;
+      // `returning`, `docked`, `idle`: the end of a job that cleaned (« Done »); paused before any cleaning, the robot
+      // is waited for again, as after the call (« Starting »).
+      if (cleaned) return "done";
+      return phase === "paused" ? "starting" : phase;
   }
 }
