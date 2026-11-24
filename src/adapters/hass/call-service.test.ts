@@ -88,6 +88,7 @@ describe("the ServiceError of each fixture row", () => {
 
   it("never copies the placeholders of a translated error", async () => {
     const unknownRooms = serviceErrors.find((r) => r.row.startsWith("Roomba+ unknown_rooms"));
+    expect(unknownRooms).toBeDefined();
     expect(JSON.stringify(await failingWith(unknownRooms?.error))).not.toMatch(/Larder|Snug|Orangery|Atelier/);
   });
 });
@@ -151,6 +152,19 @@ describe("the ServiceError rules", () => {
       ok: false,
       error: { code: "home_assistant_error", message: "Odd" },
     });
+  });
+
+  it.each<[string, () => object]>([
+    [
+      "an accessor",
+      () => Object.defineProperty({ code: "c", message: "Known rooms: Larder" }, "translation_key", { get: () => "k" }),
+    ],
+    [
+      "an inherited property",
+      () => Object.assign(Object.create({ translation_key: "k" }), { code: "c", message: "Known rooms: Larder" }),
+    ],
+  ])("drops the message when translation_key is %s, which it never reads", async (_, make) => {
+    await expect(failingWith(make())).resolves.toStrictEqual({ ok: false, error: { code: "c" } });
   });
 
   it("drops over-cap strings, never cuts them", async () => {

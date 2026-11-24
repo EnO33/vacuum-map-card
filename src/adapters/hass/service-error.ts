@@ -26,15 +26,24 @@ function parse(rejection: unknown): ServiceError {
   if (typeof rejection !== "object" || rejection === null) return UNKNOWN;
   const code = bounded(ownValue(rejection, "code"));
   const domain = bounded(ownValue(rejection, "translation_domain"));
-  const rawKey = ownValue(rejection, "translation_key");
-  const key = bounded(rawKey);
-  const message = rawKey === undefined || rawKey === null ? bounded(ownValue(rejection, "message")) : undefined;
+  const key = bounded(ownValue(rejection, "translation_key"));
+  const message = untranslated(rejection) ? bounded(ownValue(rejection, "message")) : undefined;
   return {
     code: code === undefined || code === "" ? "unknown_error" : code,
     ...(message === undefined ? {} : { message }),
     ...(domain === undefined ? {} : { translationDomain: domain }),
     ...(key === undefined ? {} : { translationKey: key }),
   };
+}
+
+/**
+ * Whether the error has no `translation_key`: none at all, or an own data property holding `undefined` or `null`. An
+ * accessor or an inherited key counts as present, so its message, whose placeholders may be filled in, is dropped.
+ */
+function untranslated(source: object): boolean {
+  const descriptor = Object.getOwnPropertyDescriptor(source, "translation_key");
+  if (descriptor === undefined) return !("translation_key" in source);
+  return "value" in descriptor && (descriptor.value === undefined || descriptor.value === null);
 }
 
 /** An own data property's value, or `undefined` for a missing or accessor property (its getter never runs). */
