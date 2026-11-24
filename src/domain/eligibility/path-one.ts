@@ -3,13 +3,13 @@ import { type LastSeen, lastSeenName } from "../mapping/last-seen";
 
 /**
  * What path 1 is asked about (ADR 0003 « Path 1 », « Where it applies »): an area item of a room list, with its area,
- * or a room of a paired rooms map, by its segment id only (`segmentIdOf`, #49). A room of an unpaired rooms map is
- * not asked about. The room's area comes from this robot's own mapping (condition 4), so a name link (#50) can never
- * be passed here.
+ * or a room of a rooms map, by its region id. Path 1 applies to a room only on this robot's paired rooms map, whose
+ * `segmentIdOf` (#49) gives its segment id; the room's area then comes from this robot's own mapping (condition 4), so
+ * a name link (#50) can never be passed here.
  */
 export type PathOneItem =
   | { readonly kind: "area"; readonly areaId: string }
-  | { readonly kind: "room"; readonly segmentId: string };
+  | { readonly kind: "room"; readonly regionId: string };
 
 /** A paired rooms map's rooms (#49), so condition 6 names a segment from the regions currently on it. */
 export interface PairedRooms {
@@ -101,9 +101,10 @@ function areaOf(
   if (item.kind === "area") {
     return segmentsOfArea(mapping, item.areaId).length > 0 ? item : refused("area_not_mapped");
   }
-  // A room is asked about only on this robot's paired rooms map (ADR 0003 « Where it applies »).
-  if (pairedRooms === undefined) return refused("no_core_area");
-  const area = areaOfSegment(mapping, item.segmentId);
+  // Path 1 applies to a room only on this robot's paired rooms map (ADR 0003 « Where it applies »).
+  const segmentId = pairedRooms?.segmentIdOf(item.regionId);
+  if (segmentId === undefined) return refused("no_core_area");
+  const area = areaOfSegment(mapping, segmentId);
   if (area.kind === "one") return { kind: "area", areaId: area.areaId };
   return refused(area.kind === "several" ? "several_areas" : "no_core_area");
 }

@@ -163,10 +163,10 @@ describe("pathOne for a room of a paired rooms map", () => {
       ],
     },
   };
-  const room = (segmentId: string): PathOneItem => ({ kind: "room", segmentId });
+  const room = (regionId: string): PathOneItem => ({ kind: "room", regionId });
 
   it("cleans the room's core area, naming every room of it from the rooms map", () => {
-    expect(pathOne(room("MapA_q1W2e3_3"), paired)).toEqual({
+    expect(pathOne(room("3"), paired)).toEqual({
       kind: "path1",
       areaId: "library",
       roomNames: ["Reading room", "Nook"],
@@ -175,19 +175,26 @@ describe("pathOne for a room of a paired rooms map", () => {
   });
 
   it.each([
-    ["a segment under two areas", room("MapA_q1W2e3_1"), "several_areas"],
-    ["a segment under no area", room("MapA_q1W2e3_7"), "no_core_area"],
+    ["a segment under two areas", room("1"), "several_areas"],
+    ["a segment under no area", room("7"), "no_core_area"],
   ])("refuses %s", (_, item, reason) => {
     expect(pathOne(item, paired)).toEqual({ kind: "refused", reason });
   });
 
   it("never names a zone of the paired map, which is not a region", () => {
     const withZone = { ...paired, mapping: withMapping([["library", ["MapA_q1W2e3_1", "MapA_q1W2e3_zid_0"]]]) };
-    expect(pathOne(room("MapA_q1W2e3_1"), withZone)).toEqual({ kind: "refused", reason: "segment_unnamed" });
+    expect(pathOne(room("1"), withZone)).toEqual({ kind: "refused", reason: "segment_unnamed" });
+  });
+
+  it("does not answer for a room whose segment id the adapter cannot build", () => {
+    const { pairedRooms } = paired;
+    if (pairedRooms === undefined) throw new Error("paired");
+    const capped = { ...paired, pairedRooms: { ...pairedRooms, segmentIdOf: () => undefined } };
+    expect(pathOne(room("3"), capped)).toEqual({ kind: "refused", reason: "no_core_area" });
   });
 
   it("does not answer for a room when the rooms map is not paired", () => {
-    expect(pathOne(room("MapA_q1W2e3_3"), { ...paired, pairedRooms: undefined })).toEqual({
+    expect(pathOne(room("3"), { ...paired, pairedRooms: undefined })).toEqual({
       kind: "refused",
       reason: "no_core_area",
     });
@@ -199,11 +206,12 @@ describe("pathOne for a room of a paired rooms map", () => {
       mapping: withMapping([["library", ["MapA_q1W2e3_1", "MapA_q1W2e3_2"]]]),
       lastSeen: readLastSeen([{ id: "MapA_q1W2e3_2", name: "Workshop" }]),
     };
-    expect(pathOne(room("MapA_q1W2e3_1"), gone)).toEqual({ kind: "refused", reason: "segment_unnamed" });
+    expect(pathOne(room("1"), gone)).toEqual({ kind: "refused", reason: "segment_unnamed" });
   });
 
   it("accepts no name link where a room is expected", () => {
     expectTypeOf<{ kind: "room"; areaId: string }>().not.toExtend<PathOneItem>();
+    expectTypeOf<{ kind: "room"; segmentId: string }>().not.toExtend<PathOneItem>();
   });
 });
 
