@@ -98,6 +98,50 @@
           }
         }
       }
+    },
+    {
+      "includes": ["src/adapters/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/ui", "**/ui/**", "**/index", "**/i18n", "**/i18n/**", "lit", "lit/**"],
+                    "message": "Adapters import nothing from ui, i18n, index or Lit (CLAUDE.md « Architecture »)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/adapters/hass/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": ["**/ui", "**/ui/**", "**/index", "**/i18n", "**/i18n/**", "lit", "lit/**"],
+                    "message": "Adapters import nothing from ui, i18n, index or Lit (CLAUDE.md « Architecture »)."
+                  },
+                  {
+                    "group": ["**/roomba-plus", "**/roomba-plus/**"],
+                    "message": "The Home Assistant adapter imports nothing from an integration adapter (ADR 0002)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

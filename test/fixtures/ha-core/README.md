@@ -49,3 +49,4 @@ Built from the captured shapes; the installation does not have them.
 | `synthetic/floor_registry_list_floor_without_areas.json` | A third floor, `basement`, with no area |
 | `synthetic/entity_registry_get_vacuum_deleted_area.json` | An `area_mapping` key, `deleted_room`, that names no area |
 | `synthetic/entity_registry_get_vacuum_clean_area_no_mapping.json` | A vacuum with `CLEAN_AREA` and no mapping saved (`options.vacuum` absent) |
+| `synthetic/service_errors.json` | Rejection values of `hass.callService`, built from the sources cited in `docs/research/ha-core-vacuum.md` « Errors » rows 1, 3, 4, 6, 7 and 10 and « Response » (no call made, 2026-11-24): websocket error objects, Roomba+ `unknown_rooms` with invented room names and `room_list_not_read`, and the connection-lost result message of `home-assistant-js-websocket` 9.8.0. Translated messages of rows 6, 7 and `room_list_not_read` use the bare key, as core sends when translations are not cached |

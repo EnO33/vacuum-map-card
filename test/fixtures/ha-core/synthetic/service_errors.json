@@ -1,0 +1,142 @@
+[
+  {
+    "row": "ha-core-vacuum.md Errors row 1, invalid_format",
+    "error": {
+      "code": "invalid_format",
+      "message": "extra keys not allowed @ data['bogus']"
+    },
+    "expected": {
+      "code": "invalid_format",
+      "message": "extra keys not allowed @ data['bogus']"
+    }
+  },
+  {
+    "row": "ha-core-vacuum.md Errors row 3, service_not_supported",
+    "error": {
+      "code": "service_validation_error",
+      "message": "Validation error: Entity vacuum.robot_one does not support action vacuum.clean_area",
+      "translation_key": "service_not_supported",
+      "translation_placeholders": {
+        "domain": "vacuum",
+        "service": "clean_area",
+        "entity_id": "vacuum.robot_one"
+      },
+      "translation_domain": "homeassistant"
+    },
+    "expected": {
+      "code": "service_validation_error",
+      "translationDomain": "homeassistant",
+      "translationKey": "service_not_supported"
+    }
+  },
+  {
+    "row": "ha-core-vacuum.md Errors row 4, Unauthorized",
+    "error": {
+      "code": "home_assistant_error",
+      "message": "Unauthorized"
+    },
+    "expected": {
+      "code": "home_assistant_error",
+      "message": "Unauthorized"
+    }
+  },
+  {
+    "row": "ha-core-vacuum.md Errors row 6, area_mapping_not_configured (translations not cached: bare key)",
+    "error": {
+      "code": "service_validation_error",
+      "message": "Validation error: area_mapping_not_configured",
+      "translation_key": "area_mapping_not_configured",
+      "translation_placeholders": {
+        "entity_id": "vacuum.robot_one"
+      },
+      "translation_domain": "vacuum"
+    },
+    "expected": {
+      "code": "service_validation_error",
+      "translationDomain": "vacuum",
+      "translationKey": "area_mapping_not_configured"
+    }
+  },
+  {
+    "row": "ha-core-vacuum.md Errors row 7, areas_not_mapped (translations not cached: bare key)",
+    "error": {
+      "code": "service_validation_error",
+      "message": "Validation error: areas_not_mapped",
+      "translation_key": "areas_not_mapped",
+      "translation_placeholders": {
+        "areas": "library"
+      },
+      "translation_domain": "vacuum"
+    },
+    "expected": {
+      "code": "service_validation_error",
+      "translationDomain": "vacuum",
+      "translationKey": "areas_not_mapped"
+    }
+  },
+  {
+    "row": "ha-core-vacuum.md Errors row 10, service_not_found",
+    "error": {
+      "code": "not_found",
+      "message": "Service vacuum.clean_area not found.",
+      "translation_key": "service_not_found",
+      "translation_placeholders": {
+        "domain": "vacuum",
+        "service": "clean_area"
+      },
+      "translation_domain": "homeassistant"
+    },
+    "expected": {
+      "code": "not_found",
+      "translationDomain": "homeassistant",
+      "translationKey": "service_not_found"
+    }
+  },
+  {
+    "row": "Roomba+ unknown_rooms (invented room names)",
+    "error": {
+      "code": "service_validation_error",
+      "message": "Validation error: Unknown room(s) for vacuum.robot_one: Atelier. Known rooms: Larder, Snug, Orangery",
+      "translation_key": "unknown_rooms",
+      "translation_placeholders": {
+        "entity_id": "vacuum.robot_one",
+        "rooms": "Atelier",
+        "known": "Larder, Snug, Orangery"
+      },
+      "translation_domain": "roomba_plus"
+    },
+    "expected": {
+      "code": "service_validation_error",
+      "translationDomain": "roomba_plus",
+      "translationKey": "unknown_rooms"
+    }
+  },
+  {
+    "row": "Roomba+ room_list_not_read (HomeAssistantError, translations not cached: bare key)",
+    "error": {
+      "code": "home_assistant_error",
+      "message": "room_list_not_read",
+      "translation_key": "room_list_not_read",
+      "translation_domain": "roomba_plus"
+    },
+    "expected": {
+      "code": "home_assistant_error",
+      "translationDomain": "roomba_plus",
+      "translationKey": "room_list_not_read"
+    }
+  },
+  {
+    "row": "home-assistant-js-websocket 9.8.0 connection lost",
+    "error": {
+      "type": "result",
+      "success": false,
+      "error": {
+        "code": 3,
+        "message": "Connection lost"
+      }
+    },
+    "expected": {
+      "code": "unknown_error"
+    }
+  }
+]
