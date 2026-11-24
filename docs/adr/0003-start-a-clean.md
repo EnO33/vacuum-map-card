@@ -157,14 +157,14 @@ Every start is confirmed by the user in a dialog (point 3). The dialog names the
 - **Exception to point 3** (owner decision, 2026-11-23, #37). Step 2 above is the only case where the dialog does not name vacuum or mop. No mode is sent and the robot uses its own setting, so the dialog says « Send <robot> to clean <room>? », and the robot stays in the picker.
 
   Live, a cleaning mode select was `unknown` with all four options. That robot was a mop robot, which step 1 reads as « mop » ([`roomba-plus.md` « Gaps for this card », Epic 4 item 4](../research/roomba-plus.md#epic-4-adapter), [« To confirm live (#27) », row 7](../research/roomba-plus.md#to-confirm-live-27)).
-- **One send per confirmation.** The confirm button is disabled while the call runs, and the card never retries: Roomba+ may already re-send an ignored start once on its own ([`roomba-plus.md` « Gaps for this card », Security item 5](../research/roomba-plus.md#security)).
+- **One send per confirmation.** The card never retries, and one confirmation sends at most one call (how the dialog and the call follow each other: « Amendment (2026-11-24) », « Where the result shows »): Roomba+ may already re-send an ignored start once on its own ([`roomba-plus.md` « Gaps for this card », Security item 5](../research/roomba-plus.md#security)).
 - **No path switch after an error.** The card never falls back to path 2 after a path 1 error, in particular after `Unauthorized`.
 
 The final wording is decided in Epic 5, with `src/i18n/en.json` and `fr.json`.
 
 ### Errors
 
-Calls use `notifyOnError = false`, so the error is shown once, in the dialog, not also as a Home Assistant toast ([`ha-core-vacuum.md` « Response »](../research/ha-core-vacuum.md#response)).
+Calls use `notifyOnError = false`, so the error is shown once, by the card on the room and in its status line after the dialog closes (« Amendment (2026-11-24) »), not also as a Home Assistant toast ([`ha-core-vacuum.md` « Response »](../research/ha-core-vacuum.md#response)).
 
 The card shows its own localised text, chosen from `error.code` and `error.translation_key`. It shows the raw `message` only as a fallback, and as text. Placeholders are shown only as text: Roomba+'s `known` lists every room name, which is untrusted. This replaces the earlier consequence « with the integration's message » ([`ha-core-vacuum.md` « Relation to ADR 0003 »](../research/ha-core-vacuum.md#relation-to-adr-0003-and-to-the-previous-document)).
 
@@ -218,11 +218,43 @@ When the mapping is missing, a non-admin user is told to ask an administrator. A
 ### Points kept
 
 3. Every start is confirmed by the user in a dialog that names the robot, the action (vacuum or mop) and the room, with the one exception in « Confirmation ».
-4. The card never chains robots, adds conditions (pad state, water level) or sets run options (`pad_wetness`, `smart_scrub`, `two_pass`): that belongs to the user's automations and scripts. Pad state is shown in the picker, never blocking ([`roomba-plus.md` « States and eligibility attributes »](../research/roomba-plus.md#states-and-eligibility-attributes), [« Gaps for this card », Epic 4 item 7](../research/roomba-plus.md#epic-4-adapter)). An option may later let the user point a robot to a script instead of a direct action.
+4. The card never chains robots, adds conditions (pad state, water level) or sets run options (`pad_wetness`, `smart_scrub`, `two_pass`): that belongs to the user's automations and scripts. Pad state is shown in the picker after the first release (owner decision 2026-11-24, epic #97 « Owner decisions », item 3), never blocking ([`roomba-plus.md` « States and eligibility attributes »](../research/roomba-plus.md#states-and-eligibility-attributes), [« Gaps for this card », Epic 4 item 7](../research/roomba-plus.md#epic-4-adapter)). An option may later let the user point a robot to a script instead of a direct action.
 
 ## Consequences
 
 - Path 1 works the same for every integration that supports core area cleaning, once the vacuum's segments are mapped to areas. The adapter still names the action and links rooms to segments (ADR 0002 amendment).
-- Errors are shown in the dialog in plain words chosen by the card, with the integration's message only as a fallback.
+- Errors are shown on the card and the room in plain words chosen by the card, with the integration's message only as a fallback.
 - A mop robot without area cleaning always uses its integration's action, through its adapter, with the residual risks recorded under « Path 2 ».
 - On robots with several stored maps, a tapped outline uses path 2 (the rooms map is not paired), where a shared region id is often refused (`unknown_rooms`). The room lists of their plans start areas through path 1, which does not depend on region ids.
+
+## Amendment (2026-11-24)
+
+Epic 5 settled how the confirmation is shown: Home Assistant's standard confirmation through the card helpers, with the card's own dialog only as a fallback (owner decision 2026-11-24, epic #97 « Owner decisions », item 1; ADR 0004 « Amendment (2026-11-24) », « Confirmation »). This amendment says where the result of a start shows and how progress on a room is derived. Eligibility, the two paths, the checks before calling, the error tables and the permissions are unchanged.
+
+### Where the result shows
+
+1. When the picker's choice is made, the card captures the intent with the clean controller's `prepare` (« When the checks run »), then opens the confirmation: `showConfirmationDialog` from the card helpers, or the card's own dialog when the helpers are missing.
+2. The card does not pass the start as the dialog's `action`. With `action`, a rejected promise leaves the standard dialog open with no message, so an error could not be shown there ([`ha-frontend.md` § 3 « Dialogs »](../research/ha-frontend.md#3-dialogs), [« Gaps for this card », item 3](../research/ha-frontend.md#gaps-for-this-card)).
+3. The dialog resolves first. On `true`, the card calls the controller's `confirm` once with that intent. On `false` (Cancel, or Escape), it calls `dismiss` and nothing is sent. The card's own fallback dialog behaves the same way: it closes when the user confirms, before the call.
+4. The outcome shows on the room and in a status line of the card that is announced to screen readers (`role="status"`). The stored outcomes are `accepted`, `changed` and `error` (`src/app/start-clean/outcomes.ts`). An error uses the card's own text, chosen as in « Errors ».
+
+This replaces « the error is shown once, in the dialog » (« Errors ») and « the confirm button is disabled while the call runs » (« Confirmation »): with the standard confirmation, the dialog is closed while the call runs. The one-send rule is unchanged. One confirmation leads to at most one `confirm` call, and the controller sends nothing for an intent already confirmed (`already_sent`) or for a robot whose start is still in flight (`busy`).
+
+### Progress on a room
+
+Progress belongs to the robot that was started and shows on the room it was sent to. It is derived from the stored outcome of `confirm` and from the states the vacuum entity reports after it. `accepted` means Home Assistant accepted the call, never « cleaning » (« When the checks run »).
+
+| Progress | When |
+|---|---|
+| Sending | While `confirm` runs |
+| Starting | After `accepted`, until the vacuum reports `cleaning` |
+| Cleaning | While the vacuum reports `cleaning` |
+| Paused | On `paused` |
+| Done | On the first `returning`, `docked` or `idle` after `cleaning` |
+| Failed | On an `error` outcome, or on the `error` state after the start |
+| Not started | On a `changed` outcome: nothing was sent, and the user is asked to try again |
+| Status unknown | On `unavailable` or `unknown`. It does not end the progress: when a state above comes back, its row applies again |
+
+The vacuum states are `cleaning`, `docked`, `idle`, `paused`, `returning` and `error`, plus `unavailable` and `unknown` ([`ha-core-vacuum.md` « States the card can see »](../research/ha-core-vacuum.md#states-the-card-can-see), [const.py#L32-L40](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/components/vacuum/const.py#L32-L40) at core 2026.11.2).
+
+Progress is kept in memory until the user dismisses it (the controller's `acknowledge`) or starts that robot again. Nothing is persisted: a page reload loses it (epic #97 « Non-goals »). The colours of these states are in ADR 0004 « Amendment (2026-11-24) », « State colours ».
