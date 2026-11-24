@@ -6,5 +6,7 @@
   "card.no_robot": "Aucun robot compatible trouvé",
   "card.no_robot_hint": "Cette carte fonctionne avec les robots de l'intégration {integration}.",
   "card.no_plan": "Aucun plan trouvé.",
-  "card.no_floor": "Plans sans étage"
+  "card.no_floor": "Plans sans étage",
+  "confirm.cancel": "Annuler",
+  "confirm.ok": "OK"
 }

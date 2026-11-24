@@ -1,5 +1,6 @@
 import { CARD_VERSION } from "../version";
 import { CARD_DOCUMENTATION_URL, CARD_ELEMENT, CARD_NAME } from "./card-meta";
+import { CONFIRM_DIALOG_ELEMENT, ConfirmDialog } from "./confirm-dialog";
 import { VacuumMapCard } from "./vacuum-map-card";
 
 /** Entry of `window.customCards`, read by the Home Assistant card picker (frontend 20261028.6). */
@@ -38,11 +39,12 @@ export function defineOnce(registry: CustomElementRegistry, name: string, elemen
   return true;
 }
 
-/** Registers the card element, logs its version once, and lists it in the card picker. */
+/** Registers the card and its own elements, logs its version once, and lists it in the card picker. */
 export function registerCard(): void {
   if (defineOnce(customElements, CARD_ELEMENT, VacuumMapCard)) {
     console.info(`${CARD_ELEMENT} ${CARD_VERSION}`);
   }
+  defineOnce(customElements, CONFIRM_DIALOG_ELEMENT, ConfirmDialog);
   window.customCards = withCustomCard(window.customCards, {
     type: CARD_ELEMENT,
     name: CARD_NAME,
