@@ -172,6 +172,7 @@ describe("defensive parsing", () => {
     ["without a string entity_id", raw({ entity_id: 3 })],
     ["without a platform", raw({ platform: undefined })],
     ["without a string id", raw({ id: null })],
+    ["with an empty id", raw({ id: "" })],
     ["with an over-cap entity_id", raw({ entity_id: `sensor.${"x".repeat(MAX_TEXT_LENGTH)}` })],
   ])("skips an entry %s", async (_, entry) => {
     await loaded([entry, raw({ entity_id: "sensor.kept" })]);

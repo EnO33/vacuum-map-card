@@ -22,6 +22,9 @@ export interface EntityRegistry {
   stop(): void;
 }
 
+/** The registry as its consumers read it: no `start` or `stop`, which stay with its owner. */
+export type EntityRegistryView = Pick<EntityRegistry, "version" | "entry" | "byPlatform" | "onChange">;
+
 interface Index {
   readonly list: readonly EntityRegistryEntry[];
   readonly byId: ReadonlyMap<string, EntityRegistryEntry>;

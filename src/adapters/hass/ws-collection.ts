@@ -1,5 +1,6 @@
 import { type Debounced, leadingDebounce, type Schedule, timerSchedule } from "./debounce";
 import type { FrontendConnection, FrontendHass } from "./frontend-hass";
+import { Listeners } from "./listeners";
 
 /** The frontend's registry collections wait 500 ms (`docs/research/ha-core-registries.md` « Update signal »). */
 const DEBOUNCE_MS = 500;
@@ -23,6 +24,11 @@ export interface WsCollectionOptions<T> {
 export interface WsCollection<T> {
   /** The last list read, `undefined` until the first successful fetch; same object while nothing changed. */
   value(): T | undefined;
+  /**
+   * Whether the value reflects every update signal so far: `false` before the first fetch, and from an update event or
+   * a reconnection until a fetch made after it is applied (equal or not). A failed fetch leaves it `false`.
+   */
+  settled(): boolean;
   /** Calls `listener` once each time the value changes; returns the function that removes it. */
   onChange(listener: () => void): () => void;
   start(): void;
@@ -38,18 +44,27 @@ export function createWsCollection<T>(options: WsCollectionOptions<T>): WsCollec
 
 class ListCollection<T> implements WsCollection<T> {
   readonly #options: WsCollectionOptions<T>;
-  readonly #listeners = new Set<() => void>();
+  readonly #listeners = new Listeners();
   readonly #debounced: Debounced;
   #state: State = "idle";
   #current: T | undefined;
   #latest = 0;
   /** The request whose answer the value reflects: an answer to an older one is never applied. */
   #applied = 0;
+  /** Update signals received (events and reconnections), and the last one an applied answer covers. */
+  #signals = 0;
+  #covered = -1;
   #connection: FrontendConnection | undefined;
   #unsubscribe: (() => Promise<void>) | undefined;
   readonly #refetch = () => void this.#fetch();
   readonly #onEvent = () => {
-    if (this.#state === "started") this.#debounced.call();
+    if (this.#state !== "started") return;
+    this.#signals++;
+    this.#debounced.call();
+  };
+  readonly #onReady = () => {
+    this.#signals++;
+    this.#refetch();
   };
 
   constructor(options: WsCollectionOptions<T>) {
@@ -61,11 +76,12 @@ class ListCollection<T> implements WsCollection<T> {
     return this.#current;
   }
 
+  settled(): boolean {
+    return this.#covered === this.#signals;
+  }
+
   onChange(listener: () => void): () => void {
-    this.#listeners.add(listener);
-    return () => {
-      this.#listeners.delete(listener);
-    };
+    return this.#listeners.add(listener);
   }
 
   /** Does nothing while `hass` or its connection cannot be read: the collection stays idle, so a later start works. */
@@ -74,7 +90,7 @@ class ListCollection<T> implements WsCollection<T> {
     let connection: FrontendConnection;
     try {
       connection = this.#options.getHass().connection;
-      connection.addEventListener("ready", this.#refetch);
+      connection.addEventListener("ready", this.#onReady);
     } catch {
       return;
     }
@@ -90,7 +106,7 @@ class ListCollection<T> implements WsCollection<T> {
     this.#debounced.cancel();
     this.#listeners.clear();
     try {
-      this.#connection?.removeEventListener("ready", this.#refetch);
+      this.#connection?.removeEventListener("ready", this.#onReady);
     } catch {
       // Nothing more to remove.
     }
@@ -104,6 +120,7 @@ class ListCollection<T> implements WsCollection<T> {
    */
   async #fetch(): Promise<void> {
     const request = ++this.#latest;
+    const signals = this.#signals;
     const { getHass, command, parse, equal } = this.#options;
     let next: T | undefined;
     try {
@@ -112,25 +129,13 @@ class ListCollection<T> implements WsCollection<T> {
       next = parse(raw);
       if (next === undefined) return;
       this.#applied = request;
+      this.#covered = signals;
       if (this.#current !== undefined && equal(this.#current, next)) return;
     } catch {
       return;
     }
     this.#current = next;
-    this.#notify();
-  }
-
-  #notify(): void {
-    for (const listener of [...this.#listeners]) {
-      // A listener may stop the collection or remove another listener.
-      if (this.#state !== "started") return;
-      if (!this.#listeners.has(listener)) continue;
-      try {
-        listener();
-      } catch {
-        // A failing listener must not stop the others.
-      }
-    }
+    this.#listeners.notify();
   }
 
   #subscribe(connection: FrontendConnection): void {

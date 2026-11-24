@@ -45,7 +45,9 @@ export type VacuumOptionsFailure = "not_loaded" | "registry_entry_unreadable" | 
  * - no `access_token`, picture URL, `unique_id` or whole state object crosses this port;
  * - map ids and segment ids are sensitive: never logged, never put in a reason;
  * - integration strings are within ADR 0002 « Parsing limits » item 3 (255 UTF-16 code units) and never cut, except
- *   the `options.vacuum` lists, passed through whole because the domain readers of #46 own their caps; registry
+ *   the `options.vacuum` lists: within the collection caps of ADR 0002 « Parsing limits » item 3 they are passed whole,
+ *   because the domain readers of #46 own the string caps; over a cap the adapter copies nothing and reports `malformed`
+ *   (sizes are counted before anything is copied); registry
  *   floor and area names and aliases are kept whole, while floor and area ids are within the cap everywhere (an entry
  *   with an over-cap id is skipped, an over-cap reference reads as none), so the same id matches in every source;
  * - no admin-only command is used (ADR 0005 « Permissions »).
@@ -74,8 +76,10 @@ export interface HassPort {
   /**
    * Whether core's repair issue `segments_changed` is open for the vacuum: an issue of `repairs/list_issues` with
    * domain `vacuum` and `issue_id` `segments_changed_<vacuum registry entry id>` (its `translation_placeholders`
-   * carry the entity id; there is no `data` field). `true` until the list has been read: the safe side of ADR 0003
-   * path 1 condition 6 (`docs/research/ha-core-vacuum.md` « When the integration reports different segments »).
+   * carry the entity id; there is no `data` field). `true` until both the entity registry list and the issue list are
+   * read, while an update of the issue list has not been fetched successfully, and for a vacuum without a registry
+   * entry: the safe side of ADR 0003 path 1 condition 6 (`docs/research/ha-core-vacuum.md` « When the integration
+   * reports different segments »).
    */
   segmentsChangedOpen(entityId: string): boolean;
   /**
