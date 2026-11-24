@@ -11,13 +11,13 @@ import deletedArea from "../fixtures/ha-core/synthetic/entity_registry_get_vacuu
   type: "json",
 };
 
-interface VacuumOptions {
+interface RawVacuumOptions {
   readonly area_mapping?: Readonly<Record<string, readonly string[]>>;
   readonly last_seen_segments?: readonly LastSeenSegment[];
 }
 
 export interface EntityRegistryFixture {
-  readonly options: Readonly<Record<string, unknown>> & { readonly vacuum?: VacuumOptions };
+  readonly options: Readonly<Record<string, unknown>> & { readonly vacuum?: RawVacuumOptions };
 }
 
 export const mappingFixtures = { vacuum, mop, noMapping, deletedArea } satisfies Record<string, EntityRegistryFixture>;

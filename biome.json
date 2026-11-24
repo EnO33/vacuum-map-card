@@ -35,5 +35,69 @@
         "noNonNullAssertion": "error"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      "includes": ["src/domain/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/app",
+                      "**/app/**",
+                      "**/adapters",
+                      "**/adapters/**",
+                      "**/ui",
+                      "**/ui/**",
+                      "**/index",
+                      "**/i18n",
+                      "**/i18n/**",
+                      "lit",
+                      "lit/**"
+                    ],
+                    "message": "The domain imports nothing from app, adapters, ui or Lit (CLAUDE.md « Architecture »)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "includes": ["src/app/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "**/adapters",
+                      "**/adapters/**",
+                      "**/ui",
+                      "**/ui/**",
+                      "**/index",
+                      "**/i18n",
+                      "**/i18n/**",
+                      "lit",
+                      "lit/**"
+                    ],
+                    "message": "The app layer imports only the domain and its own files (CLAUDE.md « Architecture »)."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }
