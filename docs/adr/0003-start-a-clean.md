@@ -164,7 +164,7 @@ The final wording is decided in Epic 5, with `src/i18n/en.json` and `fr.json`.
 
 ### Errors
 
-Calls use `notifyOnError = false`, so the error is shown once, by the card on the room and in its status line after the dialog closes (« Amendment (2026-11-24) »), not also as a Home Assistant toast ([`ha-core-vacuum.md` « Response »](../research/ha-core-vacuum.md#response)).
+Calls use `notifyOnError = false`, so the error is shown by the card only, on the room and in its status line after the dialog closes (« Amendment (2026-11-24) »), not also as a Home Assistant toast ([`ha-core-vacuum.md` « Response »](../research/ha-core-vacuum.md#response)).
 
 The card shows its own localised text, chosen from `error.code` and `error.translation_key`. It shows the raw `message` only as a fallback, and as text. Placeholders are shown only as text: Roomba+'s `known` lists every room name, which is untrusted. This replaces the earlier consequence « with the integration's message » ([`ha-core-vacuum.md` « Relation to ADR 0003 »](../research/ha-core-vacuum.md#relation-to-adr-0003-and-to-the-previous-document)).
 
@@ -236,7 +236,9 @@ Epic 5 settled how the confirmation is shown: Home Assistant's standard confirma
 1. When the picker's choice is made, the card captures the intent with the clean controller's `prepare` (« When the checks run »), then opens the confirmation: `showConfirmationDialog` from the card helpers, or the card's own dialog when the helpers are missing.
 2. The card does not pass the start as the dialog's `action`. With `action`, a rejected promise leaves the standard dialog open with no message, so an error could not be shown there ([`ha-frontend.md` § 3 « Dialogs »](../research/ha-frontend.md#3-dialogs), [« Gaps for this card », item 3](../research/ha-frontend.md#gaps-for-this-card)).
 3. The dialog resolves first. On `true`, the card calls the controller's `confirm` once with that intent. On `false` (Cancel, or Escape), it calls `dismiss` and nothing is sent. The card's own fallback dialog behaves the same way: it closes when the user confirms, before the call.
-4. The outcome shows on the room and in a status line of the card that is announced to screen readers (`role="status"`). The stored outcomes are `accepted`, `changed` and `error` (`src/app/start-clean/outcomes.ts`). An error uses the card's own text, chosen as in « Errors ».
+4. The outcome shows on the room and in a status line of the card that is announced to screen readers (`role="status"`, present in the page before its text changes, so that the change is announced). The room's accessible name includes its progress. The stored outcomes are `accepted`, `changed` and `error` (`src/app/start-clean/outcomes.ts`). An error uses the card's own text, chosen as in « Errors ». When the error is a missing mapping, the administrator's link to the vacuum's entity settings (« Permissions ») shows on the card with it.
+5. A `busy`, `already_sent` or `discarded` answer stores nothing; the status line says that nothing was sent.
+6. When the card is shown in the card editor (`preview` is `true`), it never starts a robot ([`ha-frontend.md` § 7 « Card sizing »](../research/ha-frontend.md#7-card-sizing), [« Gaps for this card », item 10](../research/ha-frontend.md#gaps-for-this-card)).
 
 This replaces « the error is shown once, in the dialog » (« Errors ») and « the confirm button is disabled while the call runs » (« Confirmation »): with the standard confirmation, the dialog is closed while the call runs. The one-send rule is unchanged. One confirmation leads to at most one `confirm` call, and the controller sends nothing for an intent already confirmed (`already_sent`) or for a robot whose start is still in flight (`busy`).
 
@@ -251,10 +253,20 @@ Progress belongs to the robot that was started and shows on the room it was sent
 | Cleaning | While the vacuum reports `cleaning` |
 | Paused | On `paused` |
 | Done | On the first `returning`, `docked` or `idle` after `cleaning` |
-| Failed | On an `error` outcome, or on the `error` state after the start |
+| Failed | On an `error` outcome whose robot cannot have started (`mayHaveStarted` is `no`), or on the `error` state after the start |
+| May have started | On an `error` outcome whose robot may have started (`mayHaveStarted` is `possibly` or `unknown`, « Errors »). The error is shown, and the rows above apply again from the next vacuum state |
 | Not started | On a `changed` outcome: nothing was sent, and the user is asked to try again |
-| Status unknown | On `unavailable` or `unknown`. It does not end the progress: when a state above comes back, its row applies again |
+| Status unknown | On `unavailable` or `unknown`, or when the vacuum leaves `hass.states`. It does not end the progress: when a state above comes back, its row applies again |
 
-The vacuum states are `cleaning`, `docked`, `idle`, `paused`, `returning` and `error`, plus `unavailable` and `unknown` ([`ha-core-vacuum.md` « States the card can see »](../research/ha-core-vacuum.md#states-the-card-can-see), [const.py#L32-L40](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/components/vacuum/const.py#L32-L40) at core 2026.11.2).
+The vacuum states are `cleaning`, `docked`, `idle`, `paused`, `returning` and `error`, plus `unavailable` and `unknown`; a disabled or removed vacuum has no state at all ([`ha-core-vacuum.md` « States the card can see »](../research/ha-core-vacuum.md#states-the-card-can-see), [const.py#L32-L40](https://github.com/home-assistant/core/blob/2026.11.2/homeassistant/components/vacuum/const.py#L32-L40) at core 2026.11.2).
 
-Progress is kept in memory until the user dismisses it (the controller's `acknowledge`) or starts that robot again. Nothing is persisted: a page reload loses it (epic #97 « Non-goals »). The colours of these states are in ADR 0004 « Amendment (2026-11-24) », « State colours ».
+Progress is kept in memory until the user dismisses it (the controller's `acknowledge`, through a keyboard-reachable control) or starts that robot again. Nothing is persisted: a page reload loses it (epic #97 « Non-goals »). The colours of these states are in ADR 0004 « Amendment (2026-11-24) », « State colours ».
+
+### Open points
+
+These are left to the issue that builds the progress, and go to the owner when they change what the user is told:
+
+1. « Starting » has no end when the robot accepts the call but never reports `cleaning`.
+2. A robot that docks in the middle of a job (to recharge or empty its bin) and then resumes would read as « Done ». Whether Roomba+ robots do this, and in which states, is « à vérifier ».
+3. A robot that was not docked or idle when it was started (already `cleaning`, `paused` or `returning`, which « Eligibility » allows) can show « Cleaning » and « Done » for a job that is not this room's.
+4. Two robots sent to the same room show two progresses on one room; how they are drawn together is not decided.
