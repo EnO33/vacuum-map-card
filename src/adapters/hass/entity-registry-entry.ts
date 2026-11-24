@@ -42,7 +42,12 @@ export function parseEntityRegistryEntry(raw: unknown): EntityRegistryEntry | un
     uniqueId: boundedText(ownValue(raw, "unique_id")),
     translationKey: boundedText(ownValue(raw, "translation_key")) ?? null,
   };
-  return entityId.startsWith("vacuum.") ? { ...entry, rawVacuumOptions: vacuumOptionsOf(raw) } : entry;
+  return isVacuumEntityId(entityId) ? { ...entry, rawVacuumOptions: vacuumOptionsOf(raw) } : entry;
+}
+
+/** Whether an entity id is in the `vacuum` domain. */
+export function isVacuumEntityId(entityId: string): boolean {
+  return entityId.startsWith("vacuum.");
 }
 
 function vacuumOptionsOf(raw: object): unknown {
