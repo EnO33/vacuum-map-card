@@ -29,6 +29,8 @@ Planned as epic #40 (issues #41 to #56). The list below is the original idea; th
 
 ## Epic 4: Roomba+ adapter
 
+Planned as epic #74 (issues #75 to #84), covering both adapters: Home Assistant (`HassPort`) and Roomba+ (`RoomSource`). The list below is the original idea; the epic is the source of truth. `get_rooms` is not read: ADR 0005 « Rejected options » rejects it and the MVP does not need it.
+
 - Detect robots by registry platform, read `rooms_map`, `floor_plan_*` (enabled or not), `get_rooms`, map ids; parse defensively; fixtures.
 
 ## Epic 5: UI
