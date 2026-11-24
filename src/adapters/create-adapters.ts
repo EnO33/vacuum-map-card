@@ -53,6 +53,7 @@ export function createAdapters(getHass: () => FrontendHass, options: AdaptersOpt
 function portOnly(port: HassPort): HassPort {
   const only: HassPort = {
     floors: () => port.floors(),
+    fetchFailed: () => port.fetchFailed(),
     areas: () => port.areas(),
     vacuum: (entityId) => port.vacuum(entityId),
     hasService: (domain, service) => port.hasService(domain, service),

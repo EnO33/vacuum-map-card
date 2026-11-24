@@ -43,6 +43,7 @@ export function createHassPort(getHass: () => FrontendHass, options: HassPortOpt
 
   return {
     floors: () => floors.value(),
+    fetchFailed: () => floors.failed() || entityRegistry.failed(),
     areas: areasReader(getHass),
     vacuum: vacuumReader(getHass),
     hasService: serviceReader(getHass),

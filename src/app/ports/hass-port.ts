@@ -62,6 +62,14 @@ export interface HassPort {
    * until the list is read, then `subscribe` notifies (an empty list means a home without floors).
    */
   floors(): readonly Floor[] | undefined;
+  /**
+   * Whether a list the floor model waits for (the floor list or the entity registry list) could not be read: it has no
+   * value yet and its latest fetch failed (a websocket error, a refusal, or an answer that is not the documented shape).
+   * `false` until such a failure; then `true` until a later fetch succeeds (after a reconnection or an update event;
+   * there is no retry timer), and `subscribe` notifies each change. No error text crosses the port. The repair issue list is
+   * not counted: until it is read, `segmentsChangedOpen` keeps its safe side and the card does not wait for it.
+   */
+  fetchFailed(): boolean;
   /** Areas keyed by area id, from own keys of `hass.areas` only (`Object.hasOwn`, never `in`). */
   areas(): ReadonlyMap<string, Area>;
   /** The vacuum's state from `hass.states`, or `undefined` when it has none (missing or disabled entity). */

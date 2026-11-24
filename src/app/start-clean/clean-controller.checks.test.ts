@@ -24,6 +24,7 @@ function harness(hass: FakeHass, sources: readonly RoomSource[]) {
   const state = { hass, sources };
   const port: HassPort = {
     floors: () => state.hass.floors(),
+    fetchFailed: () => state.hass.fetchFailed(),
     areas: () => state.hass.areas(),
     vacuum: (id) => state.hass.vacuum(id),
     hasService: (domain, service) => state.hass.hasService(domain, service),

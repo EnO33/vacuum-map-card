@@ -11,6 +11,7 @@ const settings: FakeHassSettings = { services: ["vacuum.clean_area"] };
 export function portOf(current: () => FakeHass) {
   return {
     floors: () => current().floors(),
+    fetchFailed: () => current().fetchFailed(),
     areas: () => current().areas(),
     vacuum: (id: string) => current().vacuum(id),
     hasService: (domain: string, service: string) => current().hasService(domain, service),

@@ -46,5 +46,5 @@ export function floorModelOf(inputs: FloorModelInputs, plansFor: RoomsPlanFor): 
     const shown = planShownOnFloor(group.plans);
     if (shown) floorViews.push({ floorId: group.floor.floorId, name: group.floor.name, plan: shown.plan });
   }
-  return { loading, floors: floorViews, noFloor, robots };
+  return { loading, loadFailed: loading && inputs.fetchFailed, floors: floorViews, noFloor, robots };
 }

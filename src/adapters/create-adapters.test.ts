@@ -36,6 +36,7 @@ describe("createAdapters", () => {
     expect(Object.keys(port).sort()).toStrictEqual([
       "areas",
       "callService",
+      "fetchFailed",
       "floors",
       "hasService",
       "isAdmin",

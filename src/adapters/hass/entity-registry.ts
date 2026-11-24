@@ -17,6 +17,8 @@ export interface EntityRegistry {
   entry(entityId: string): EntityRegistryEntry | undefined;
   /** The entries of one integration, in list order. */
   byPlatform(platform: string): readonly EntityRegistryEntry[];
+  /** Whether the list could not be read yet (`WsCollection.failed`). */
+  failed(): boolean;
   onChange(listener: () => void): () => void;
   start(): void;
   stop(): void;
@@ -46,6 +48,7 @@ export function createEntityRegistry(getHass: () => FrontendHass, schedule?: Sch
     version: () => collection.value()?.list,
     entry: (entityId) => collection.value()?.byId.get(entityId),
     byPlatform: (platform) => collection.value()?.byPlatform.get(platform) ?? NONE,
+    failed: () => collection.failed(),
     onChange: (listener) => collection.onChange(listener),
     start: () => collection.start(),
     stop: () => collection.stop(),

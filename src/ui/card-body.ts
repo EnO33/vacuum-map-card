@@ -21,6 +21,12 @@ export const bodyStyles = css`
   .title {
     font-weight: var(--ha-font-weight-medium, 500);
   }
+  /* ADR 0004 « State colours », Failed. On the edge, not the text: the text keeps its contrast and says it all. */
+  .load-failed {
+    border-inline-start: var(--ha-space-1, 4px) solid
+      var(--state-vacuum-error-color, var(--state-vacuum-active-color, var(--state-active-color)));
+    padding-inline-start: var(--ha-space-3, 12px);
+  }
   ul {
     margin: 0;
     padding-inline-start: var(--ha-space-6, 24px);
@@ -29,7 +35,7 @@ export const bodyStyles = css`
 
 /**
  * The card's body for a view. The status region is the same element in every view, so a screen reader announces each
- * message that replaces the previous one (loading, then no robot, error or no plan); the floor list stays outside it.
+ * message that replaces the previous one (loading or « could not load », then no robot, error or no plan); the floor list stays outside it.
  * Every value inserted is text, never markup.
  */
 export function cardBody(view: CardView, locale: Locale): TemplateResult {
@@ -55,6 +61,12 @@ function message(view: CardView, names: readonly string[], locale: Locale): Temp
   switch (view.kind) {
     case "loading":
       return html`<p class="secondary">${localize(locale, "card.loading")}</p>`;
+    case "load_failed":
+      // No detail of what failed: no error text, command, URL or token.
+      return html`<div class="load-failed">
+        <p class="title">${localize(locale, "card.load_failed")}</p>
+        <p class="secondary">${localize(locale, "card.load_failed_hint")}</p>
+      </div>`;
     case "failed":
       // No detail of what failed: no stack, URL, token or entity data.
       return html`<p>${localize(locale, "card.error")}</p>`;

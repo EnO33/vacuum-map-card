@@ -70,7 +70,22 @@ describe("buildFloorModel variants", () => {
   });
 
   it("is loading before the floor list is read", () => {
-    expect(buildFloorModel(new FakeHass({ floorsNotLoaded: true }), [new FakeRoomSource()]).loading).toBe(true);
+    const model = buildFloorModel(new FakeHass({ floorsNotLoaded: true }), [new FakeRoomSource()]);
+    expect(model.loading).toBe(true);
+    expect(model.loadFailed).toBe(false);
+  });
+
+  it("tells a list that could not be fetched from one still loading", () => {
+    const failed = buildFloorModel(new FakeHass({ floorsNotLoaded: true, fetchFailed: true }), [new FakeRoomSource()]);
+    expect(failed).toMatchObject({ loading: true, loadFailed: true });
+    expect(buildFloorModel(new FakeHass(), [new FakeRoomSource()]).loadFailed).toBe(false);
+  });
+
+  it("is never loadFailed once loaded", () => {
+    expect(buildFloorModel(new FakeHass({ fetchFailed: true }), [new FakeRoomSource()])).toMatchObject({
+      loading: false,
+      loadFailed: false,
+    });
   });
 
   it("is loading before a robot's vacuum options are read", () => {
