@@ -1,5 +1,6 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import type { Plan } from "../app/floor-model/floor-model";
+import { type RoomsPlan, undrawableRooms } from "../domain/plan/rooms-plan";
 import { registryNameKey } from "../domain/text/registry-name";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
@@ -40,9 +41,13 @@ export const layoutStyles = css`
   figure {
     margin: 0;
   }
-  figcaption {
+  figcaption,
+  .not-drawn {
     margin-top: var(--ha-space-1, 4px);
     color: var(--secondary-text-color, #5e5e5e);
+  }
+  .not-drawn {
+    margin-bottom: 0;
   }
 `;
 
@@ -87,20 +92,38 @@ function mapLabel(plan: Plan, locale: Locale): string {
 function planFigure(plan: Plan, display: PlanDisplay | undefined, locale: Locale, floorName?: string): TemplateResult {
   const map = mapLabel(plan, locale);
   const robot = display?.robotName ?? plan.robot;
+  const rooms = plan.content.kind === "outlines" ? plan.content.plan : undefined;
+  // The note speaks of the picture's rooms: only under a picture that is shown.
+  const shown = plan.pictureState === "available" && display?.url !== undefined;
   const alt =
     floorName === undefined
       ? localize(locale, "plan.alt_no_floor", { map, robot })
       : localize(locale, "plan.alt", { name: floorName });
   const sameAsFloor = floorName !== undefined && registryNameKey(map) === registryNameKey(floorName);
   return html`<figure>
-    ${picture(plan, display?.url, alt, locale)}
+    ${picture(plan, display?.url, alt, rooms, locale)}
     <figcaption>${sameAsFloor ? nothing : html`${map} <span aria-hidden="true">·</span> `}${robot}</figcaption>
+    ${shown ? notDrawn(rooms, locale) : nothing}
   </figure>`;
 }
 
 /** The picture, or a readable message for each state that has none (ADR 0005 « Plan pictures » item 3). */
-function picture(plan: Plan, url: string | undefined, alt: string, locale: Locale): TemplateResult {
+function picture(
+  plan: Plan,
+  url: string | undefined,
+  alt: string,
+  rooms: RoomsPlan | undefined,
+  locale: Locale,
+): TemplateResult {
   if (plan.pictureState !== "available") return planMessage(localize(locale, `plan.${plan.pictureState}`));
   if (url === undefined) return planMessage(localize(locale, "plan.no_picture"));
-  return html`<vmc-plan-picture .src=${url} .alt=${alt} .locale=${locale}></vmc-plan-picture>`;
+  return html`<vmc-plan-picture .src=${url} .alt=${alt} .locale=${locale} .rooms=${rooms}></vmc-plan-picture>`;
+}
+
+/** The rooms of an outlines plan that cannot be drawn, named so none silently disappears. */
+function notDrawn(rooms: RoomsPlan | undefined, locale: Locale): TemplateResult | typeof nothing {
+  const names = rooms ? undrawableRooms(rooms).map((room) => room.name) : [];
+  if (names.length === 0) return nothing;
+  const list = new Intl.ListFormat(locale, { type: "conjunction" }).format(names);
+  return html`<p class="not-drawn">${localize(locale, "plan.not_drawn", { names: list })}</p>`;
 }

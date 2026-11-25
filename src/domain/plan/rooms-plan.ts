@@ -77,6 +77,23 @@ export function buildRoomsPlan(snapshot: RoomsMapSnapshot): RoomsPlanResult {
   return { kind: "plan", rooms: planRooms, hitRooms };
 }
 
+/** A room of the plan that can be drawn. */
+export type DrawableRoom = PlanRoom & { readonly shape: DrawableShape };
+
+function isDrawable(room: PlanRoom): room is DrawableRoom {
+  return room.shape.kind === "drawable";
+}
+
+/** The plan's rooms that can be drawn, in plan order. */
+export function drawableRooms(plan: RoomsPlan): DrawableRoom[] {
+  return [...plan.rooms.values()].filter(isDrawable);
+}
+
+/** The plan's rooms that cannot be drawn, in plan order: the UI names them, so none silently disappears. */
+export function undrawableRooms(plan: RoomsPlan): PlanRoom[] {
+  return [...plan.rooms.values()].filter((room) => !isDrawable(room));
+}
+
 /** The region id of the drawable room under a picture pixel, by the rule of the geometry hit test. */
 export function roomAt(plan: RoomsPlan, point: Point): string | undefined {
   return roomUnder(plan.hitRooms, point);

@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
-import { shadowOf } from "../../test/helpers/shadow";
+import { img, loaded, mountPicture } from "../../test/helpers/plan-picture";
+import { shadowOf, stylesText } from "../../test/helpers/shadow";
 import { PLAN_PICTURE_ELEMENT, PlanPicture } from "./plan-picture";
 import { defineOnce } from "./register";
 
@@ -18,25 +19,8 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function picture(src: string, locale: "en" | "fr" = "en"): Promise<PlanPicture> {
-  const element = document.createElement(PLAN_PICTURE_ELEMENT);
-  if (!(element instanceof PlanPicture)) throw new Error("not a PlanPicture");
-  Object.assign(element, { src, alt: "Floor plan, Ground floor", locale });
-  document.body.append(element);
-  await element.updateComplete;
-  return element;
-}
-
-function img(element: PlanPicture): HTMLImageElement {
-  const found = shadowOf(element).querySelector("img");
-  if (!(found instanceof HTMLImageElement)) throw new Error("no img");
-  return found;
-}
-
-function loaded(image: HTMLImageElement, width: number, height: number): void {
-  Object.defineProperty(image, "naturalWidth", { value: width, configurable: true });
-  Object.defineProperty(image, "naturalHeight", { value: height, configurable: true });
-  image.dispatchEvent(new Event("load"));
+function picture(src: string, locale: "en" | "fr" = "en"): Promise<PlanPicture> {
+  return mountPicture({ src, alt: "Floor plan, Ground floor", locale });
 }
 
 describe("PlanPicture", () => {
@@ -48,7 +32,7 @@ describe("PlanPicture", () => {
   });
 
   it("is never drawn wider than the picture itself", () => {
-    const rules = PlanPicture.elementStyles.map((style) => ("cssText" in style ? style.cssText : "")).join("\n");
+    const rules = stylesText(PlanPicture);
     expect(rules).toMatch(/img\s*\{[^}]*width:\s*auto;[^}]*max-width:\s*100%/);
   });
 

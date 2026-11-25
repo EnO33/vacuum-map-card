@@ -1,6 +1,7 @@
 // Test helper: a rooms map fixture turned into the typed snapshot an adapter would build (Epic 4 parses for real).
 import type { CalibrationPair, Point } from "../../src/domain/geometry/types";
 import type { RoomsMapSnapshot, SnapshotRoom } from "../../src/domain/plan/rooms-map-snapshot";
+import { buildRoomsPlan, type RoomsPlan } from "../../src/domain/plan/rooms-plan";
 import noCloud from "../fixtures/roomba-plus/synthetic/hass_state_rooms_map_no_cloud.json" with { type: "json" };
 import withoutOutline from "../fixtures/roomba-plus/synthetic/hass_state_rooms_map_room_without_outline.json" with {
   type: "json",
@@ -60,4 +61,11 @@ export function squareOutline(size = 1000): Point[] {
 /** A square room at the origin, for tests that need many rooms. */
 export function squareRoom(regionId: string, size = 1000): SnapshotRoom {
   return { regionId, name: `Room ${regionId}`, roomId: `room_${regionId}`, outline: squareOutline(size) };
+}
+
+/** The plan of a snapshot; throws when the snapshot gives no plan, so tests need no narrowing. */
+export function planOf(snapshot: RoomsMapSnapshot): RoomsPlan {
+  const result = buildRoomsPlan(snapshot);
+  if (result.kind !== "plan") throw new Error(`expected a plan, got ${JSON.stringify(result)}`);
+  return result;
 }
