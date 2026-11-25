@@ -32,6 +32,13 @@ describe("VacuumMapCard rooms", () => {
     expect(withRooms.length).toBeLessThan(pictures(card).length);
   });
 
+  it("tells each picture its plan's image entity, for the rooms chosen on it", async () => {
+    const card = await mount(fixtureHass());
+    const ids = pictures(card).map((p) => p.imageEntityId);
+    expect(ids.every((id) => id.startsWith("image."))).toBe(true);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it("lists the rooms it cannot draw under their plan", async () => {
     const plan = planOf(snapshotOf(snapshotFixtures.withoutOutline));
     withOutlines(plan);

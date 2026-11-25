@@ -16,6 +16,7 @@
   "plan.unknown": "This floor plan has no picture yet.",
   "plan.no_picture": "This floor plan picture cannot be shown right now.",
   "plan.load_failed": "The floor plan picture could not be loaded. The card tries again when the plan changes.",
+  "plan.rooms": "Rooms, {name}",
   "plan.not_drawn": "Rooms not drawn: {names}",
   "confirm.cancel": "Cancel",
   "confirm.ok": "OK"

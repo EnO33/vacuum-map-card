@@ -4,7 +4,7 @@ import { shadowOf } from "./shadow";
 
 /** A plan picture with `props`, attached to the document and rendered. */
 export async function mountPicture(
-  props: Partial<Pick<PlanPicture, "src" | "alt" | "locale" | "rooms">>,
+  props: Partial<Pick<PlanPicture, "src" | "alt" | "locale" | "rooms" | "imageEntityId" | "label" | "selected">>,
 ): Promise<PlanPicture> {
   const element = document.createElement(PLAN_PICTURE_ELEMENT);
   if (!(element instanceof PlanPicture)) throw new Error("not a PlanPicture");
@@ -25,4 +25,11 @@ export function loaded(image: HTMLImageElement, width: number, height: number): 
   Object.defineProperty(image, "naturalWidth", { value: width, configurable: true });
   Object.defineProperty(image, "naturalHeight", { value: height, configurable: true });
   image.dispatchEvent(new Event("load"));
+}
+
+/** One of the picture's two layers: the rooms (controls) or their labels. */
+export function layer(element: PlanPicture, name: "rooms" | "labels" = "rooms"): SVGSVGElement {
+  const found = shadowOf(element).querySelector(`svg.${name}`);
+  if (!(found instanceof SVGSVGElement)) throw new Error(`no ${name} svg`);
+  return found;
 }
