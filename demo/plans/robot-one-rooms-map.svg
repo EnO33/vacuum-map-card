@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600" role="img" aria-label="Demo rooms map, Robot one">
+  <!-- Invented demo rooms map, without room names like the Roomba+ default, drawn from the invented outlines of test/fixtures/roomba-plus/. Not a real home. -->
+  <style>
+    polygon { fill: #e3e8ec; stroke: #56636b; stroke-width: 4; stroke-linejoin: round; }
+  </style>
+  <polygon points="4,595 512,595 512,345.6 318,345.6 318,4 4,4 4,262.6 59.4,262.6 59.4,318 4,318"/>
+</svg>

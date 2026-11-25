@@ -25,7 +25,7 @@ Vacuum map cards usually show one robot on one map. Homes have several floors an
 ## How it works
 
 1. **Floors and rooms** come from Home Assistant: floors and areas, and the mapping between your vacuum's segments and your areas (vacuum entity settings, available since Home Assistant 2026.3).
-2. **Room outlines** come from a *room source* adapter for your vacuum integration. The first one supports [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). More adapters can be added without touching the rest of the card.
+2. **Room outlines** come from a *room source* adapter for your vacuum integration. The first one supports [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). More adapters can be added without touching the rest of the card. The card draws the outlines and room names over the rooms map picture itself, so keep the Roomba+ option « Draw room names on the map image » off (its default): with it on, each name shows twice; rooms it cannot draw are listed under the plan.
 3. **Cleaning** uses Home Assistant's own `vacuum.clean_area` action when the room is mapped to an area, or the integration's room action otherwise.
 
 ## Supported integrations

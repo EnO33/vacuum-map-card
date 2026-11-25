@@ -1,22 +1,23 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
 import {
+  changeModel,
   fixtureHass,
   injected,
   mount,
   newCard,
   nextHass,
+  pictures,
   settle,
   shadowOf,
   useTestCard,
-  wrapBuilder,
 } from "../../test/helpers/card";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
 import { roombaPlusStates } from "../../test/helpers/roomba-plus-states";
+import { stylesText } from "../../test/helpers/shadow";
 import { createAdapters } from "../adapters/create-adapters";
-import type { FloorModel, Plan } from "../app/floor-model/floor-model";
+import type { Plan } from "../app/floor-model/floor-model";
 import type { PictureState } from "../domain/robot/stored-map";
-import { PlanPicture } from "./plan-picture";
 import { VacuumMapCard } from "./vacuum-map-card";
 
 useTestCard();
@@ -30,11 +31,6 @@ function fakePictures(token = "t1"): void {
   });
 }
 
-/** The model the real builder gives, with `change` applied. */
-function changeModel(change: (model: FloorModel) => FloorModel): void {
-  injected.current.createModelBuilder = wrapBuilder((build) => (hass, sources) => change(build(hass, sources)));
-}
-
 function withFirstFloorPlan(change: Partial<Plan>): void {
   changeModel((model) => ({
     ...model,
@@ -46,10 +42,6 @@ function withFirstFloorPlan(change: Partial<Plan>): void {
 
 function headings(card: VacuumMapCard): string[] {
   return [...shadowOf(card).querySelectorAll("section > h2")].map((h) => h.textContent?.trim() ?? "");
-}
-
-function pictures(card: VacuumMapCard): PlanPicture[] {
-  return [...shadowOf(card).querySelectorAll("vmc-plan-picture")].filter((p) => p instanceof PlanPicture);
 }
 
 async function images(card: VacuumMapCard): Promise<HTMLImageElement[]> {
@@ -225,7 +217,7 @@ describe("VacuumMapCard sizing", () => {
   });
 
   it("fills a grid cell and lays plans out by the card's own width, not the viewport's", () => {
-    const rules = VacuumMapCard.elementStyles.map((style) => ("cssText" in style ? style.cssText : "")).join("\n");
+    const rules = stylesText(VacuumMapCard);
     expect(rules).toMatch(/:host\(\[layout="grid"\]\)[^{]*\{[^}]*height:\s*100%/);
     expect(rules).toMatch(/container-type:\s*inline-size/);
     expect(rules).toMatch(

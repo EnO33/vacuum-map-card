@@ -1,20 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { pixelRoom, toPixel } from "../../../test/helpers/pixel-rooms";
-import { snapshotFixtures, snapshotOf, squareOutline, squareRoom } from "../../../test/helpers/rooms-snapshot";
+import { planOf, snapshotFixtures, snapshotOf, squareOutline, squareRoom } from "../../../test/helpers/rooms-snapshot";
 import { containsPoint } from "../geometry/hit-test";
 import type { Point } from "../geometry/types";
 import { MAX_TEXT_LENGTH } from "../text/limits";
 import type { RoomsMapSnapshot, SnapshotRoom } from "./rooms-map-snapshot";
-import { buildRoomsPlan, MAX_PLAN_ROOMS, type PlanRoom, type RoomsPlan, roomAt } from "./rooms-plan";
+import {
+  buildRoomsPlan,
+  drawableRooms,
+  MAX_PLAN_ROOMS,
+  type PlanRoom,
+  type RoomsPlan,
+  roomAt,
+  undrawableRooms,
+} from "./rooms-plan";
 
 const { threeRooms, vacuumAligned, mopPending, withoutOutline, noCloud } = snapshotFixtures;
 const threeRoomsCalibration = snapshotOf(threeRooms).calibration;
-
-function planOf(snapshot: RoomsMapSnapshot): RoomsPlan {
-  const result = buildRoomsPlan(snapshot);
-  if (result.kind !== "plan") throw new Error(`expected a plan, got ${JSON.stringify(result)}`);
-  return result;
-}
 
 function roomOf(plan: RoomsPlan, regionId: string): PlanRoom {
   const room = plan.rooms.get(regionId);
@@ -183,5 +185,21 @@ describe("roomAt", () => {
     const drawable = [...plan.rooms.values()].filter((room) => room.shape.kind === "drawable");
     expect(plan.hitRooms.map((room) => room.id)).toEqual(drawable.map((room) => room.regionId));
     expect(plan.hitRooms.map((room) => room.id)).toEqual(["1"]);
+  });
+});
+
+describe("drawableRooms and undrawableRooms", () => {
+  it("split the plan's rooms by shape, each in plan order", () => {
+    const plan = planOf(snapshotOf(withoutOutline));
+    const all = [...plan.rooms.values()];
+    expect(drawableRooms(plan).map((room) => room.regionId)).toEqual(
+      all.filter((room) => room.shape.kind === "drawable").map((room) => room.regionId),
+    );
+    expect(undrawableRooms(plan).map((room) => room.shape.kind)).toEqual(["unsupported"]);
+    expect(drawableRooms(plan).length + undrawableRooms(plan).length).toBe(all.length);
+  });
+
+  it("find nothing undrawable when every room has an outline", () => {
+    expect(undrawableRooms(planOf(snapshotOf(threeRooms)))).toEqual([]);
   });
 });

@@ -3,6 +3,7 @@
 import { afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
 import { type Adapters, createAdapters } from "../../src/adapters/create-adapters";
 import type { FrontendHass } from "../../src/adapters/hass/frontend-hass";
+import type { FloorModel } from "../../src/app/floor-model/floor-model";
 import { createFloorModelBuilder, type FloorModelBuilder } from "../../src/app/floor-model/memo";
 import type { SessionDependencies } from "../../src/ui/card-session";
 import { PLAN_PICTURE_ELEMENT, PlanPicture } from "../../src/ui/plan-picture";
@@ -75,6 +76,16 @@ export function useTestCard(): void {
 /** The real memoised builder, its result passed through `change`. */
 export function wrapBuilder(change: (build: FloorModelBuilder) => FloorModelBuilder): () => FloorModelBuilder {
   return () => change(createFloorModelBuilder());
+}
+
+/** Makes the card use the model the real builder gives, with `change` applied. */
+export function changeModel(change: (model: FloorModel) => FloorModel): void {
+  injected.current.createModelBuilder = wrapBuilder((build) => (hass, sources) => change(build(hass, sources)));
+}
+
+/** The card's plan picture elements, in document order. */
+export function pictures(card: VacuumMapCard): PlanPicture[] {
+  return [...shadowOf(card).querySelectorAll(PLAN_PICTURE_ELEMENT)].filter((p) => p instanceof PlanPicture);
 }
 
 /** A fake frontend `hass` on the anonymised captures: two Roomba+ robots, two floors. */
