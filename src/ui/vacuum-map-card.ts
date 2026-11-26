@@ -5,8 +5,10 @@ import { bodyStyles, cardBody } from "./card-body";
 import { CARD_NAME } from "./card-meta";
 import { CardSession, type CardView, type SessionDependencies } from "./card-session";
 import { cardSize } from "./card-size";
+import { disabledPlanStyles } from "./disabled-plan";
 import { layoutStyles } from "./floor-layout";
 import { noticeStyles } from "./notice";
+import { outlinedButtonStyles } from "./outlined-button";
 import { roomListStyles } from "./plan-content";
 import { planMessageStyles } from "./plan-picture";
 
@@ -46,6 +48,8 @@ export class VacuumMapCard extends LitElement {
     planMessageStyles,
     noticeStyles,
     roomListStyles,
+    outlinedButtonStyles,
+    disabledPlanStyles,
   ];
 
   static override properties = { layout: { reflect: true } };

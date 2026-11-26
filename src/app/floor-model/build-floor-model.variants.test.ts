@@ -52,7 +52,7 @@ describe("buildFloorModel variants", () => {
     expect([ground?.plan.robot, ground?.plan.content.kind]).toEqual(["vacuum.robot_two", "outlines"]);
   });
 
-  it("says « enable this floor plan » for a disabled plan with no floor", () => {
+  it("gives a disabled plan with no floor the same fixes as an enabled one", () => {
     const source = new FakeRoomSource();
     const mop = source.robots()[1];
     if (!mop) throw new Error("the fake has a mop robot");
@@ -66,7 +66,7 @@ describe("buildFloorModel variants", () => {
     );
     expect(plan).toMatchObject({
       pictureState: "disabled",
-      placement: { kind: "no_floor", reasons: ["assign_area_to_floor_plan", "add_floor_alias", "enable_floor_plan"] },
+      placement: { kind: "no_floor", reasons: ["assign_area_to_floor_plan", "add_floor_alias"] },
     });
   });
 

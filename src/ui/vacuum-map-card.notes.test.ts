@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import type { TestCard } from "../../test/helpers/card";
 import {
   changeModel,
+  firstPlan,
   fixtureHass,
+  hassAs,
   mount,
   nextHass,
   shadowOf,
@@ -21,14 +23,8 @@ import { VacuumMapCard } from "./vacuum-map-card";
 useTestCard();
 expectNoConsoleOutput();
 
-function firstPlan(card: TestCard): Element | null {
-  return shadowOf(card).querySelector("section .plan");
-}
-
-async function mountAs(isAdmin: boolean): Promise<TestCard> {
-  const hass = fixtureHass();
-  hass.user = { is_admin: isAdmin };
-  return mount(hass);
+function mountAs(isAdmin: boolean): Promise<TestCard> {
+  return mount(hassAs(isAdmin));
 }
 
 /** The vacuums' states with every friendly name replaced by `name`. */
@@ -132,7 +128,7 @@ describe("VacuumMapCard « no floor » notes", () => {
   it("lists the fixes that place a plan on a floor, then what comes on top", async () => {
     withNoFloorReasons({
       kind: "no_floor",
-      reasons: ["assign_area_to_floor_plan", "add_floor_alias", "enable_floor_plan"],
+      reasons: ["assign_area_to_floor_plan", "add_floor_alias", "cannot_tell_shown_map"],
     });
     const note = noFloorNote(await mount(fixtureHass()));
     expect(text(note?.querySelector("p"))).toBe(
@@ -142,7 +138,7 @@ describe("VacuumMapCard « no floor » notes", () => {
       "Assign this floor plan to an area that is on a floor.",
       "Add this map's name as an alias of a floor.",
     ]);
-    expect(text(note)).toContain("Enable this floor plan to show its picture.");
+    expect(text(note)).toContain("The card cannot tell which of the robot's maps this picture shows");
   });
 
   it("explains that the card cannot tell which map a rooms map shows, without a list of fixes", async () => {
@@ -273,11 +269,14 @@ describe("VacuumMapCard notes for a non-administrator", () => {
 });
 
 describe("VacuumMapCard room list styles", () => {
-  it("gives each button a 44 px target and the rooms' three-band focus ring", () => {
+  it("gives each button a 44 px target and the rooms' three-band focus ring", async () => {
+    withFirstFloorPlan({ content: { kind: "areas", items: AREAS } });
+    const buttons = [...(firstPlan(await mount(fixtureHass()))?.querySelectorAll(".room-list button") ?? [])];
+    expect(buttons.every((button) => button.classList.contains("outlined-button"))).toBe(true);
     const rules = stylesText(VacuumMapCard);
-    expect(rules).toMatch(/\.room-list button\s*\{[^}]*min-height:\s*44px/);
+    expect(rules).toMatch(/\.outlined-button\s*\{[^}]*min-height:\s*44px/);
     expect(rules).toMatch(
-      /\.room-list button:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ha-color-focus[^}]*outline-offset:\s*2px[^}]*0 0 0 2px var\(--card-background-color[^}]*0 0 0 6px var\(--primary-text-color/,
+      /\.outlined-button:focus-visible\s*\{[^}]*outline:\s*2px solid var\(--ha-color-focus[^}]*outline-offset:\s*2px[^}]*0 0 0 2px var\(--card-background-color[^}]*0 0 0 6px var\(--primary-text-color/,
     );
   });
 

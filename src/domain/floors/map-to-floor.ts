@@ -16,16 +16,15 @@ export interface MapFloorContext {
 }
 
 /**
- * Why a plan has no floor, as the fix the user can make in Home Assistant (ADR 0005 « Map to floor » source 4,
- * « Plan pictures » item 5). Codes only: never a map id, segment id or map name.
+ * Why a plan has no floor, as the fix the user can make in Home Assistant (ADR 0005 « Map to floor » source 4).
+ * A disabled floor plan says how to enable it in place of its picture (« Plan pictures » item 5), not here. Codes only: never a map id, segment id or map name.
  */
 export type NoFloorReason =
   /** The floor plan entity has no area. */
   | "assign_area_to_floor_plan"
   /** The floor plan entity's area is on no listed floor. */
   | "assign_floor_to_area"
-  | "add_floor_alias"
-  | "enable_floor_plan";
+  | "add_floor_alias";
 
 export type MapFloor =
   | { readonly kind: "floor"; readonly floorId: string; readonly source: 1 | 2 | 3 }
@@ -53,7 +52,6 @@ export function floorOfStoredMap(map: StoredMap, context: MapFloorContext): MapF
     map.ownAreaId === null ? "assign_area_to_floor_plan" : "assign_floor_to_area",
     "add_floor_alias",
   ];
-  if (map.pictureState === "disabled") reasons.push("enable_floor_plan");
   return { kind: "no_floor", reasons };
 }
 

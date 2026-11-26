@@ -52,12 +52,16 @@ export const noticeStyles = css`
   .notice ul {
     padding-inline-start: var(--ha-space-5, 20px);
   }
+  /* A button in a note keeps its focus ring clear of the lines around it. */
+  .notice .notice-action {
+    margin-block: var(--ha-space-2, 8px);
+  }
 `;
 
 /**
  * A note that stays on the card: `role="note"`, never a live region, so it is read in place and not announced on every
  * render. Home Assistant's `ha-alert` is not used: it renders `role="alert"` (`docs/research/ha-frontend.md`).
- * `content` must be text only.
+ * `content` must be text, or the card's own controls built from text.
  */
 export function notice(kind: NoticeKind, content: TemplateResult): TemplateResult {
   return html`<div class="notice notice-${kind}" role="note">

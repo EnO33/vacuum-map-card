@@ -15,19 +15,18 @@ const NO_FLOOR: readonly NoFloorNote[] = [
   "assign_area_to_floor_plan",
   "assign_floor_to_area",
   "add_floor_alias",
-  "enable_floor_plan",
   "cannot_tell_shown_map",
 ];
 
 describe("plan notes", () => {
   it.each(LOCALES)("words every picture-only reason in %s, each differently", (locale) => {
-    const texts = PICTURE_ONLY.map((reason) => pictureOnlyNotes(reason, true, locale)[0] ?? "");
+    const texts = PICTURE_ONLY.map((reason) => pictureOnlyNotes(reason, true, locale).lines[0] ?? "");
     expect(texts.every((text) => text.length > 0)).toBe(true);
     expect(new Set(texts).size).toBe(PICTURE_ONLY.length);
   });
 
   it("says why cleaning cannot be started", () => {
-    expect(pictureOnlyNotes("no_clean_area", false, "en")).toStrictEqual([
+    expect(pictureOnlyNotes("no_clean_area", false, "en").lines).toStrictEqual([
       "Cleaning cannot be started from this plan: this robot's rooms can only be chosen on the plan where the card draws them.",
     ]);
   });
@@ -35,17 +34,22 @@ describe("plan notes", () => {
   const MAPPING: readonly PictureOnlyReason[] = ["mapping_absent", "mapping_unsupported", "no_area_on_this_map"];
 
   it.each(MAPPING)("asks a non-administrator to ask an administrator for the mapping (%s)", (reason) => {
-    expect(pictureOnlyNotes(reason, false, "en")[1]).toBe(
-      "Ask an administrator to map your vacuum's segments to areas.",
-    );
+    const notes = pictureOnlyNotes(reason, false, "en");
+    expect(notes.lines[1]).toBe("Ask an administrator to map your vacuum's segments to areas.");
+    expect(notes.vacuumSettings).toBe(false);
   });
 
   it.each(MAPPING)("tells an administrator where to map the segments (%s)", (reason) => {
-    expect(pictureOnlyNotes(reason, true, "en")[1]).toBe("Map the vacuum's segments to areas in its entity settings.");
+    const notes = pictureOnlyNotes(reason, true, "en");
+    expect(notes.lines[1]).toBe("Map the vacuum's segments to areas in its entity settings.");
+    expect(notes.vacuumSettings).toBe(true);
   });
 
   it("asks nothing more of a robot that cannot clean by area", () => {
-    expect(pictureOnlyNotes("no_clean_area", true, "en")).toHaveLength(1);
+    expect(pictureOnlyNotes("no_clean_area", true, "en")).toStrictEqual({
+      lines: [expect.any(String)],
+      vacuumSettings: false,
+    });
   });
 
   it.each(LOCALES)("words every « no floor » note in %s, each differently", (locale) => {
@@ -58,7 +62,7 @@ describe("plan notes", () => {
 
   it("keeps the fixes, which are alternatives, apart from what only explains or comes on top", () => {
     const notes = noFloorNotes(
-      ["assign_area_to_floor_plan", "add_floor_alias", "enable_floor_plan", "cannot_tell_shown_map"],
+      ["assign_area_to_floor_plan", "add_floor_alias", "cannot_tell_shown_map"],
       undefined,
       "en",
     );
@@ -67,7 +71,6 @@ describe("plan notes", () => {
       "Add this map's name as an alias of a floor.",
     ]);
     expect(notes.facts).toStrictEqual([
-      "Enable this floor plan to show its picture.",
       "The card cannot tell which of the robot's maps this picture shows, so it cannot place it on a floor.",
     ]);
   });

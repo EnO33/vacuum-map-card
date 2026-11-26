@@ -5,6 +5,7 @@ import { registryNameKey } from "../domain/text/registry-name";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
 import type { CardView } from "./card-session";
+import { disabledPlan } from "./disabled-plan";
 import { planNote, roomList } from "./plan-content";
 import { robotNameIn } from "./plan-display";
 import { planMessage } from "./plan-picture";
@@ -106,22 +107,27 @@ function planFigure(plan: Plan, view: ReadyView, locale: Locale, floorName?: str
   const label = floorName ?? `${map}, ${robot}`;
   return html`<div class="plan">
     <figure>
-      ${picture(plan, url, { alt, label }, rooms, locale)}
+      ${picture(plan, url, { alt, label }, rooms, view.isAdmin, locale)}
       <figcaption>${sameAsFloor ? nothing : html`${map} <span aria-hidden="true">·</span> `}${robot}</figcaption>
     </figure>
     ${shown ? notDrawn(rooms, locale) : nothing} ${roomList(plan, label, locale)}
-    ${planNote(plan, view.isAdmin, locale)}
+    ${planNote(plan, label, view.isAdmin, locale)}
   </div>`;
 }
 
-/** The picture, or a readable message for each state that has none (ADR 0005 « Plan pictures » item 3). */
+/**
+ * The picture, or a readable message for each state that has none (ADR 0005 « Plan pictures » item 3); a disabled one
+ * comes with the steps to enable it (item 5).
+ */
 function picture(
   plan: Plan,
   url: string | undefined,
   names: { readonly alt: string; readonly label: string },
   rooms: RoomsPlan | undefined,
+  isAdmin: boolean,
   locale: Locale,
 ): TemplateResult {
+  if (plan.pictureState === "disabled") return disabledPlan(plan.imageEntityId, isAdmin, names.label, locale);
   if (plan.pictureState !== "available") return planMessage(localize(locale, `plan.${plan.pictureState}`));
   if (url === undefined) return planMessage(localize(locale, "plan.no_picture"));
   return html`<vmc-plan-picture
