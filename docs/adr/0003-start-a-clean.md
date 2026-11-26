@@ -270,3 +270,21 @@ These are left to the issue that builds the progress, and go to the owner when t
 2. A robot that docks in the middle of a job (to recharge or empty its bin) and then resumes would read as « Done ». Whether Roomba+ robots do this, and in which states, is « à vérifier ».
 3. A robot that was not docked or idle when it was started (already `cleaning`, `paused` or `returning`, which « Eligibility » allows) can show « Cleaning » and « Done » for a job that is not this room's.
 4. Two robots sent to the same room show two progresses on one room; how they are drawn together is not decided.
+
+## Amendment (2026-11-26): non-administrator live checks and the settings link
+
+This amendment corrects two sentences of « Permissions » with what was checked live and what the card does. The text above is kept as written. Eligibility, the two paths, the checks before calling, the errors and the confirmation are unchanged.
+
+### What was checked live as a non-administrator
+
+« Verified at source; a live call as a non-admin user was not made » is now partly out of date. On 2026-11-26, on Home Assistant 2026.11.3 (frontend 20261028.8), `config/entity_registry/list` answered a user with `hass.user.is_admin === false` ([`ha-frontend.md` § 14 « As a non-administrator, live (#123) »](../research/ha-frontend.md#as-a-non-administrator-live-123)).
+
+Still verified at source only, not live as a non-administrator: the other registry read commands (`config/entity_registry/get` and the floor, area and device lists), the four `*_registry_updated` subscriptions, listing repair issues, `vacuum.clean_area` and `roomba_plus.clean_room` ([`ha-core-registries.md` « Permissions in one place »](../research/ha-core-registries.md#permissions-in-one-place), [`ha-core-vacuum.md` « What a non-admin user cannot do »](../research/ha-core-vacuum.md#what-a-non-admin-user-cannot-do), [`roomba-plus.md` « Actions »](../research/roomba-plus.md#actions)).
+
+### The settings link
+
+« built from the registry entity id on a fixed Home Assistant path » is replaced. Home Assistant has no route that opens one entity's settings (the undocumented query parameters `more-info-entity-id` and `more-info-view` can, on any path; the event is preferred). The card dispatches the `hass-more-info` event with `{ entityId, view: "settings" }`, as Home Assistant's own map card does, which opens the entity's settings in Home Assistant's dialog (`src/ui/settings-button.ts`). It is not a URL path. The link is shown only when `hass.user.is_admin` is `true`; a non-administrator is told to ask an administrator. The event is undocumented for custom cards ([`ha-frontend.md` § 14 « Outcome »](../research/ha-frontend.md#14-entity-settings-from-a-card-99)).
+
+### Where later results go
+
+Later live checks (as a non-administrator or otherwise) are recorded in [`docs/research/ha-frontend.md`](../research/ha-frontend.md) and in the « à vérifier » table of [`docs/research/ha-core-registries.md`](../research/ha-core-registries.md#-à-vérifier-); for the clean actions, in the « à vérifier » tables of [`docs/research/ha-core-vacuum.md`](../research/ha-core-vacuum.md) and [`docs/research/roomba-plus.md`](../research/roomba-plus.md). Not in this ADR. This ADR changes again only if a result changes a decision.
