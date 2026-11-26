@@ -99,6 +99,17 @@ describe("VacuumMapCard confirmation and start", () => {
     expect(statusText(card)).toMatch(/^Robot (One|Two) is starting to clean .+\.$/);
   });
 
+  it("never starts a robot the robots option leaves out, even when asked for one of its rooms", async () => {
+    standardConfirmation(true);
+    const hass = fixtureHass();
+    const card = await mount(hass, { robots: ["vacuum.robot_two"] });
+    await selectFirstRoom(card);
+    const theirs = { kind: "room", imageEntityId: "image.robot_one_rooms_map", regionId: "1" } as const;
+    picker(card).dispatchEvent(new RobotChosenEvent({ item: theirs, vacuumEntityId: "vacuum.robot_one" }));
+    await flush(card);
+    expect(hass.calls).toEqual([]);
+  });
+
   it("closes the picker before the confirmation opens", async () => {
     let pickerOpenWhenAsked: boolean | undefined;
     const card = await mount(fixtureHass());

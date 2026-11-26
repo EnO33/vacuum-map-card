@@ -85,7 +85,6 @@ describe("VacuumMapCard states", () => {
     expect(bodyText(card)).toBe(
       "Aucun robot compatible trouvé Cette carte fonctionne avec les robots de l'intégration Roomba+.",
     );
-    expect(shadowOf(card).querySelector(".card-header")?.textContent?.trim()).toBe("Vacuum Map Card");
   });
 
   it("follows a change of the lists that a subscription signals", async () => {
@@ -99,8 +98,8 @@ describe("VacuumMapCard states", () => {
   });
 
   it("keeps the title", async () => {
-    const card = await mount(fixtureHass());
-    expect(shadowOf(card).querySelector("ha-card > .card-header")?.textContent?.trim()).toBe("Vacuum Map Card");
+    const card = await mount(fixtureHass(), { title: "Robots" });
+    expect(shadowOf(card).querySelector("ha-card > .card-header")?.textContent?.trim()).toBe("Robots");
   });
 });
 

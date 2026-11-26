@@ -82,6 +82,18 @@ describe("VacuumMapCard robot picker", () => {
     expect(pickerDialog(card)?.opener).toBe(button);
   });
 
+  it("never offers a robot the robots option leaves out, nor opens for its rooms", async () => {
+    const all = await mount(fixtureHass());
+    const theirs = await selectFirstRoom(all);
+    expect(picker(all)?.candidates.map((candidate) => candidate.vacuumEntityId)).toStrictEqual(["vacuum.robot_one"]);
+    const card = await mount(fixtureHass(), { robots: ["vacuum.robot_two"] });
+    await selectFirstRoom(card);
+    expect(picker(card)?.candidates.map((candidate) => candidate.vacuumEntityId)).toStrictEqual(["vacuum.robot_two"]);
+    pictures(card)[0]?.dispatchEvent(roomSelectedEvent(theirs.item));
+    await settlePicker(card);
+    expect(picker(card)?.itemName).not.toBe(theirs.name);
+  });
+
   it("anchors the picker to the room that opened it and gives it the focus back on close", async () => {
     const card = await mount(fixtureHass());
     const { opener } = await selectFirstRoom(card);

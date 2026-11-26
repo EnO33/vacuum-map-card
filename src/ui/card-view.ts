@@ -30,7 +30,14 @@ export type CardView =
       readonly gone: string | undefined;
       /** Every started robot's progress (`ProgressTracker.entries`): the same array while none changed. */
       readonly progress: readonly ProgressEntry[];
+      /** Which options narrow the model (#115), so an empty card says the option is why. */
+      readonly narrowed: Narrowed;
     };
+
+export interface Narrowed {
+  readonly robots: boolean;
+  readonly floors: boolean;
+}
 
 export type ReadyView = Extract<CardView, { kind: "ready" }>;
 
@@ -65,6 +72,7 @@ export function sameView(a: CardView, b: CardView): boolean {
     sameValue(a.robotNames, b.robotNames) &&
     sameValue(a.picked, b.picked) &&
     a.gone === b.gone &&
-    a.progress === b.progress
+    a.progress === b.progress &&
+    sameValue(a.narrowed, b.narrowed)
   );
 }

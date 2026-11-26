@@ -8,15 +8,18 @@ import { progressContext, progressList } from "./progress-list";
 import { robotNotes } from "./robot-notes";
 import { STATE_COLORS } from "./state-colors";
 
-/** Styles of the card's body; the title keeps `ha-card`'s own header style. */
+/** Styles of the card's body; the title keeps `ha-card`'s own header style, whose padding is the space above the body. */
 export const bodyStyles = css`
   /* Focused only by the card, when a dismissed entry has no room left to give the focus to. */
   .content:focus {
     outline: none;
   }
   .content {
-    padding: 0 var(--ha-space-4, 16px) var(--ha-space-4, 16px);
+    padding: var(--ha-space-4, 16px);
     color: var(--primary-text-color, #141414);
+  }
+  .card-header + .content {
+    padding-top: 0;
   }
   [role="status"] p {
     margin: 0;
@@ -89,16 +92,24 @@ function message(view: CardView, locale: Locale): TemplateResult | typeof nothin
       // No detail of what failed: no stack, URL, token or entity data.
       return html`<p>${localize(locale, "card.error")}</p>`;
     case "ready":
-      if (view.model.robots.length === 0) return noRobot(view.integrations, locale);
-      return html`${planCount(view.model) > 0 ? nothing : html`<p class="secondary">${localize(locale, "card.no_plan")}</p>`}
+      if (view.model.robots.length === 0) return noRobot(view.integrations, view.narrowed.robots, locale);
+      return html`${planCount(view.model) > 0 ? nothing : noPlan(view.narrowed.floors, locale)}
       ${view.gone === undefined ? nothing : html`<p>${localize(locale, "picker.gone", { name: view.gone })}</p>`}`;
   }
 }
 
-function noRobot(integrations: readonly string[], locale: Locale): TemplateResult {
+/** No robot: none of the integration's, or none of those the `robots` option lists (#115). */
+function noRobot(integrations: readonly string[], narrowed: boolean, locale: Locale): TemplateResult {
   const integration = new Intl.ListFormat(locale, { type: "disjunction" }).format(integrations);
   return html`
-    <p class="title">${localize(locale, "card.no_robot")}</p>
-    <p class="secondary">${localize(locale, "card.no_robot_hint", { integration })}</p>
+    <p class="title">${localize(locale, narrowed ? "card.no_listed_robot" : "card.no_robot")}</p>
+    <p class="secondary">${localize(locale, narrowed ? "card.no_listed_robot_hint" : "card.no_robot_hint", { integration })}</p>
   `;
+}
+
+/** No plan: none found, or none on the floors the `floors` option lists (#115), which also hides plans on no floor. */
+function noPlan(narrowed: boolean, locale: Locale): TemplateResult {
+  if (!narrowed) return html`<p class="secondary">${localize(locale, "card.no_plan")}</p>`;
+  return html`<p class="secondary">${localize(locale, "card.no_listed_floor_plan")}</p>
+    <p class="secondary">${localize(locale, "card.no_listed_floor_plan_hint")}</p>`;
 }
