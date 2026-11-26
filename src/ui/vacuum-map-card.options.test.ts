@@ -103,16 +103,16 @@ describe("VacuumMapCard options", () => {
   it("says the floors option hides every plan when no listed floor has one", async () => {
     const card = await mount(fixtureHass(), { floors: ["deleted_floor"] });
     expect(bodyText(card)).toBe(
-      "No floor plan on the listed floors. Check the card's floors option: each entry is a Home Assistant floor id. " +
-        "Plans on no floor are not shown while it is set.",
+      "No floor plan on the listed floors. Check the card's floors option. " +
+        "Plans not assigned to a floor are not shown while it is set.",
     );
   });
 
   it("says the robots option leaves no robot when no listed robot exists", async () => {
     const card = await mount(fixtureHass(), { robots: ["vacuum.robot_three"] });
     expect(bodyText(card)).toBe(
-      "None of the listed robots was found Check the card's robots option: each entry is the entity id of a " +
-        "vacuum from the Roomba+ integration.",
+      "None of the listed robots was found Check the card's robots option: only vacuums from the Roomba+ " +
+        "integration can be used.",
     );
   });
 
@@ -157,10 +157,19 @@ describe("VacuumMapCard options", () => {
     expect(form.computeLabel({ name: "floors" })).toBe("Floors");
   });
 
+  it("creates and loads no Home Assistant element for its editor: Home Assistant renders the form itself", () => {
+    VacuumMapCard.getConfigForm().computeLabel({ name: "title" });
+    expect([...document.querySelectorAll("*")].filter((element) => /^(ha|hui)-/.test(element.localName))).toEqual([]);
+    expect(customElements.get("ha-form")).toBeUndefined();
+  });
+
   it("in the editor preview, follows each option picked in the form and still starts nothing", async () => {
     const hass = fixtureHass();
     const card = await mount(hass);
     card.preview = true;
+    card.setConfig({ type: "custom:vacuum-map-card", floors: ["upper_floor"] });
+    await card.updateComplete;
+    expect(headings(card)).toStrictEqual(["Upper floor"]);
     card.setConfig({ type: "custom:vacuum-map-card", robots: ["vacuum.robot_two"] });
     await card.updateComplete;
     expect(captions(card).every((caption) => caption.endsWith("Robot Two"))).toBe(true);

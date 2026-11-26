@@ -9,7 +9,12 @@ import { localize } from "../i18n/localize";
  */
 type FormSelector =
   | { readonly text: Readonly<Record<string, never>> }
-  | { readonly entity: { readonly multiple: true; readonly filter: { readonly domain: "vacuum" } } }
+  | {
+      readonly entity: {
+        readonly multiple: true;
+        readonly filter: readonly { readonly domain: "vacuum"; readonly integration: string }[];
+      };
+    }
   | { readonly floor: { readonly multiple: true } };
 
 /** The field Home Assistant hands back to the label and helper functions: only its name is read. */
@@ -27,28 +32,37 @@ export interface ConfigForm {
   computeHelper(field: ShownField): string | undefined;
 }
 
-const FIELDS: Readonly<
-  Record<OptionName, { readonly selector: FormSelector; readonly label: MessageKey; readonly helper: MessageKey }>
-> = {
-  title: { selector: { text: {} }, label: "editor.title", helper: "editor.title_helper" },
-  robots: {
-    selector: { entity: { multiple: true, filter: { domain: "vacuum" } } },
-    label: "editor.robots",
-    helper: "editor.robots_helper",
-  },
-  floors: { selector: { floor: { multiple: true } }, label: "editor.floors", helper: "editor.floors_helper" },
+const WORDS: Readonly<Record<OptionName, { readonly label: MessageKey; readonly helper: MessageKey }>> = {
+  title: { label: "editor.title", helper: "editor.title_helper" },
+  robots: { label: "editor.robots", helper: "editor.robots_helper" },
+  floors: { label: "editor.floors", helper: "editor.floors_helper" },
 };
 
 /**
- * Home Assistant's visual editor for the card's options. The labels are the card's own, in `language()` read on each
- * call: Home Assistant passes its own `localize`, which has none of the card's strings. A field the card does not
- * know gets no label from it, so Home Assistant's default applies.
+ * Each option's selector. The robot picker offers only the vacuums of `platforms`, the supported integrations: Home
+ * Assistant matches `integration` against the entity registry `platform` (`docs/research/ha-frontend.md` § 8).
  */
-export function configForm(language: () => unknown): ConfigForm {
-  const words = ({ name }: ShownField, kind: "label" | "helper") =>
-    isOptionName(name) ? localize(resolveLocale(language()), FIELDS[name][kind]) : undefined;
+function selectors(platforms: readonly string[]): Readonly<Record<OptionName, FormSelector>> {
   return {
-    schema: OPTION_NAMES.map((name) => ({ name, selector: FIELDS[name].selector })),
+    title: { text: {} },
+    robots: {
+      entity: { multiple: true, filter: platforms.map((integration) => ({ domain: "vacuum", integration })) },
+    },
+    floors: { floor: { multiple: true } },
+  };
+}
+
+/**
+ * Home Assistant's visual editor for the card's options, offering the robots of `platforms`. The labels are the card's
+ * own, in `language()` read on each call: Home Assistant passes its own `localize`, which has none of the card's
+ * strings. A field the card does not know gets no label from it, so Home Assistant's default applies.
+ */
+export function configForm(platforms: readonly string[], language: () => unknown): ConfigForm {
+  const words = ({ name }: ShownField, kind: "label" | "helper") =>
+    isOptionName(name) ? localize(resolveLocale(language()), WORDS[name][kind]) : undefined;
+  const selector = selectors(platforms);
+  return {
+    schema: OPTION_NAMES.map((name) => ({ name, selector: selector[name] })),
     assertConfig: parseConfig,
     computeLabel: (field) => words(field, "label"),
     computeHelper: (field) => words(field, "helper"),

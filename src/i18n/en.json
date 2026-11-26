@@ -7,9 +7,9 @@
   "card.no_robot_hint": "This card works with robots from the {integration} integration.",
   "card.no_plan": "No floor plan found.",
   "card.no_listed_robot": "None of the listed robots was found",
-  "card.no_listed_robot_hint": "Check the card's robots option: each entry is the entity id of a vacuum from the {integration} integration.",
+  "card.no_listed_robot_hint": "Check the card's robots option: only vacuums from the {integration} integration can be used.",
   "card.no_listed_floor_plan": "No floor plan on the listed floors.",
-  "card.no_listed_floor_plan_hint": "Check the card's floors option: each entry is a Home Assistant floor id. Plans on no floor are not shown while it is set.",
+  "card.no_listed_floor_plan_hint": "Check the card's floors option. Plans not assigned to a floor are not shown while it is set.",
   "card.no_floor": "Plans without a floor",
   "plan.alt": "Floor plan, {name}",
   "plan.generic_name": "Map {number}",
@@ -145,7 +145,7 @@
   "editor.title": "Title",
   "editor.title_helper": "Shown as the card's header. Leave empty for no header.",
   "editor.robots": "Robots",
-  "editor.robots_helper": "Leave empty to use every robot found.",
+  "editor.robots_helper": "Only these robots' plans are shown and offered. Leave empty to use every supported robot.",
   "editor.floors": "Floors",
-  "editor.floors_helper": "Leave empty to show every floor and the plans without a floor."
+  "editor.floors_helper": "Only these floors are shown, in Home Assistant's order. Leave empty to show every floor and the plans not assigned to one."
 }

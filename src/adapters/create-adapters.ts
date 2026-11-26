@@ -5,9 +5,16 @@ import { createDisplay } from "./hass/display";
 import type { FrontendHass } from "./hass/frontend-hass";
 import { createHassPort, type HassPortOptions } from "./hass/hass-port";
 import { pictureUrl } from "./hass/picture-url";
+import { PLATFORM as ROOMBA_PLUS_PLATFORM } from "./roomba-plus/robot-entities";
 import { createRoombaPlusSource } from "./roomba-plus/roomba-plus-source";
 
 export type AdaptersOptions = HassPortOptions;
+
+/**
+ * Each source's integration as the entity registry names it (`platform`), in the order of `sources()`, known before
+ * any `hass`: the visual editor offers only these integrations' vacuums.
+ */
+export const SOURCE_PLATFORMS: readonly string[] = Object.freeze([ROOMBA_PLUS_PLATFORM]);
 
 /** The one object the card wires (Epic 5): the ports `app` reads, the picture URL builder, and their lifecycle. */
 export interface Adapters {

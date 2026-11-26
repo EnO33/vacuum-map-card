@@ -4,11 +4,27 @@ import { configForm } from "./config-form";
 
 describe("configForm", () => {
   it("has one field per option, in the options' order, with Home Assistant's selectors", () => {
-    expect(configForm(() => "en").schema).toStrictEqual([
+    expect(configForm(["roomba_plus"], () => "en").schema).toStrictEqual([
       { name: "title", selector: { text: {} } },
-      { name: "robots", selector: { entity: { multiple: true, filter: { domain: "vacuum" } } } },
+      {
+        name: "robots",
+        selector: { entity: { multiple: true, filter: [{ domain: "vacuum", integration: "roomba_plus" }] } },
+      },
       { name: "floors", selector: { floor: { multiple: true } } },
     ]);
+  });
+
+  it("offers only the vacuums of the supported integrations, one filter each", () => {
+    const [, robots] = configForm(["one", "two"], () => "en").schema;
+    expect(robots?.selector).toStrictEqual({
+      entity: {
+        multiple: true,
+        filter: [
+          { domain: "vacuum", integration: "one" },
+          { domain: "vacuum", integration: "two" },
+        ],
+      },
+    });
   });
 
   it("lists every option of the card", () => {
@@ -16,7 +32,7 @@ describe("configForm", () => {
   });
 
   it("accepts what the card accepts, Home Assistant's own keys included", () => {
-    const { assertConfig } = configForm(() => "en");
+    const { assertConfig } = configForm(["roomba_plus"], () => "en");
     expect(() => assertConfig({ type: "custom:vacuum-map-card", grid_options: { columns: 12 } })).not.toThrow();
     expect(() =>
       assertConfig({ type: "custom:vacuum-map-card", title: "Robots", robots: ["vacuum.my_robot"], floors: [] }),
@@ -24,7 +40,7 @@ describe("configForm", () => {
   });
 
   it("refuses a YAML-only shape with the parser's message, which turns the visual editor off", () => {
-    const { assertConfig } = configForm(() => "en");
+    const { assertConfig } = configForm(["roomba_plus"], () => "en");
     expect(() => assertConfig({ type: "custom:vacuum-map-card", floor: ["upper_floor"] })).toThrow(
       'Unknown option "floor". The options are title, robots and floors.',
     );
@@ -33,29 +49,46 @@ describe("configForm", () => {
     );
   });
 
+  const ENGLISH = {
+    labels: ["Title", "Robots", "Floors"],
+    helpers: [
+      "Shown as the card's header. Leave empty for no header.",
+      "Only these robots' plans are shown and offered. Leave empty to use every supported robot.",
+      "Only these floors are shown, in Home Assistant's order. Leave empty to show every floor and the plans not assigned to one.",
+    ],
+  };
+  const FRENCH = {
+    labels: ["Titre", "Robots", "Étages"],
+    helpers: [
+      "Affiché en en-tête de la carte. Laissez vide pour ne pas afficher d'en-tête.",
+      "Seuls les plans de ces robots sont affichés et proposés. Laissez vide pour utiliser tous les robots compatibles.",
+      "Seuls ces étages sont affichés, dans l'ordre de Home Assistant. Laissez vide pour afficher tous les étages et les plans sans étage.",
+    ],
+  };
+
   it.each([
-    ["en", ["Title", "Robots", "Floors"], "Leave empty to use every robot found."],
-    ["fr", ["Titre", "Robots", "Étages"], "Laissez vide pour utiliser tous les robots trouvés."],
-    ["fr-CA", ["Titre", "Robots", "Étages"], "Laissez vide pour utiliser tous les robots trouvés."],
-    ["de", ["Title", "Robots", "Floors"], "Leave empty to use every robot found."],
-    ["", ["Title", "Robots", "Floors"], "Leave empty to use every robot found."],
-    [undefined, ["Title", "Robots", "Floors"], "Leave empty to use every robot found."],
-  ])("labels and explains the fields in the language %j", (lang, labels, robotsHelper) => {
-    const { computeLabel, computeHelper } = configForm(() => lang);
+    ["en", ENGLISH],
+    ["fr", FRENCH],
+    ["fr-CA", FRENCH],
+    ["de", ENGLISH],
+    ["", ENGLISH],
+    [undefined, ENGLISH],
+  ])("labels and explains the fields in the language %j", (lang, { labels, helpers }) => {
+    const { computeLabel, computeHelper } = configForm(["roomba_plus"], () => lang);
     expect(OPTION_NAMES.map((name) => computeLabel({ name }))).toStrictEqual(labels);
-    expect(computeHelper({ name: "robots" })).toBe(robotsHelper);
+    expect(OPTION_NAMES.map((name) => computeHelper({ name }))).toStrictEqual(helpers);
   });
 
   it("reads the language on each call, so the labels follow a change while the editor is open", () => {
     let lang = "en";
-    const { computeLabel } = configForm(() => lang);
+    const { computeLabel } = configForm(["roomba_plus"], () => lang);
     expect(computeLabel({ name: "floors" })).toBe("Floors");
     lang = "fr";
     expect(computeLabel({ name: "floors" })).toBe("Étages");
   });
 
   it("leaves a field it does not know to Home Assistant", () => {
-    const { computeLabel, computeHelper } = configForm(() => "en");
+    const { computeLabel, computeHelper } = configForm(["roomba_plus"], () => "en");
     expect(computeLabel({ name: "grid_options" })).toBeUndefined();
     expect(computeHelper({ name: "toString" })).toBeUndefined();
   });
