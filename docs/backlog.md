@@ -44,6 +44,8 @@ Planned as epic #97 (issues #98 to #116). The list below is the original idea; t
 
 ## Epic 6: MVP release
 
+Planned as epic #142 (issues #143 to #156). The list below is the original idea; the epic is the source of truth. The non-administrator message on a refused save and a `TemplateResult` in Home Assistant's dialog are not needed by the card; the Android WebView minimum, the Edge floor build date, the `@floating-ui/dom` size and anchor names across shadow roots stay open in `docs/research/ha-frontend.md` and are not needed for the MVP.
+
 - README with real screenshots of a demo home (not the owner's), docs, `/ha-live-test` on stable and beta, owner publishes the release and the Marketplace submission.
 
 ## Later
