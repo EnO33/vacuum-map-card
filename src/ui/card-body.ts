@@ -63,7 +63,8 @@ function message(view: CardView, locale: Locale): TemplateResult | typeof nothin
       return html`<p>${localize(locale, "card.error")}</p>`;
     case "ready":
       if (view.model.robots.length === 0) return noRobot(view.integrations, locale);
-      return planCount(view.model) > 0 ? nothing : html`<p class="secondary">${localize(locale, "card.no_plan")}</p>`;
+      return html`${planCount(view.model) > 0 ? nothing : html`<p class="secondary">${localize(locale, "card.no_plan")}</p>`}
+      ${view.gone === undefined ? nothing : html`<p>${localize(locale, "picker.gone", { name: view.gone })}</p>`}`;
   }
 }
 

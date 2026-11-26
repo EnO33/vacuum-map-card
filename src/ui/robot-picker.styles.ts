@@ -1,5 +1,5 @@
 import { css } from "lit";
-import { twoToneRing } from "./focus-ring.styles";
+import { iconButtonStyles } from "./icon-button";
 import { outlinedButtonStyles } from "./outlined-button";
 
 /**
@@ -9,6 +9,7 @@ import { outlinedButtonStyles } from "./outlined-button";
  */
 export const robotPickerStyles = [
   outlinedButtonStyles,
+  iconButtonStyles,
   css`
   :host {
     display: block;
@@ -16,8 +17,17 @@ export const robotPickerStyles = [
   }
   h2 {
     margin: 0 0 var(--ha-space-2, 8px);
+    /* Room for a host's control beside the name (the picker window's close button), as tall as it. */
+    display: flex;
+    align-items: center;
+    min-height: var(--vmc-heading-height, auto);
+    padding-inline-end: var(--vmc-heading-end, 0);
     font-size: var(--ha-font-size-l, 16px);
     font-weight: var(--ha-font-weight-medium, 500);
+  }
+  /* Focused only so a picker with no robot to start has somewhere to put the focus: not a control, no ring. */
+  h2:focus {
+    outline: none;
   }
   ul {
     margin: 0;
@@ -44,21 +54,6 @@ export const robotPickerStyles = [
   /* A robot that can start has the room list's outlined look, so it reads as a button without hover (touch). */
   button.choose {
     margin: 0;
-  }
-  button.details {
-    margin: 0;
-    border: none;
-    background: none;
-    font: inherit;
-    cursor: pointer;
-  }
-  @media (hover: hover) {
-    button.details:hover {
-      background: rgba(var(--rgb-primary-color, 3, 169, 244), 0.08);
-    }
-  }
-  button.details:focus-visible {
-    ${twoToneRing}
   }
   .name,
   .cleans,
@@ -125,20 +120,6 @@ export const robotPickerStyles = [
   .reasons ul {
     padding-inline-start: var(--ha-space-5, 20px);
     list-style: disc;
-  }
-  button.details {
-    flex: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    color: var(--secondary-text-color, #5e5e5e);
-  }
-  button.details svg {
-    width: 24px;
-    height: 24px;
   }
   .empty {
     margin: 0;

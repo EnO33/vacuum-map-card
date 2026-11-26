@@ -18,7 +18,7 @@ Une carte de tableau de bord Home Assistant pour nettoyer n'importe quelle pièc
 Les cartes d'aspirateur montrent en général un robot sur un plan. Une maison a souvent plusieurs étages et plusieurs robots (un aspirateur et un laveur, un robot par étage). Cette carte part de la maison plutôt que du robot :
 
 - **Tous les étages d'un coup.** Un plan par étage, côte à côte, dans l'ordre des étages de Home Assistant.
-- **Touchez une pièce, choisissez un robot.** La carte liste les robots capables de nettoyer cette pièce, chacun avec ce qu'il ferait et son état, et dit pourquoi un robot ne peut pas démarrer ; vous en choisissez un et confirmez : « Envoyer Roomba S9+ aspirer la chambre ? »
+- **Touchez une pièce, choisissez un robot.** La carte liste les robots capables de nettoyer cette pièce à côté d'elle (en bas de l'écran sur un téléphone), chacun avec ce qu'il ferait et son état, et dit pourquoi un robot ne peut pas démarrer ; Échap, un appui en dehors de la liste ou son bouton Fermer la ferment ; vous en choisissez un et confirmez : « Envoyer Roomba S9+ aspirer la chambre ? »
 - **Aucune coordonnée à entretenir.** Pièces, contours et étages viennent de vos intégrations et de Home Assistant. Refaites la carte d'un étage dans l'application du fabricant, ajoutez une pièce ou un étage : la carte suit.
 - **L'allure de Home Assistant.** Couleurs de votre thème en mode clair et sombre, utilisable au clavier et avec un lecteur d'écran : Tab atteint un plan, Gauche et Droite parcourent ses pièces dans l'ordre de lecture, Haut et Bas vont à la pièce la plus proche dans ce sens, Début et Fin vont à la première et à la dernière pièce, Entrée ou Espace en choisit une. Une pièce trop petite pour un doigt se touche juste à côté de son nom.
 

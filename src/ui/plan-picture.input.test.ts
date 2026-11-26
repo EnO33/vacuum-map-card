@@ -8,7 +8,7 @@ import type { ItemRef } from "../app/robots-for-item/robots-for-item";
 import { deepActiveElement } from "./focus";
 import { PLAN_PICTURE_ELEMENT, PlanPicture } from "./plan-picture";
 import { defineOnce } from "./register";
-import { ROOM_SELECTED_EVENT } from "./room-selected";
+import { ROOM_SELECTED_EVENT, RoomSelectedEvent } from "./room-selected";
 
 const IMAGE = "image.robot_rooms_map";
 
@@ -223,6 +223,18 @@ describe("PlanPicture rooms as controls", () => {
     press(await focusRoom(element, "top-left"), "Enter");
     expect(event?.bubbles).toBe(true);
     expect(event?.composed).toBe(false);
+  });
+
+  it("names the chosen room as the opener, from a key and from a tap, so the picker anchors to it", async () => {
+    const element = await mounted();
+    const openers: unknown[] = [];
+    element.addEventListener(ROOM_SELECTED_EVENT, (event) => {
+      if (event instanceof RoomSelectedEvent) openers.push(event.opener);
+    });
+    press(await focusRoom(element, "top-left"), "Enter");
+    halfSize(element);
+    tap(element, 10 + 175, 20 + 175);
+    expect(openers).toEqual([room(element, "top-left"), room(element, "bottom-right")]);
   });
 
   it("selects the room under a tap, mapped from the drawn size to the picture's pixels", async () => {

@@ -97,6 +97,8 @@ function planFigure(plan: Plan, view: ReadyView, locale: Locale, floorName?: str
   const robot = robotNameIn(view.robotNames, plan.robot);
   const url = view.plans.get(plan.imageEntityId)?.url;
   const rooms = plan.content.kind === "outlines" ? plan.content.plan : undefined;
+  const picked = view.picked?.item;
+  const selected = picked?.kind === "room" && picked.imageEntityId === plan.imageEntityId ? picked.regionId : undefined;
   // The note speaks of the picture's rooms: only under a picture that is shown.
   const shown = plan.pictureState === "available" && url !== undefined;
   const alt =
@@ -107,7 +109,7 @@ function planFigure(plan: Plan, view: ReadyView, locale: Locale, floorName?: str
   const label = floorName ?? `${map}, ${robot}`;
   return html`<div class="plan">
     <figure>
-      ${picture(plan, url, { alt, label }, rooms, view.isAdmin, locale)}
+      ${picture(plan, url, { alt, label }, { rooms, selected }, view.isAdmin, locale)}
       <figcaption>${sameAsFloor ? nothing : html`${map} <span aria-hidden="true">·</span> `}${robot}</figcaption>
     </figure>
     ${shown ? notDrawn(rooms, locale) : nothing} ${roomList(plan, label, locale)}
@@ -123,7 +125,7 @@ function picture(
   plan: Plan,
   url: string | undefined,
   names: { readonly alt: string; readonly label: string },
-  rooms: RoomsPlan | undefined,
+  layer: { readonly rooms: RoomsPlan | undefined; readonly selected: string | undefined },
   isAdmin: boolean,
   locale: Locale,
 ): TemplateResult {
@@ -134,7 +136,8 @@ function picture(
     .src=${url}
     .alt=${names.alt}
     .locale=${locale}
-    .rooms=${rooms}
+    .rooms=${layer.rooms}
+    .selected=${layer.selected}
     .imageEntityId=${plan.imageEntityId}
     .label=${names.label}
   ></vmc-plan-picture>`;

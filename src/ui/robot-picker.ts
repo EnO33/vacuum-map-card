@@ -23,7 +23,7 @@ export interface RobotChosen {
 /**
  * The robots for one room or area (`docs/product.md` « Core flow » 3): each robot with what it would do and its state,
  * as a button when it can start, else as a disabled row that says why (« Honest state »). Every value shown is text.
- * Where it sits on screen, and its focus, belong to its host.
+ * Where it sits on screen belongs to its host (`vmc-picker-dialog`).
  */
 export class RobotPicker extends LitElement {
   static override styles = robotPickerStyles;
@@ -55,7 +55,7 @@ export class RobotPicker extends LitElement {
 
   protected override render(): TemplateResult {
     const { candidates } = this;
-    return html`<h2 id="heading">${this.itemName}</h2>
+    return html`<h2 id="heading" tabindex="-1">${this.itemName}</h2>
       ${
         candidates.length === 0
           ? html`<p class="empty">${localize(this.locale, "picker.empty")}</p>`
@@ -63,6 +63,17 @@ export class RobotPicker extends LitElement {
               ${candidates.map((candidate, index) => this.#row(candidate, `robot-${index}`))}
             </ul>`
       }`;
+  }
+
+  /** The focus for an opened picker: the first robot that can start, else the heading (#110). */
+  focusFirst(): void {
+    const first = this.renderRoot.querySelector("button.choose") ?? this.renderRoot.querySelector("h2");
+    if (first instanceof HTMLElement) first.focus();
+  }
+
+  /** Every control, in focus order, so a host can keep Tab inside it. */
+  controls(): HTMLButtonElement[] {
+    return Array.from(this.renderRoot.querySelectorAll("button"));
   }
 
   /**
@@ -109,7 +120,7 @@ export class RobotPicker extends LitElement {
     const label = localize(this.locale, "picker.details", { robot: name });
     return html`<button
       type="button"
-      class="details"
+      class="details icon-button"
       aria-label=${label}
       title=${label}
       @click=${() => this.#openDetails(entityId)}

@@ -190,7 +190,6 @@ export class PlanPicture extends LitElement {
       const clicked = event.detail === 0 ? this.#roomOf(event.target) : undefined;
       const regionId = clicked ?? this.#tappedRoom(event);
       if (regionId === undefined) return;
-      this.#focusRoom(regionId);
       this.#select(regionId);
     },
   };
@@ -203,13 +202,17 @@ export class PlanPicture extends LitElement {
     return at && roomAtTap(navigation, at.point, TAP_TARGET_HALF_PX * at.scale);
   }
 
-  /** Focuses a drawn room; the layer's `focusin` listener makes it the tab stop. */
-  #focusRoom(regionId: string): void {
+  /** Focuses a drawn room, which the layer's `focusin` listener makes the tab stop, and returns it. */
+  #focusRoom(regionId: string): SVGElement | undefined {
     const index = this.#navigation?.rooms.findIndex((room) => room.regionId === regionId) ?? -1;
-    roomElementAt(this.renderRoot, index)?.focus();
+    const room = roomElementAt(this.renderRoot, index);
+    room?.focus();
+    return room;
   }
 
+  /** Selects a room from a key or a tap: it takes the focus first, so the picker can give it back on close. */
   #select(regionId: string): void {
-    this.dispatchEvent(roomSelectedEvent({ kind: "room", imageEntityId: this.imageEntityId, regionId }));
+    const opener = this.#focusRoom(regionId);
+    this.dispatchEvent(roomSelectedEvent({ kind: "room", imageEntityId: this.imageEntityId, regionId }, opener));
   }
 }

@@ -46,6 +46,8 @@
   "picker.details": "Robot details, {robot}",
   "picker.empty": "No robot can clean this room",
   "picker.cannot_start": "Cannot clean this room",
+  "picker.close": "Close",
+  "picker.gone": "{name} is no longer on the plans, so the robot list was closed.",
   "action.vacuum": "Vacuum",
   "action.mop": "Mop",
   "action.vacuum_and_mop": "Vacuum and mop",

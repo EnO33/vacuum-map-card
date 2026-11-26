@@ -5,9 +5,10 @@ import type { FloorModel } from "../app/floor-model/floor-model";
 import type { FloorModelBuilder } from "../app/floor-model/memo";
 import { sameValue } from "../app/floor-model/same-value";
 import type { Candidate } from "../app/robots-for-item/choice";
-import { type ItemRef, itemName, robotsForItem } from "../app/robots-for-item/robots-for-item";
+import { type ItemRef, robotsForItem } from "../app/robots-for-item/robots-for-item";
 import type { Locale } from "../i18n/catalogs";
 import { resolveLocale } from "../i18n/locale";
+import { followModel, NO_SELECTION, type Selection } from "./card-selection";
 import { type PlanDisplays, planDisplaysOf, type RobotNames, robotNamesOf } from "./plan-display";
 
 /** What the session makes for each attachment of the card; the card passes the real ones, tests pass fakes. */
@@ -36,6 +37,8 @@ export type CardView =
       readonly isAdmin: boolean;
       /** The selected item with its robots, read on every refresh so their states stay current; `undefined` when none. */
       readonly picked: PickedItem | undefined;
+      /** The name of the item whose picker closed because the model no longer has it (re-mapping); `undefined` else. */
+      readonly gone: string | undefined;
     };
 
 /** A selected item with its name and its robots, read once at selection. */
@@ -81,7 +84,8 @@ function sameView(a: CardView, b: CardView): boolean {
     a.isAdmin === b.isAdmin &&
     sameValue(a.plans, b.plans) &&
     sameValue(a.robotNames, b.robotNames) &&
-    sameValue(a.picked, b.picked)
+    sameValue(a.picked, b.picked) &&
+    a.gone === b.gone
   );
 }
 
@@ -103,7 +107,7 @@ export class CardSession {
   /** `failed` when the adapters could not start: shown until they are stopped (detached or an invalid `hass`). */
   #running: Running | "failed" | undefined;
   #state: CardState = { locale: "en", view: LOADING };
-  #selected: ItemRef | undefined;
+  #selection: Selection = NO_SELECTION;
   /** The language of the last accepted `hass`, read without the adapters, so every state speaks it. */
   readonly #display = createDisplay(() => this.#hass);
 
@@ -118,7 +122,13 @@ export class CardSession {
 
   /** Selects a room or area: the view then carries it with its robots while the model has it. Nothing is sent. */
   select(item: ItemRef): void {
-    this.#selected = item;
+    this.#selection = { kind: "open", item };
+    this.#refresh();
+  }
+
+  /** Clears the selection: the picker closed without a choice. */
+  deselect(): void {
+    this.#selection = NO_SELECTION;
     this.#refresh();
   }
 
@@ -141,8 +151,10 @@ export class CardSession {
     this.#refresh();
   }
 
+  /** Ends the selection too: a picker opens only from a tap or a key, never on its own when the card comes back. */
   disconnect(): void {
     this.#connected = false;
+    this.#selection = NO_SELECTION;
     this.#stop();
   }
 
@@ -179,6 +191,8 @@ export class CardSession {
 
   #refresh(): void {
     const next = this.#next();
+    // The picker is gone with the plans (loading, failed): the selection ends with it rather than reopen later.
+    if (next.view.kind !== "ready" && this.#selection.kind === "open") this.#selection = NO_SELECTION;
     if (next.locale === this.#state.locale && sameView(next.view, this.#state.view)) return;
     this.#state = next;
     this.#onChange();
@@ -197,6 +211,8 @@ export class CardSession {
       const model = running.build(adapters.hass, adapters.sources());
       if (model.loading) return model.loadFailed ? LOAD_FAILED : LOADING;
       const shown = this.#state.view.kind === "ready" ? this.#state.view : undefined;
+      this.#selection = followModel(this.#selection, model);
+      const selection = this.#selection;
       return {
         kind: "ready",
         model,
@@ -205,20 +221,25 @@ export class CardSession {
         robotNames: kept(shown?.robotNames, robotNamesOf(model.robots, adapters)),
         isAdmin: adapters.hass.isAdmin(),
         picked: kept(shown?.picked, this.#picked(model, adapters)),
+        gone: selection.kind === "gone" ? selection.name : undefined,
       };
     } catch {
       return FAILED;
     }
   }
 
-  /** The selected item with its robots (`robotsForItem`); `undefined` when the model has no such item or the read fails. */
+  /**
+   * The selected item with its robots (`robotsForItem`); `undefined` when nothing is selected. A failed read ends the
+   * selection, so the picker closes and does not come back by itself.
+   */
   #picked(model: FloorModel, adapters: Adapters): PickedItem | undefined {
-    const item = this.#selected;
-    const name = item && itemName(model, item);
-    if (item === undefined || name === undefined) return undefined;
+    const selection = this.#selection;
+    if (selection.kind !== "open" || selection.name === undefined) return undefined;
+    const { item, name } = selection;
     try {
       return { item, name, candidates: robotsForItem(model, item, adapters.hass, adapters.sources()) };
     } catch {
+      this.#selection = NO_SELECTION;
       return undefined;
     }
   }
