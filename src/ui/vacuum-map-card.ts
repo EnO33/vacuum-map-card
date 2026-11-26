@@ -6,6 +6,8 @@ import { CARD_NAME } from "./card-meta";
 import { CardSession, type CardView, type SessionDependencies } from "./card-session";
 import { cardSize } from "./card-size";
 import { layoutStyles } from "./floor-layout";
+import { noticeStyles } from "./notice";
+import { roomListStyles } from "./plan-content";
 import { planMessageStyles } from "./plan-picture";
 
 const FAILED: CardView = Object.freeze({ kind: "failed" });
@@ -42,6 +44,8 @@ export class VacuumMapCard extends LitElement {
     bodyStyles,
     layoutStyles,
     planMessageStyles,
+    noticeStyles,
+    roomListStyles,
   ];
 
   static override properties = { layout: { reflect: true } };

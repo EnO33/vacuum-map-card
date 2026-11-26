@@ -3,7 +3,7 @@
 import { afterEach, beforeAll, beforeEach, expect, vi } from "vitest";
 import { type Adapters, createAdapters } from "../../src/adapters/create-adapters";
 import type { FrontendHass } from "../../src/adapters/hass/frontend-hass";
-import type { FloorModel } from "../../src/app/floor-model/floor-model";
+import type { FloorModel, Plan } from "../../src/app/floor-model/floor-model";
 import { createFloorModelBuilder, type FloorModelBuilder } from "../../src/app/floor-model/memo";
 import type { SessionDependencies } from "../../src/ui/card-session";
 import { PLAN_PICTURE_ELEMENT, PlanPicture } from "../../src/ui/plan-picture";
@@ -78,9 +78,33 @@ export function wrapBuilder(change: (build: FloorModelBuilder) => FloorModelBuil
   return () => change(createFloorModelBuilder());
 }
 
-/** Makes the card use the model the real builder gives, with `change` applied. */
+/**
+ * Makes the card use the model the real builder gives, with `change` applied once per built model: the changed model
+ * keeps its identity while the real one does, as the memoised builder's does, so a render is only caused by the rest of
+ * the view.
+ */
 export function changeModel(change: (model: FloorModel) => FloorModel): void {
-  injected.current.createModelBuilder = wrapBuilder((build) => (hass, sources) => change(build(hass, sources)));
+  injected.current.createModelBuilder = wrapBuilder((build) => {
+    const changed = new WeakMap<FloorModel, FloorModel>();
+    return (hass, sources) => {
+      const model = build(hass, sources);
+      const known = changed.get(model);
+      if (known !== undefined) return known;
+      const result = change(model);
+      changed.set(model, result);
+      return result;
+    };
+  });
+}
+
+/** Makes the card use the real model with `change` applied to the first floor's plan. */
+export function withFirstFloorPlan(change: Partial<Plan>): void {
+  changeModel((model) => ({
+    ...model,
+    floors: model.floors.map((floor, index) =>
+      index === 0 ? { ...floor, plan: { ...floor.plan, ...change } } : floor,
+    ),
+  }));
 }
 
 /** The card's plan picture elements, in document order. */
@@ -128,10 +152,14 @@ export async function mount(hass: unknown): Promise<TestCard> {
 
 export { shadowOf };
 
+/** An element's text, whitespace collapsed; empty for no element. */
+export function collapsedText(element: Element | null | undefined): string {
+  return (element?.textContent ?? "").replace(/\s+/g, " ").trim();
+}
+
 /** The card's text without the title, whitespace collapsed. */
 export function bodyText(card: VacuumMapCard): string {
-  const content = shadowOf(card).querySelector(".content");
-  return (content?.textContent ?? "").replace(/\s+/g, " ").trim();
+  return collapsedText(shadowOf(card).querySelector(".content"));
 }
 
 export function statusRegion(card: VacuumMapCard): Element | null {

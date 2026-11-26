@@ -28,6 +28,14 @@ Les cartes d'aspirateur montrent en général un robot sur un plan. Une maison a
 2. **Les contours des pièces** viennent d'un *adaptateur de source de pièces* propre à l'intégration de l'aspirateur. Le premier prend en charge [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). D'autres adaptateurs peuvent s'ajouter sans toucher au reste de la carte. La carte dessine elle-même les contours et les noms des pièces sur l'image de la carte des pièces : laissez l'option Roomba+ « Draw room names on the map image » désactivée (son réglage par défaut) : activée, chaque nom s'affiche deux fois ; les pièces qu'elle ne peut pas dessiner sont listées sous le plan.
 3. **Le nettoyage** passe par l'action `vacuum.clean_area` de Home Assistant quand la pièce est associée à une pièce Home Assistant, sinon par l'action de l'intégration.
 
+## Quand un étage ou une pièce manque
+
+La carte indique sur le plan ce qui manque et ce que vous pouvez changer dans Home Assistant :
+
+- **Un plan est sous « Plans sans étage »** : associez l'entité du plan à une pièce située sur un étage, attribuez un étage à cette pièce, ou ajoutez le nom du plan comme alias d'un étage. Un plan désactivé doit aussi être activé pour afficher son image.
+- **Un plan affiche son image mais aucune pièce** : le robot n'a pas le nettoyage par pièce (un robot laveur, par exemple), donc ses pièces ne se choisissent que sur le plan où la carte les dessine ; ou ses segments ne sont pas encore associés aux pièces. Un administrateur les associe dans les paramètres de l'entité de l'aspirateur ; les autres utilisateurs sont invités à le demander à un administrateur.
+- **« pas encore de contours de pièces »** sous les plans : le plan des pièces du robot n'a pas de contours (aucun plan cloud chargé), ou le robot n'a pas d'entité de plan des pièces (absente ou désactivée). **« les contours des pièces n'ont pas pu être lus »** est suivi d'un code court à citer dans un rapport de bug.
+
 ## Intégrations prises en charge
 
 | Intégration | Contours des pièces | Plans d'étage | Lancer une pièce | État |

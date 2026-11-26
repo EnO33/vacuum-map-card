@@ -28,6 +28,14 @@ Vacuum map cards usually show one robot on one map. Homes have several floors an
 2. **Room outlines** come from a *room source* adapter for your vacuum integration. The first one supports [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). More adapters can be added without touching the rest of the card. The card draws the outlines and room names over the rooms map picture itself, so keep the Roomba+ option « Draw room names on the map image » off (its default): with it on, each name shows twice; rooms it cannot draw are listed under the plan.
 3. **Cleaning** uses Home Assistant's own `vacuum.clean_area` action when the room is mapped to an area, or the integration's room action otherwise.
 
+## When a floor or room is missing
+
+The card says on the plan what is missing and what you can change in Home Assistant:
+
+- **A plan is under « Plans without a floor »**: assign the floor plan entity to an area that is on a floor, assign a floor to that area, or add the map's name as an alias of a floor. A disabled floor plan also needs to be enabled to show its picture.
+- **A plan shows its picture but no room**: the robot has no area cleaning (a mop robot, for example), so its rooms can only be chosen on the plan where the card draws them, or its segments are not mapped to areas yet. An administrator maps them in the vacuum entity's settings; other users are asked to ask an administrator.
+- **« no room outlines yet »** under the plans: the robot's rooms map has no outlines (no cloud map loaded yet), or the robot has no rooms map entity (missing or disabled). **« room outlines could not be read »** comes with a short code to quote in a bug report.
+
 ## Supported integrations
 
 | Integration | Room outlines | Floor plans | Start a room | Status |
