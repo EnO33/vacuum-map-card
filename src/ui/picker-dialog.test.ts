@@ -215,6 +215,21 @@ describe("PickerDialog", () => {
       expect(deepActiveElement()).toBe(from);
     });
 
+    it("keeps its Escape from the dialogs around it, such as the card editor's", async () => {
+      const element = await mount(KITCHEN, opener());
+      const events = closedEvents(element);
+      const outside: Event[] = [];
+      const listen = (event: Event) => outside.push(event);
+      document.addEventListener("keydown", listen);
+      const pressed = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, composed: true, cancelable: true });
+      dialogOf(element).dispatchEvent(pressed);
+      document.removeEventListener("keydown", listen);
+      expect(pressed.defaultPrevented).toBe(true);
+      expect(outside).toHaveLength(0);
+      expect(dialogOf(element).open).toBe(false);
+      expect(events).toHaveLength(1);
+    });
+
     it("closes with its close button, named in the card's language", async () => {
       const element = await mount(KITCHEN, opener());
       expect(closeButton(element).getAttribute("aria-label")).toBe("Close");
