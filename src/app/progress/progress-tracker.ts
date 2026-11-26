@@ -7,6 +7,7 @@ import {
   SENDING,
 } from "../../domain/clean/progress";
 import { compareCodeUnits } from "../../domain/text/compare";
+import { Listeners } from "../listeners";
 import type { HassPort } from "../ports/hass-port";
 import type { ItemRef } from "../robots-for-item/robots-for-item";
 import type { CleanController } from "../start-clean/clean-controller";
@@ -25,16 +26,29 @@ export type ProgressController = Pick<CleanController, "onSending" | "onOutcome"
 export interface ProgressTracker {
   /** Called by the card on each model update; reads only tracked robots and feeds a state only when it changed. */
   observe(hass: Pick<HassPort, "vacuum">): void;
-  /** The entries on the item, by vacuum entity id; the same array while nothing changed for that item. */
-  forItem(item: ItemRef): readonly ProgressEntry[];
-  /** Removes the robot's entry and acknowledges its outcome. */
+  /**
+   * Every entry, by vacuum entity id; the same array while nothing changed. An entry keeps its identity until its
+   * phase, error or status changes, so a caller tells a changed entry by reference.
+   */
+  entries(): readonly ProgressEntry[];
+  /**
+   * Tells of each change a start or a dismiss makes; a change read from the vacuum states is the caller's of `observe`.
+   * Returns the remover.
+   */
+  subscribe(listener: () => void): () => void;
+  /** Removes the robot's entry and acknowledges its outcome on the controller that stored it. */
   dismiss(vacuumEntityId: string): void;
-  /** Stops listening to the controller. */
-  close(): void;
+  /**
+   * Follows a controller's starts; returns the function that stops following it. Entries already shown stay, and a
+   * start in flight on a controller no longer followed still gets its outcome, so nothing is lost while the card is
+   * away from the page and comes back with a new controller.
+   */
+  follow(controller: ProgressController): () => void;
 }
 
 interface Start {
-  readonly key: string;
+  /** The controller that sent the start: it stores its outcome until acknowledged. */
+  readonly controller: ProgressController;
   progress: Progress;
   /** What the start shows; keeps its identity unless that changed. */
   entry: ProgressEntry;
@@ -44,29 +58,43 @@ const NONE: readonly ProgressEntry[] = Object.freeze([]);
 
 /**
  * Progress per robot in memory only (ADR 0003 « Amendment (2026-11-24) », « Progress on a room »): no timer, no
- * polling, no storage, so a reload starts empty. A start begins when the controller sends (`onSending`), so an answer
- * that sends nothing never touches the progress; a new start for a robot replaces its entry.
+ * polling, no storage, so a reload starts empty. A start begins when a followed controller sends (`onSending`), so an
+ * answer that sends nothing never touches the progress; a new start for a robot replaces its entry.
  */
-export function createProgressTracker(controller: ProgressController): ProgressTracker {
+export function createProgressTracker(): ProgressTracker {
   const shown = new Map<string, Start>();
   const lastState = new Map<string, string | undefined>();
-  const lists = new Map<string, readonly ProgressEntry[]>();
+  /** Every entry, rebuilt only after a change; `undefined` until then. */
+  let all: readonly ProgressEntry[] | undefined = NONE;
+  const changes = new Listeners();
+  const changed = (): void => {
+    all = undefined;
+    changes.notify();
+  };
 
-  /** Robots dismissed while their call was in flight: their outcome is acknowledged when it comes. */
-  const dismissedSending = new Set<string>();
+  /** Robots dismissed while their call was in flight, by the controller sending it: acknowledged when it answers. */
+  const dismissedSending = new Map<string, ProgressController>();
 
-  const stopSending = controller.onSending(({ vacuumEntityId, item, vacuumState }) => {
-    const progress = nextProgress(SENDING, { kind: "confirm_started", state: vacuumState });
-    shown.set(vacuumEntityId, { key: keyOf(item), progress, entry: entryOf(vacuumEntityId, item, progress) });
-    // The state before the start is the baseline: a robot already in `error` or `cleaning` is read only once it changes.
-    lastState.set(vacuumEntityId, vacuumState);
-    dismissedSending.delete(vacuumEntityId);
-  });
-  const stopOutcome = controller.onOutcome((vacuumEntityId, outcome) => {
-    if (dismissedSending.delete(vacuumEntityId)) controller.acknowledge(vacuumEntityId);
-    const start = shown.get(vacuumEntityId);
-    if (start) apply(start, { kind: "outcome", outcome });
-  });
+  const follow = (controller: ProgressController): (() => void) => {
+    const stopSending = controller.onSending(({ vacuumEntityId, item, vacuumState }) => {
+      const progress = nextProgress(SENDING, { kind: "confirm_started", state: vacuumState });
+      shown.set(vacuumEntityId, { controller, progress, entry: entryOf(vacuumEntityId, item, progress) });
+      // The state before the start is the baseline: a robot already in `error` or `cleaning` is read once it changes.
+      lastState.set(vacuumEntityId, vacuumState);
+      dismissedSending.delete(vacuumEntityId);
+      changed();
+    });
+    // Kept after `stopSending`: a call in flight still answers, and its outcome still belongs to its start.
+    controller.onOutcome((vacuumEntityId, outcome) => {
+      if (dismissedSending.get(vacuumEntityId) === controller) {
+        dismissedSending.delete(vacuumEntityId);
+        controller.acknowledge(vacuumEntityId);
+      }
+      const start = shown.get(vacuumEntityId);
+      if (start?.controller === controller && apply(start, { kind: "outcome", outcome })) changed();
+    });
+    return stopSending;
+  };
 
   return {
     observe(hass) {
@@ -74,59 +102,46 @@ export function createProgressTracker(controller: ProgressController): ProgressT
         const state = hass.vacuum(vacuumEntityId)?.state;
         if (lastState.has(vacuumEntityId) && lastState.get(vacuumEntityId) === state) continue;
         lastState.set(vacuumEntityId, state);
-        apply(start, { kind: "vacuum_state", state });
+        // Read by the caller of `observe` through `entries`, not told to the listeners.
+        if (apply(start, { kind: "vacuum_state", state })) all = undefined;
       }
     },
-    forItem(item) {
-      if (shown.size === 0) return NONE;
-      return listFor(shown, lists, keyOf(item));
+    entries() {
+      all ??= sortedEntries(shown);
+      return all;
     },
+    subscribe: (listener) => changes.add(listener),
     dismiss(vacuumEntityId) {
-      if (shown.get(vacuumEntityId)?.progress.phase === "sending") dismissedSending.add(vacuumEntityId);
+      const start = shown.get(vacuumEntityId);
+      if (start === undefined) return;
+      if (start.progress.phase === "sending") dismissedSending.set(vacuumEntityId, start.controller);
       shown.delete(vacuumEntityId);
       lastState.delete(vacuumEntityId);
-      controller.acknowledge(vacuumEntityId);
+      start.controller.acknowledge(vacuumEntityId);
+      changed();
     },
-    close() {
-      stopSending();
-      stopOutcome();
-    },
+    follow,
   };
 }
 
-/** The item's entries; the cached array while they are the same objects. */
-function listFor(
-  shown: ReadonlyMap<string, Start>,
-  lists: Map<string, readonly ProgressEntry[]>,
-  key: string,
-): readonly ProgressEntry[] {
-  const entries = [...shown.values()]
-    .filter((start) => start.key === key)
-    .map((start) => start.entry)
-    .sort((a, b) => compareCodeUnits(a.vacuumEntityId, b.vacuumEntityId));
-  if (entries.length === 0) {
-    lists.delete(key);
-    return NONE;
-  }
-  const cached = lists.get(key);
-  if (cached && cached.length === entries.length && cached.every((entry, i) => entry === entries[i])) return cached;
-  lists.set(key, entries);
-  return entries;
+/** Every start's entry, by vacuum entity id. */
+function sortedEntries(shown: ReadonlyMap<string, Start>): readonly ProgressEntry[] {
+  const entries = [...shown.values()].map((start) => start.entry);
+  return entries.length === 0 ? NONE : entries.sort((a, b) => compareCodeUnits(a.vacuumEntityId, b.vacuumEntityId));
 }
 
-function apply(start: Start, event: ProgressEvent): void {
+/** Applies an event; `true` when what the start shows changed. */
+function apply(start: Start, event: ProgressEvent): boolean {
   const next = nextProgress(start.progress, event);
-  if (next === start.progress) return;
+  if (next === start.progress) return false;
   start.progress = next;
   const { entry } = start;
-  if (entry.phase === next.phase && entry.error === next.error && entry.statusUnknown === next.statusUnknown) return;
+  if (entry.phase === next.phase && entry.error === next.error && entry.statusUnknown === next.statusUnknown)
+    return false;
   start.entry = entryOf(entry.vacuumEntityId, entry.item, next);
+  return true;
 }
 
 function entryOf(vacuumEntityId: string, item: ItemRef, { phase, error, statusUnknown }: Progress): ProgressEntry {
   return error ? { vacuumEntityId, item, phase, error, statusUnknown } : { vacuumEntityId, item, phase, statusUnknown };
-}
-
-function keyOf(item: ItemRef): string {
-  return JSON.stringify([item.kind, item.imageEntityId, item.kind === "room" ? item.regionId : item.areaId]);
 }

@@ -1,3 +1,4 @@
+import { Listeners } from "../../app/listeners";
 import type { HassPort } from "../../app/ports/hass-port";
 import { areasReader } from "./areas";
 import { callService } from "./call-service";
@@ -5,7 +6,6 @@ import type { Schedule } from "./debounce";
 import { createEntityRegistry, type EntityRegistryView } from "./entity-registry";
 import { createFloorList } from "./floors";
 import type { FrontendHass } from "./frontend-hass";
-import { Listeners } from "./listeners";
 import { createRepairIssues, segmentsChangedReader } from "./repairs";
 import { serviceReader } from "./services";
 import { adminReader } from "./user";

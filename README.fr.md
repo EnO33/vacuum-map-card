@@ -27,6 +27,7 @@ Les cartes d'aspirateur montrent en général un robot sur un plan. Une maison a
 1. **Les étages et les pièces** viennent de Home Assistant : étages et pièces, et l'association entre les segments de l'aspirateur et vos pièces (réglages de l'entité aspirateur, disponibles depuis Home Assistant 2026.3).
 2. **Les contours des pièces** viennent d'un *adaptateur de source de pièces* propre à l'intégration de l'aspirateur. Le premier prend en charge [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). D'autres adaptateurs peuvent s'ajouter sans toucher au reste de la carte. La carte dessine elle-même les contours et les noms des pièces sur l'image de la carte des pièces : laissez l'option Roomba+ « Draw room names on the map image » désactivée (son réglage par défaut) : activée, chaque nom s'affiche deux fois ; les pièces qu'elle ne peut pas dessiner sont listées sous le plan.
 3. **Le nettoyage** passe par l'action `vacuum.clean_area` de Home Assistant quand la pièce est associée à une pièce Home Assistant, sinon par l'action de l'intégration.
+4. **L'avancement** s'affiche sur la pièce une fois le lancement confirmé : envoi, démarrage, nettoyage, pause, terminé, ou la raison d'un échec et quoi faire. Il suit les états que l'aspirateur signale : « Terminé » veut dire que le robot est passé de `cleaning` à `returning`, `docked` ou `idle`. L'avancement de chaque robot reste sous son plan jusqu'à ce que vous choisissiez « Masquer » ou relanciez ce robot ; il n'est pas conservé au rechargement de la page.
 
 ## Quand un étage ou une pièce manque
 

@@ -16,26 +16,6 @@ describe("startNoticeLines", () => {
       ["Le lancement est désactivé dans l'aperçu de l'éditeur."],
     ],
     [
-      { kind: "sending", vacuumEntityId: ROBOT },
-      ["Sending the start to Robot <one>…"],
-      ["Envoi de la demande à Robot <one>…"],
-    ],
-    [
-      { kind: "sent", vacuumEntityId: ROBOT },
-      ["Start sent to Robot <one>."],
-      ["Demande de nettoyage envoyée à Robot <one>."],
-    ],
-    [
-      { kind: "may_have_started", vacuumEntityId: ROBOT },
-      ["Robot <one> may have started. Check it before trying again."],
-      ["Robot <one> a peut-être démarré. Vérifiez-le avant de réessayer."],
-    ],
-    [
-      { kind: "failed", vacuumEntityId: ROBOT },
-      ["Could not start Robot <one>."],
-      ["Impossible de lancer Robot <one>."],
-    ],
-    [
       { kind: "not_started", vacuumEntityId: ROBOT },
       ["Robot <one> was not started: its state or rooms changed. Choose the room again."],
       [`Robot <one> n'a pas été lancé${NB}: son état ou ses pièces ont changé. Choisissez à nouveau la pièce.`],
@@ -77,8 +57,8 @@ describe("startNoticeView", () => {
   }
 
   it.each([
-    [{ kind: "sent", vacuumEntityId: ROBOT }, "notice-info"],
-    [{ kind: "may_have_started", vacuumEntityId: ROBOT }, "notice-warning"],
+    [{ kind: "busy", vacuumEntityId: ROBOT }, "notice-info"],
+    [{ kind: "not_asked", vacuumEntityId: ROBOT }, "notice-warning"],
   ] satisfies [StartNotice, string][])("shows %j in a box of its tone, with its icon", (notice, tone) => {
     const box = shown(notice).querySelector(".notice");
     expect(box?.classList.contains(tone)).toBe(true);

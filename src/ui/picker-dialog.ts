@@ -2,7 +2,7 @@ import { html, LitElement, type PropertyValues, svg, type TemplateResult } from 
 import { sameValue } from "../app/floor-model/same-value";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
-import type { PickedItem } from "./card-session";
+import type { PickedItem } from "./card-view";
 import { deepActiveElement, type Focusable } from "./focus";
 import { isRepeatedActivation } from "./key-repeat";
 import { pickerDialogStyles } from "./picker-dialog.styles";

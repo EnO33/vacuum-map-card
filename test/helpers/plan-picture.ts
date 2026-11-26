@@ -4,7 +4,12 @@ import { shadowOf } from "./shadow";
 
 /** A plan picture with `props`, attached to the document and rendered. */
 export async function mountPicture(
-  props: Partial<Pick<PlanPicture, "src" | "alt" | "locale" | "rooms" | "imageEntityId" | "label" | "selected">>,
+  props: Partial<
+    Pick<
+      PlanPicture,
+      "src" | "alt" | "locale" | "rooms" | "imageEntityId" | "label" | "selected" | "progress" | "robotNames"
+    >
+  >,
 ): Promise<PlanPicture> {
   const element = document.createElement(PLAN_PICTURE_ELEMENT);
   if (!(element instanceof PlanPicture)) throw new Error("not a PlanPicture");

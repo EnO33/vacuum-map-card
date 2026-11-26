@@ -27,6 +27,7 @@ Vacuum map cards usually show one robot on one map. Homes have several floors an
 1. **Floors and rooms** come from Home Assistant: floors and areas, and the mapping between your vacuum's segments and your areas (vacuum entity settings, available since Home Assistant 2026.3).
 2. **Room outlines** come from a *room source* adapter for your vacuum integration. The first one supports [Roomba+](https://github.com/johnnyh1975/ha_roomba_plus) (iRobot). More adapters can be added without touching the rest of the card. The card draws the outlines and room names over the rooms map picture itself, so keep the Roomba+ option « Draw room names on the map image » off (its default): with it on, each name shows twice; rooms it cannot draw are listed under the plan.
 3. **Cleaning** uses Home Assistant's own `vacuum.clean_area` action when the room is mapped to an area, or the integration's room action otherwise.
+4. **Progress** shows on the room once you confirm: sending, starting, cleaning, paused, done, or why it failed and what to do. It follows the states your vacuum reports, so « Done » means the robot left `cleaning` for `returning`, `docked` or `idle`. Each robot's progress stays under its plan until you select « Dismiss » or start that robot again; it is not kept when the page reloads.
 
 ## When a floor or room is missing
 

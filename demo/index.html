@@ -82,6 +82,15 @@
         <label><input type="radio" name="outcome" value="refused" /> Refused</label>
         <label><input type="radio" name="outcome" value="never" /> Never answers</label>
       </fieldset>
+      <fieldset>
+        <legend>Robots report</legend>
+        <label><input type="radio" name="report" value="captured" /> Captured state</label>
+        <label><input type="radio" name="report" value="cleaning" /> Cleaning</label>
+        <label><input type="radio" name="report" value="paused" /> Paused</label>
+        <label><input type="radio" name="report" value="returning" /> Returning</label>
+        <label><input type="radio" name="report" value="error" /> Error</label>
+        <label><input type="radio" name="report" value="unavailable" /> Unavailable</label>
+      </fieldset>
     </form>
     <main class="stage">
       <vacuum-map-card></vacuum-map-card>

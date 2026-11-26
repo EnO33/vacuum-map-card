@@ -1,13 +1,19 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
-import type { CardView } from "./card-session";
+import type { CardView } from "./card-view";
 import { floorLayout } from "./floor-layout";
-import { planCount } from "./plan-display";
+import { planCount, shownPlans } from "./plan-display";
+import { progressContext, progressList } from "./progress-list";
 import { robotNotes } from "./robot-notes";
+import { STATE_COLORS } from "./state-colors";
 
 /** Styles of the card's body; the title keeps `ha-card`'s own header style. */
 export const bodyStyles = css`
+  /* Focused only by the card, when a dismissed entry has no room left to give the focus to. */
+  .content:focus {
+    outline: none;
+  }
   .content {
     padding: 0 var(--ha-space-4, 16px) var(--ha-space-4, 16px);
     color: var(--primary-text-color, #141414);
@@ -18,6 +24,15 @@ export const bodyStyles = css`
   [role="status"] p + p {
     margin-top: var(--ha-space-2, 8px);
   }
+  /* Read by a screen reader only: the same words show on the room and under its plan. */
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .secondary {
     color: var(--secondary-text-color, #5e5e5e);
   }
@@ -26,8 +41,7 @@ export const bodyStyles = css`
   }
   /* ADR 0004 « State colours », Failed. On the edge, not the text: the text keeps its contrast and says it all. */
   .load-failed {
-    border-inline-start: var(--ha-space-1, 4px) solid
-      var(--state-vacuum-error-color, var(--state-vacuum-active-color, var(--state-active-color)));
+    border-inline-start: var(--ha-space-1, 4px) solid ${STATE_COLORS.error};
     padding-inline-start: var(--ha-space-3, 12px);
   }
 `;
@@ -35,8 +49,9 @@ export const bodyStyles = css`
 /**
  * The card's body for a view. The status region is the same element in every view, so a screen reader announces each
  * message that replaces the previous one (loading or « could not load », then no robot, error or no plan); the plans
- * stay outside it, followed by the notes on robots whose rooms map adds no plan. `notice` is the result of the last
- * start, in the same region so it is announced. Every value inserted is text, never markup.
+ * stay outside it, followed by the progress of robots sent to a room no plan shows any more, then the notes on robots
+ * whose rooms map adds no plan. `notice` is what the last start and the last progress change say, in the same region
+ * so it is announced. Every value inserted is text, never markup.
  */
 export function cardBody(
   view: CardView,
@@ -46,10 +61,18 @@ export function cardBody(
   return html`<div role="status">${message(view, locale)}${notice}</div>
     ${
       view.kind === "ready"
-        ? html`${planCount(view.model) > 0 ? floorLayout(view, locale) : nothing}
+        ? html`${planCount(view.model) > 0 ? floorLayout(view, locale) : nothing} ${unplacedProgress(view, locale)}
           ${robotNotes(view.model.robots, view.robotNames, locale)}`
         : nothing
     }`;
+}
+
+/** The progress of robots sent to an item of a plan the card no longer shows (re-mapping), so none is lost. */
+function unplacedProgress(view: Extract<CardView, { kind: "ready" }>, locale: Locale): TemplateResult | typeof nothing {
+  if (view.progress.length === 0) return nothing;
+  const shown = new Set(shownPlans(view.model).map((plan) => plan.imageEntityId));
+  const unplaced = view.progress.filter((entry) => !shown.has(entry.item.imageEntityId));
+  return progressList(unplaced, localize(locale, "progress.list_unplaced"), progressContext(view, locale));
 }
 
 function message(view: CardView, locale: Locale): TemplateResult | typeof nothing {

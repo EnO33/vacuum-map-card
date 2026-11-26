@@ -1,6 +1,6 @@
+import { Listeners } from "../../app/listeners";
 import { type Debounced, leadingDebounce, type Schedule, timerSchedule } from "./debounce";
 import type { FrontendConnection, FrontendHass } from "./frontend-hass";
-import { Listeners } from "./listeners";
 
 /** The frontend's registry collections wait 500 ms (`docs/research/ha-core-registries.md` « Update signal »). */
 const DEBOUNCE_MS = 500;

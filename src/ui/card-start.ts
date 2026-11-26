@@ -20,16 +20,16 @@ export interface CardStartHost {
   ownDialog(): Confirmer | undefined;
   /** Closes the picker and waits until it is closed. */
   closePicker(): Promise<void>;
-  /** Shows a notice in the status line, replacing the one before. */
-  show(notice: StartNotice): void;
+  /** Shows a notice in the status line, replacing the one before; `undefined` clears it. */
+  show(notice: StartNotice | undefined): void;
 }
 
 /**
  * The card's starts (ADR 0003 « Amendment (2026-11-24) », « Where the result shows »; ADR 0004 « Confirmation »): the
  * picker closes before the question opens, at most one question is open, and held keys repeat nothing until it is
- * answered. Once answered, the focus goes back to the room and another robot can be chosen; a confirmed start shows
- * « sending » until its outcome replaces it. The controller keeps one send per confirmation and one start in flight
- * per robot.
+ * answered. Once answered, the focus goes back to the room and another robot can be chosen; a confirmed start clears
+ * the last notice, and its progress then tells what happens (ADR 0003 « Progress on a room »). The controller keeps one
+ * send per confirmation and one start in flight per robot.
  */
 export class CardStart {
   readonly #host: CardStartHost;
@@ -54,7 +54,7 @@ export class CardStart {
       this.#abort = undefined;
       release();
       if (opener?.isConnected) opener.focus();
-      if (confirmed) this.#host.show({ kind: "sending", vacuumEntityId: chosen.vacuumEntityId });
+      if (confirmed) this.#host.show(undefined);
     };
     this.#abort = () => answered(false);
     return this.#run(chosen, itemName, answered).finally(() => answered(false));

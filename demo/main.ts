@@ -6,7 +6,7 @@ import { DemoHass } from "./demo-hass";
 import { defineHaCard } from "./ha-card";
 import { type DemoSettings, searchOf, settingsOf } from "./settings";
 
-const NAMES = ["theme", "width", "outcome"] as const;
+const NAMES = ["theme", "width", "outcome", "report"] as const;
 
 defineHaCard();
 const hass = new DemoHass();
@@ -29,6 +29,7 @@ function apply(settings: DemoSettings, form: HTMLFormElement): void {
   document.documentElement.setAttribute("data-theme", settings.theme);
   document.documentElement.setAttribute("data-width", settings.width);
   hass.outcome = settings.outcome;
+  hass.report(settings.report);
   for (const input of form.querySelectorAll("input")) {
     input.checked = NAMES.some((name) => input.name === name && settings[name] === input.value);
   }
@@ -46,7 +47,11 @@ function showCall([domain, service, data, target]: Parameters<DemoHass["callServ
 if (form === null || !(card instanceof VacuumMapCard)) throw new Error("demo page markup is incomplete");
 const settingsForm = form;
 apply(settingsOf(location.search), settingsForm);
-settingsForm.addEventListener("change", () => apply(settingsOf(formSearch(settingsForm)), settingsForm));
+settingsForm.addEventListener("change", () => {
+  apply(settingsOf(formSearch(settingsForm)), settingsForm);
+  // A new state, as Home Assistant pushes one: the card reads the robots again.
+  card.hass = hass;
+});
 hass.onCall = showCall;
 card.setConfig({ type: "custom:vacuum-map-card" });
 card.hass = hass;

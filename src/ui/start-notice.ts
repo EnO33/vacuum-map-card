@@ -9,10 +9,6 @@ import type { StartNotice } from "./start-flow";
 const NOTICE_KEYS: Readonly<Record<StartNotice["kind"], MessageKey>> = {
   preview: "start.preview",
   cannot_start: "start.cannot_start",
-  sending: "start.sending",
-  sent: "start.sent",
-  may_have_started: "start.may_have_started",
-  failed: "start.failed",
   not_started: "start.not_started",
   busy: "start.busy",
   nothing_sent: "start.nothing_sent",
@@ -23,10 +19,6 @@ const NOTICE_KEYS: Readonly<Record<StartNotice["kind"], MessageKey>> = {
 const NOTICE_TONES: Readonly<Record<StartNotice["kind"], NoticeKind>> = {
   preview: "info",
   cannot_start: "warning",
-  sending: "info",
-  sent: "info",
-  may_have_started: "warning",
-  failed: "warning",
   not_started: "warning",
   busy: "info",
   nothing_sent: "warning",

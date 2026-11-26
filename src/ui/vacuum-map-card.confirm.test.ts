@@ -96,7 +96,7 @@ describe("VacuumMapCard confirmation and start", () => {
     expect(params).toMatchObject({ confirmText: "Start", dismissText: "Cancel", destructive: false });
     expect(JSON.stringify(params)).toMatch(/"title":"Send Robot (One|Two) to [a-z ,]+ .+\?"/);
     expect(hass.calls).toHaveLength(1);
-    expect(statusText(card)).toMatch(/^Start sent to Robot (One|Two)\.$/);
+    expect(statusText(card)).toMatch(/^Robot (One|Two) is starting to clean .+\.$/);
   });
 
   it("closes the picker before the confirmation opens", async () => {
@@ -157,7 +157,7 @@ describe("VacuumMapCard confirmation and start", () => {
     expect(deepActiveElement()).toBe(opener);
   });
 
-  it("says the robot may have started when the call fails in a way that cannot tell", async () => {
+  it("says the robot may have started, with the server's message, when the call fails in a way that cannot tell", async () => {
     standardConfirmation(true);
     const hass = fixtureHass();
     hass.behaviour = { kind: "reject", value: { code: "home_assistant_error", message: "Boom" } };
@@ -166,7 +166,9 @@ describe("VacuumMapCard confirmation and start", () => {
     await chooseFirstRobot(card);
     await flush(card);
     expect(hass.calls).toHaveLength(1);
-    expect(statusText(card)).toMatch(/^Robot (One|Two) may have started\. Check it before trying again\.$/);
+    expect(statusText(card)).toMatch(
+      /returned an error\..*Message from Home Assistant: Boom.*may have started: check it\.$/,
+    );
   });
 
   it("opens no dialog and says why when the robot can no longer start", async () => {
@@ -308,7 +310,7 @@ describe("VacuumMapCard confirmation and start", () => {
     const robot = await chooseFirstRobot(card);
     await flush(card);
     expect(deepActiveElement()).toBe(opener);
-    expect(statusText(card)).toMatch(/^Sending the start to Robot (One|Two)…$/);
+    expect(statusText(card)).toMatch(/^Sending the start to Robot (One|Two) for .+…$/);
     await selectFirstRoom(card);
     picker(card).dispatchEvent(
       new RobotChosenEvent({ item: picker(card).picked?.item ?? fail(), vacuumEntityId: robot }),
@@ -316,7 +318,7 @@ describe("VacuumMapCard confirmation and start", () => {
     await flush(card);
     expect(show).toHaveBeenCalledTimes(2);
     expect(hass.calls).toHaveLength(1);
-    expect(statusText(card)).toMatch(/^Nothing was sent: a start is already being sent to Robot (One|Two)\.$/);
+    expect(statusText(card)).toMatch(/^Nothing was sent: a start is already being sent to Robot (One|Two)\./);
   });
 
   it("puts no entity, map, area or segment id in the question", async () => {

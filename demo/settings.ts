@@ -1,5 +1,5 @@
 // The demo page's settings, kept in the address so a screenshot can be reproduced from its URL.
-import { isOutcome, type Outcome } from "./demo-hass";
+import { isOutcome, isReport, type Outcome, type Report } from "./demo-hass";
 
 export const THEMES = ["light", "dark"] as const;
 export type Theme = (typeof THEMES)[number];
@@ -12,9 +12,15 @@ export interface DemoSettings {
   readonly theme: Theme;
   readonly width: Width;
   readonly outcome: Outcome;
+  readonly report: Report;
 }
 
-export const DEFAULT_SETTINGS: DemoSettings = Object.freeze({ theme: "light", width: "tablet", outcome: "accepted" });
+export const DEFAULT_SETTINGS: DemoSettings = Object.freeze({
+  theme: "light",
+  width: "tablet",
+  outcome: "accepted",
+  report: "captured",
+});
 
 function oneOf<T extends string>(values: readonly T[], value: string | null): T | undefined {
   return values.find((known) => known === value);
@@ -24,15 +30,17 @@ function oneOf<T extends string>(values: readonly T[], value: string | null): T 
 export function settingsOf(search: string): DemoSettings {
   const query = new URLSearchParams(search);
   const outcome = query.get("outcome") ?? "";
+  const report = query.get("report") ?? "";
   return {
     theme: oneOf(THEMES, query.get("theme")) ?? DEFAULT_SETTINGS.theme,
     width: oneOf(WIDTHS, query.get("width")) ?? DEFAULT_SETTINGS.width,
     outcome: isOutcome(outcome) ? outcome : DEFAULT_SETTINGS.outcome,
+    report: isReport(report) ? report : DEFAULT_SETTINGS.report,
   };
 }
 
 /** The query string of the settings, in a fixed order. */
 export function searchOf(settings: DemoSettings): string {
-  const { theme, width, outcome } = settings;
-  return `?${new URLSearchParams({ theme, width, outcome })}`;
+  const { theme, width, outcome, report } = settings;
+  return `?${new URLSearchParams({ theme, width, outcome, report })}`;
 }
