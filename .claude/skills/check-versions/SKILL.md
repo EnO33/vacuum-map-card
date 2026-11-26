@@ -13,12 +13,12 @@ A version is never written from memory. Sources, queried now:
 | npm package | `npm view <pkg> version` and `npm view <pkg> time --json` (release date) |
 | pnpm `packageManager` hash | `npm view pnpm@<version> dist.integrity` (`sha512-<base64>`), to hex: `node -p "Buffer.from(process.argv[1].slice(7), 'base64').toString('hex')" "<integrity>"` |
 | GitHub Action | `gh api repos/<owner>/<repo>/releases/latest --jq .tag_name`, then `gh api repos/<owner>/<repo>/git/ref/tags/<tag> --jq '.object.type+" "+.object.sha'` (if `tag`, dereference with `git/tags/<sha>` until `commit`) |
-| Home Assistant releases | `gh api repos/home-assistant/core/releases/latest --jq '.tag_name+" "+.published_at'` and the frontend repository for card APIs |
+| Home Assistant stable and beta | `gh api repos/home-assistant/core/releases --jq '.[0:4][] \| .tag_name+" "+.published_at+" pre="+(.prerelease\|tostring)'` (the newest `pre=true` above the stable is the open beta); the frontend of each: `gh api "repos/home-assistant/core/contents/homeassistant/components/frontend/manifest.json?ref=<tag>" --jq .content \| base64 -d` (`home-assistant-frontend==<version>`), its date from `gh api repos/home-assistant/frontend/releases` |
 | Integrations covered by an adapter | `gh api repos/<owner>/<repo>/releases/latest --jq '.tag_name+" "+.published_at'`; a new release triggers `integration-scout` on `docs/research/<integration>.md` |
 
 Steps:
 
-1. List every pin: `package.json` (`engines`, `packageManager`, dependencies), `.github/workflows/*.yml`, `docs/standards.md`, the minimum Home Assistant version in the READMEs and Marketplace metadata.
+1. List every pin: `package.json` (`engines`, `packageManager`, dependencies), `pnpm-lock.yaml` (transitive bundler such as Rolldown), `pnpm-workspace.yaml` (`minimumReleaseAge: 0`, keep it), `.github/workflows/*.yml`, `.github/actions/setup/action.yml`, `docs/standards.md`, the minimum Home Assistant version in the READMEs and Marketplace metadata.
 2. Query the latest stable: the `latest` dist-tag on npm, the latest GitHub release for actions (no pre-release, no `next`/`beta`/`rc`). Adopt it with no waiting period (owner decision, 2026-11-20, `docs/standards.md` « Supply chain »).
 3. Major bump: read the release notes and migration guide first; it is its own PR (`build(deps)!:` with the migration).
 4. Update `docs/standards.md` « Versions vérifiées » with today's date, then the pins, in a `build(deps):` or `docs:` PR.
