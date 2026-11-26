@@ -1,7 +1,7 @@
 // Fakes for the progress of a started room (`src/app/progress/`): a controller the test drives, and vacuum states.
 
 import type { HassPort } from "../../src/app/ports/hass-port";
-import type { ProgressController } from "../../src/app/progress/progress-tracker";
+import type { ProgressController, ProgressEntry, ProgressTracker } from "../../src/app/progress/progress-tracker";
 import type { ItemRef } from "../../src/app/robots-for-item/robots-for-item";
 import type { OutcomeListener, SendingListener, StoredOutcome } from "../../src/app/start-clean/outcomes";
 
@@ -47,4 +47,11 @@ export class FakeVacuumStates implements Pick<HassPort, "vacuum"> {
     const state = this.#states.get(entityId);
     return state === undefined ? undefined : { state, supportedFeatures: 0 };
   }
+}
+
+/** The tracker's entries on one item, as the card picks them out of `entries()`; a new array on each call. */
+export function entriesOn(tracker: Pick<ProgressTracker, "entries">, item: ItemRef): ProgressEntry[] {
+  const id = (ref: ItemRef) =>
+    [ref.kind, ref.imageEntityId, ref.kind === "room" ? ref.regionId : ref.areaId].join("\n");
+  return tracker.entries().filter((entry) => id(entry.item) === id(item));
 }

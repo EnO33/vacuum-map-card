@@ -119,18 +119,24 @@ describe("startFlow", () => {
   });
 
   it.each([
-    [{ kind: "accepted" }, "sent"],
-    [{ kind: "error", error: { kind: "unknown", mayHaveStarted: "unknown" } }, "may_have_started"],
-    [{ kind: "error", error: { kind: "unknown", mayHaveStarted: "possibly" } }, "may_have_started"],
-    [{ kind: "error", error: { kind: "not_allowed", mayHaveStarted: "no" } }, "failed"],
-    [{ kind: "changed" }, "not_started"],
     [{ kind: "busy" }, "busy"],
     [{ kind: "already_sent" }, "nothing_sent"],
     [{ kind: "discarded" }, "nothing_sent"],
-  ] as const)("confirms the intent once and tells %j as %s", async (outcome, kind) => {
+  ] as const)("confirms the intent once and tells %j, which sent nothing, as %s", async (outcome, kind) => {
     const fake = controller({ kind: "intent", intent: INTENT }, outcome);
     await expect(startFlow(deps(fake), CHOSEN)).resolves.toEqual({ kind, vacuumEntityId: ROBOT });
     expect(fake.confirm.mock.calls).toEqual([[INTENT]]);
     expect(fake.dismiss).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { kind: "accepted" },
+    { kind: "error", error: { kind: "unknown", mayHaveStarted: "unknown" } },
+    { kind: "error", error: { kind: "not_allowed", mayHaveStarted: "no" } },
+    { kind: "changed" },
+  ] as const)("leaves a stored outcome %j to the robot's progress", async (outcome) => {
+    const fake = controller({ kind: "intent", intent: INTENT }, outcome);
+    await expect(startFlow(deps(fake), CHOSEN)).resolves.toBeUndefined();
+    expect(fake.confirm.mock.calls).toEqual([[INTENT]]);
   });
 });

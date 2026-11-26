@@ -1,6 +1,7 @@
 import { css } from "lit";
 import { iconButtonStyles } from "./icon-button";
 import { outlinedButtonStyles } from "./outlined-button";
+import { STATE_COLORS } from "./state-colors";
 
 /**
  * The picker's content: one row per robot, a 44 px touch target for every control (ADR 0004 « Touch targets »), theme
@@ -89,26 +90,26 @@ export const robotPickerStyles = [
     border-radius: 50%;
   }
   .dot.cleaning {
-    background: var(--state-vacuum-cleaning-color, var(--state-vacuum-active-color, var(--state-active-color)));
+    background: ${STATE_COLORS.cleaning};
   }
   .dot.returning {
-    background: var(--state-vacuum-returning-color, var(--state-vacuum-active-color, var(--state-active-color)));
+    background: ${STATE_COLORS.returning};
   }
   .dot.error {
-    background: var(--state-vacuum-error-color, var(--state-vacuum-active-color, var(--state-active-color)));
+    background: ${STATE_COLORS.error};
   }
   .dot.docked {
-    background: var(--state-vacuum-docked-color, var(--state-vacuum-inactive-color, var(--state-inactive-color)));
+    background: ${STATE_COLORS.docked};
   }
   .dot.idle {
-    background: var(--state-vacuum-idle-color, var(--state-vacuum-inactive-color, var(--state-inactive-color)));
+    background: ${STATE_COLORS.idle};
   }
   .dot.paused {
-    background: var(--state-vacuum-paused-color, var(--state-vacuum-inactive-color, var(--state-inactive-color)));
+    background: ${STATE_COLORS.paused};
   }
   .dot.unavailable,
   .dot.unknown {
-    background: var(--state-unavailable-color);
+    background: ${STATE_COLORS.unavailable};
   }
   .cannot {
     margin-top: var(--ha-space-1, 4px);

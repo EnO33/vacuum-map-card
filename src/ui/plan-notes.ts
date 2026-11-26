@@ -35,6 +35,17 @@ export interface PictureOnlyNotes {
 }
 
 /**
+ * The fix for a missing segment mapping (ADR 0003 « Permissions »): an administrator maps the segments in the vacuum's
+ * settings, which the card can open; anyone else asks an administrator.
+ */
+export function segmentMappingFix(isAdmin: boolean, locale: Locale): { line: string; vacuumSettings: boolean } {
+  return {
+    line: localize(locale, isAdmin ? "picture_only.map_segments" : "picture_only.ask_admin"),
+    vacuumSettings: isAdmin,
+  };
+}
+
+/**
  * Why a plan without outlines shows its picture only (ADR 0005 « Room lists » item 2), then, when the segment mapping
  * is the fix, where an administrator makes it, or that a non-administrator asks one (ADR 0003 « Permissions »).
  */
@@ -42,8 +53,8 @@ export function pictureOnlyNotes(reason: PictureOnlyReason, isAdmin: boolean, lo
   const { key, mapping } = PICTURE_ONLY[reason];
   const why = localize(locale, key);
   if (!mapping) return { lines: [why], vacuumSettings: false };
-  const where = localize(locale, isAdmin ? "picture_only.map_segments" : "picture_only.ask_admin");
-  return { lines: [why, where], vacuumSettings: isAdmin };
+  const { line, vacuumSettings } = segmentMappingFix(isAdmin, locale);
+  return { lines: [why, line], vacuumSettings };
 }
 
 export interface NoFloorNotes {

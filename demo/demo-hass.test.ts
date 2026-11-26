@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAdapters } from "../src/adapters/create-adapters";
 import { isFrontendHass } from "../src/adapters/hass/frontend-hass";
 import { createFloorModelBuilder } from "../src/app/floor-model/memo";
-import { DemoHass, isOutcome, OUTCOMES } from "./demo-hass";
+import { DemoHass, isOutcome, isReport, OUTCOMES, REPORTS } from "./demo-hass";
 import { PLAN_PICTURES } from "./plans";
 
 /** Every picture a room source reports, floor plans and rooms maps, with its state. */
@@ -155,5 +155,28 @@ describe("DemoHass", () => {
 
   it("rejects an unknown outcome", () => {
     expect(isOutcome("maybe")).toBe(false);
+  });
+
+  it("makes both robots report one state in new states, and the captured ones back", () => {
+    const hass = new DemoHass();
+    const captured = hass.states;
+    const vacuumStates = () =>
+      Object.entries(Object(hass.states))
+        .filter(([entityId]) => entityId.startsWith("vacuum."))
+        .map(([, state]) => Object(state).state);
+    const before = vacuumStates();
+    hass.report("cleaning");
+    expect(hass.states).not.toBe(captured);
+    expect(vacuumStates()).toEqual(before.map(() => "cleaning"));
+    hass.report("captured");
+    expect(vacuumStates()).toEqual(before);
+  });
+
+  it.each(REPORTS)("knows the report %s", (report) => {
+    expect(isReport(report)).toBe(true);
+  });
+
+  it("rejects an unknown report", () => {
+    expect(isReport("dancing")).toBe(false);
   });
 });

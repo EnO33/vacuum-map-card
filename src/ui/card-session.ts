@@ -3,14 +3,22 @@ import { createDisplay } from "../adapters/hass/display";
 import { type FrontendHass, isFrontendHass } from "../adapters/hass/frontend-hass";
 import type { FloorModel } from "../app/floor-model/floor-model";
 import type { FloorModelBuilder } from "../app/floor-model/memo";
-import { sameValue } from "../app/floor-model/same-value";
-import type { Candidate } from "../app/robots-for-item/choice";
+import { createProgressTracker } from "../app/progress/progress-tracker";
 import { type ItemRef, robotsForItem } from "../app/robots-for-item/robots-for-item";
 import { type CleanController, createCleanController } from "../app/start-clean/clean-controller";
-import type { Locale } from "../i18n/catalogs";
 import { resolveLocale } from "../i18n/locale";
 import { followModel, NO_SELECTION, type Selection } from "./card-selection";
-import { type PlanDisplays, planDisplaysOf, type RobotNames, robotNamesOf } from "./plan-display";
+import {
+  type CardState,
+  type CardView,
+  FAILED,
+  kept,
+  LOAD_FAILED,
+  LOADING,
+  type PickedItem,
+  sameView,
+} from "./card-view";
+import { planDisplaysOf, robotNamesOf } from "./plan-display";
 
 /** What the session makes for each attachment of the card; the card passes the real ones, tests pass fakes. */
 export interface SessionDependencies {
@@ -18,51 +26,13 @@ export interface SessionDependencies {
   createModelBuilder(): FloorModelBuilder;
 }
 
-/**
- * What the card shows: `ready` only once the model is no longer loading; `load_failed` while it is loading because a
- * list could not be fetched (`FloorModel.loadFailed`), until a later fetch succeeds.
- */
-export type CardView =
-  | { readonly kind: "loading" }
-  | { readonly kind: "load_failed" }
-  | { readonly kind: "failed" }
-  | {
-      readonly kind: "ready";
-      readonly model: FloorModel;
-      readonly integrations: readonly string[];
-      /** Read again on every refresh, so a new image state gives a new picture URL (ADR 0005 « Plan pictures »). */
-      readonly plans: PlanDisplays;
-      /** Every robot's name, for its plans' labels and the notes on robots whose rooms map adds no plan. */
-      readonly robotNames: RobotNames;
-      /** `HassPort.isAdmin()`: a non-administrator is told to ask one (ADR 0003 « Permissions »). */
-      readonly isAdmin: boolean;
-      /** The selected item with its robots, read on every refresh so their states stay current; `undefined` when none. */
-      readonly picked: PickedItem | undefined;
-      /** The name of the item whose picker closed because the model no longer has it (re-mapping); `undefined` else. */
-      readonly gone: string | undefined;
-    };
-
-/** A selected item with its name and its robots, read once at selection. */
-export interface PickedItem {
-  readonly item: ItemRef;
-  readonly name: string;
-  readonly candidates: readonly Candidate[];
-}
-
-export interface CardState {
-  readonly locale: Locale;
-  readonly view: CardView;
-}
-
-const LOADING: CardView = Object.freeze({ kind: "loading" });
-const FAILED: CardView = Object.freeze({ kind: "failed" });
-const LOAD_FAILED: CardView = Object.freeze({ kind: "load_failed" });
-
 interface Running {
   readonly adapters: Adapters;
   readonly build: FloorModelBuilder;
   /** One per attachment: its outcomes stay while the card is attached, whatever happens to the dialogs. */
   readonly controller: CleanController;
+  /** Stops the card's progress from following this attachment's controller. */
+  readonly stopFollowing: () => void;
   readonly unsubscribe: () => void;
 }
 
@@ -72,24 +42,6 @@ function attempt(action: () => void): void {
   } catch {
     // Dropped: nothing the card calls may break the dashboard.
   }
-}
-
-/** The shown value when `next` equals it, so an element given it sees no change when another part of the view does. */
-function kept<T>(shown: T | undefined, next: T): T {
-  return shown !== undefined && sameValue(shown, next) ? shown : next;
-}
-
-function sameView(a: CardView, b: CardView): boolean {
-  if (a.kind !== "ready" || b.kind !== "ready") return a.kind === b.kind;
-  return (
-    a.model === b.model &&
-    a.integrations === b.integrations &&
-    a.isAdmin === b.isAdmin &&
-    sameValue(a.plans, b.plans) &&
-    sameValue(a.robotNames, b.robotNames) &&
-    sameValue(a.picked, b.picked) &&
-    a.gone === b.gone
-  );
 }
 
 /**
@@ -111,12 +63,18 @@ export class CardSession {
   #running: Running | "failed" | undefined;
   #state: CardState = { locale: "en", view: LOADING };
   #selection: Selection = NO_SELECTION;
+  /**
+   * The progress of the card's starts, kept while the card leaves the page and comes back (a view switch, a masonry
+   * column change), until dismissed or replaced: only a page reload loses it (ADR 0003 « Progress on a room »).
+   */
+  readonly #tracker = createProgressTracker();
   /** The language of the last accepted `hass`, read without the adapters, so every state speaks it. */
   readonly #display = createDisplay(() => this.#hass);
 
   constructor(dependencies: () => SessionDependencies, onChange: () => void) {
     this.#dependencies = dependencies;
     this.#onChange = onChange;
+    this.#tracker.subscribe(() => this.#refresh());
   }
 
   get state(): CardState {
@@ -133,6 +91,11 @@ export class CardSession {
   deselect(): void {
     this.#selection = NO_SELECTION;
     this.#refresh();
+  }
+
+  /** Ends a robot's progress on its room: the user dismissed it. */
+  dismiss(vacuumEntityId: string): void {
+    this.#tracker.dismiss(vacuumEntityId);
   }
 
   /** The clean controller of the running adapters; `undefined` while they are not running. */
@@ -174,7 +137,13 @@ export class CardSession {
       const build = dependencies.createModelBuilder();
       const adapters = dependencies.createAdapters(() => this.#latestHass());
       const controller = createCleanController({ hass: adapters.hass, sources: () => adapters.sources() });
-      this.#running = { adapters, build, controller, unsubscribe: adapters.hass.subscribe(() => this.#refresh()) };
+      this.#running = {
+        adapters,
+        build,
+        controller,
+        stopFollowing: this.#tracker.follow(controller),
+        unsubscribe: adapters.hass.subscribe(() => this.#refresh()),
+      };
       adapters.start();
     } catch {
       this.#stop();
@@ -196,6 +165,7 @@ export class CardSession {
     // Best effort, each step on its own so one that throws never keeps the other's subscriptions alive.
     attempt(() => running.adapters.stop());
     attempt(running.unsubscribe);
+    attempt(running.stopFollowing);
   }
 
   #refresh(): void {
@@ -217,7 +187,9 @@ export class CardSession {
     if (running === "failed") return FAILED;
     try {
       const { adapters } = running;
+      const tracker = this.#tracker;
       const model = running.build(adapters.hass, adapters.sources());
+      tracker.observe(adapters.hass);
       if (model.loading) return model.loadFailed ? LOAD_FAILED : LOADING;
       const shown = this.#state.view.kind === "ready" ? this.#state.view : undefined;
       this.#selection = followModel(this.#selection, model);
@@ -231,6 +203,7 @@ export class CardSession {
         isAdmin: adapters.hass.isAdmin(),
         picked: kept(shown?.picked, this.#picked(model, adapters)),
         gone: selection.kind === "gone" ? selection.name : undefined,
+        progress: tracker.entries(),
       };
     } catch {
       return FAILED;

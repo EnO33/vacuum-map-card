@@ -60,6 +60,11 @@ export const roomLayerStyles = css`
     stroke: var(--primary-color, #009ac7);
     stroke-width: 4px;
   }
+  /* A started room: a light fill in its phase's colour (ADR 0004 « Selection accent »), kept under hover and focus. */
+  .room.filled .shape {
+    fill: var(--progress-color);
+    fill-opacity: 0.3;
+  }
   .room .ring {
     display: none;
     fill: none;
@@ -118,7 +123,8 @@ export const roomLayerStyles = css`
     font-size: clamp(var(--ha-font-size-s, 12px), 4cqi, var(--ha-font-size-l, 16px));
     font-weight: var(--ha-font-weight-medium, 500);
   }
-  .labels text {
+  .labels > text,
+  .badge-label {
     fill: var(--primary-text-color, #212121);
     stroke: var(--card-background-color, #fff);
     stroke-width: 3px;
@@ -126,5 +132,24 @@ export const roomLayerStyles = css`
     paint-order: stroke;
     text-anchor: middle;
     dominant-baseline: central;
+  }
+  /* Small text: a thinner halo and a heavier weight keep it crisp on a tinted fill, light or dark. */
+  .badge-label {
+    font-size: var(--ha-font-size-s, 12px);
+    font-weight: var(--ha-font-weight-bold, 600);
+    stroke-width: 2px;
+  }
+  .badge-icon {
+    overflow: visible;
+    fill: none;
+    stroke: var(--progress-color, var(--primary-text-color, #212121));
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    color: var(--progress-color, var(--primary-text-color, #212121));
+  }
+  .badge-icon .badge-disc {
+    fill: var(--card-background-color, #fff);
+    stroke: none;
   }
 `;

@@ -1,4 +1,4 @@
-import type { CardView } from "./card-session";
+import type { CardView } from "./card-view";
 import { hasPlanExtras } from "./plan-content";
 import { shownPlans } from "./plan-display";
 import { hasRobotNotes } from "./robot-notes";
@@ -9,7 +9,7 @@ const PLAN_SIZE = 7;
 const HEADING_SIZE = 1;
 /** The title and one line of status, before the plans are read or when there is none. */
 const STATUS_SIZE = 2;
-/** A plan's room list or note, and the robots' notes: a few lines each. */
+/** A plan's room list or note, a robot's progress with its button, and the robots' notes: a few lines each. */
 const EXTRAS_SIZE = 2;
 
 /**
@@ -20,8 +20,9 @@ export function cardSize(view: CardView): number {
   if (view.kind !== "ready") return STATUS_SIZE;
   const plans = shownPlans(view.model);
   const robotNotes = hasRobotNotes(view.model.robots) ? EXTRAS_SIZE : 0;
-  if (plans.length === 0) return STATUS_SIZE + robotNotes;
-  const extras = plans.filter(hasPlanExtras).length * EXTRAS_SIZE;
+  const progress = view.progress.length * EXTRAS_SIZE;
+  if (plans.length === 0) return STATUS_SIZE + progress + robotNotes;
+  const extras = plans.filter(hasPlanExtras).length * EXTRAS_SIZE + progress;
   return (
     TITLE_SIZE + plans.length * PLAN_SIZE + extras + robotNotes + (view.model.noFloor.length > 0 ? HEADING_SIZE : 0)
   );

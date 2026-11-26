@@ -3,9 +3,10 @@ import { createAdapters } from "../adapters/create-adapters";
 import { createFloorModelBuilder } from "../app/floor-model/memo";
 import { bodyStyles, cardBody } from "./card-body";
 import { CARD_NAME } from "./card-meta";
-import { CardSession, type CardView, type SessionDependencies } from "./card-session";
+import { CardSession, type SessionDependencies } from "./card-session";
 import { cardSize } from "./card-size";
 import { CardStart } from "./card-start";
+import { FAILED } from "./card-view";
 import { CONFIRM_DIALOG_ELEMENT, ConfirmDialog } from "./confirm-dialog";
 import { disabledPlanStyles } from "./disabled-plan";
 import { layoutStyles } from "./floor-layout";
@@ -14,14 +15,13 @@ import { noticeStyles } from "./notice";
 import { outlinedButtonStyles } from "./outlined-button";
 import { PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
 import { roomListStyles } from "./plan-content";
-import { robotNameIn } from "./plan-display";
+import { robotNameIn, shownPlans } from "./plan-display";
 import { planMessageStyles } from "./plan-picture";
+import { onDismissed, ProgressDismissedEvent, progressListStyles } from "./progress-list";
+import { progressToneStyles } from "./progress-marks";
 import { RobotChosenEvent } from "./robot-picker";
 import { RoomSelectedEvent } from "./room-selected";
-import type { StartNotice } from "./start-flow";
-import { startNoticeView } from "./start-notice";
-
-const FAILED: CardView = Object.freeze({ kind: "failed" });
+import { StatusLine } from "./status-line";
 
 const REAL_DEPENDENCIES: SessionDependencies = Object.freeze({
   createAdapters,
@@ -59,6 +59,8 @@ export class VacuumMapCard extends LitElement {
     roomListStyles,
     outlinedButtonStyles,
     disabledPlanStyles,
+    progressToneStyles,
+    progressListStyles,
   ];
 
   static override properties = { layout: { reflect: true } };
@@ -79,8 +81,8 @@ export class VacuumMapCard extends LitElement {
   #config: unknown;
   /** The room or list button of the last selection: the picker's anchor and focus return. */
   #opener: Focusable | undefined;
-  /** The last start's notice, in the status line until another replaces it. */
-  #notice: StartNotice | undefined;
+  /** The status region's words beyond the view's: the last start's notice and the last progress change. */
+  readonly #status = new StatusLine();
   readonly #session = new CardSession(
     () => this.sessionDependencies(),
     () => this.requestUpdate(),
@@ -97,7 +99,7 @@ export class VacuumMapCard extends LitElement {
     },
     closePicker: () => this.#closePicker(),
     show: (notice) => {
-      this.#notice = notice;
+      this.#status.show(notice);
       this.requestUpdate();
     },
   });
@@ -147,6 +149,7 @@ export class VacuumMapCard extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     this.#start.abort();
+    this.#status.forget();
     this.#session.disconnect();
   }
 
@@ -155,12 +158,23 @@ export class VacuumMapCard extends LitElement {
     return REAL_DEPENDENCIES;
   }
 
+  protected override willUpdate(): void {
+    this.#status.update(this.#session.state.view);
+  }
+
   // The title is a light-DOM child of ha-card, so it stays readable when ha-card is not defined.
   // Do not style `.card-header` or `h1` here: these styles would override ha-card's native slotted header style.
   protected override render(): TemplateResult {
     return html`<ha-card
       ><h1 class="card-header">${CARD_NAME}</h1>
-      <div class="content" @room-selected=${this.#onRoomSelected}>${this.#body()}</div>
+      <div
+        class="content"
+        tabindex="-1"
+        @room-selected=${this.#onRoomSelected}
+        @progress-dismissed=${this.#onProgressDismissed}
+      >
+        ${this.#body()}
+      </div>
       ${this.#picker()}<vmc-confirm-dialog .locale=${this.#session.state.locale}></vmc-confirm-dialog></ha-card
     >`;
   }
@@ -209,12 +223,18 @@ export class VacuumMapCard extends LitElement {
     return view.kind === "ready" ? robotNameIn(view.robotNames, vacuumEntityId) : vacuumEntityId;
   }
 
-  #noticeView(): TemplateResult | typeof nothing {
-    const notice = this.#notice;
-    return notice === undefined
-      ? nothing
-      : startNoticeView(this.#session.state.locale, notice, (id) => this.#robotName(id));
-  }
+  readonly #onProgressDismissed = (event: Event): void => {
+    if (!(event instanceof ProgressDismissedEvent)) return;
+    void onDismissed(event, {
+      dismiss: (id) => this.#session.dismiss(id),
+      rendered: () => this.updateComplete,
+      plans: () => {
+        const { view } = this.#session.state;
+        return view.kind === "ready" ? shownPlans(view.model) : undefined;
+      },
+      fallback: () => this.renderRoot.querySelector<HTMLElement>(".content")?.focus(),
+    });
+  };
 
   readonly #onPickerClosed = (): void => {
     this.#session.deselect();
@@ -223,7 +243,11 @@ export class VacuumMapCard extends LitElement {
   #body(): TemplateResult {
     const { locale, view } = this.#session.state;
     try {
-      return cardBody(view, locale, this.#noticeView());
+      return cardBody(
+        view,
+        locale,
+        this.#status.view(locale, (id) => this.#robotName(id)),
+      );
     } catch {
       // The same template, so the status region stays the same element and announces the error.
       return cardBody(FAILED, locale);

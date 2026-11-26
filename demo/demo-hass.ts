@@ -17,6 +17,14 @@ export function isOutcome(value: string): value is Outcome {
   return OUTCOMES.some((outcome) => outcome === value);
 }
 
+/** What the robots report: the captured states, or one vacuum state for both, to show each phase of a started room. */
+export const REPORTS = ["captured", "cleaning", "paused", "returning", "error", "unavailable"] as const;
+export type Report = (typeof REPORTS)[number];
+
+export function isReport(value: string): value is Report {
+  return REPORTS.some((report) => report === value);
+}
+
 /** The refusal: core's `area_mapping_not_configured` validation error, as captured in the synthetic fixture. */
 const REFUSAL = serviceErrors.find(
   ({ error }) => "translation_key" in error && error.translation_key === "area_mapping_not_configured",
@@ -94,6 +102,17 @@ export class DemoHass extends FakeFrontendHass {
     lists.set("config/entity_registry/list", demoRegistry());
     lists.set("config/floor_registry/list", demoFloors());
     this.states = demoStates();
+  }
+
+  /** Both robots report `report`, in a new `hass.states` as Home Assistant pushes a state change. */
+  report(report: Report): void {
+    const states = demoStates();
+    if (report !== "captured") {
+      for (const [entityId, state] of Object.entries(states)) {
+        if (entityId.startsWith("vacuum.")) states[entityId] = { ...Object(state), state: report };
+      }
+    }
+    this.states = states;
   }
 
   override callService(...args: Parameters<FrontendHass["callService"]>): Promise<unknown> {

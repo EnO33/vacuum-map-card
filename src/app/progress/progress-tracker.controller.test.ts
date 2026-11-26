@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FakeHass } from "../../../test/fakes/fake-hass";
+import { entriesOn } from "../../../test/fakes/fake-progress";
 import { FakeRoomSource } from "../../../test/fakes/fake-room-source";
 import type { ItemRef } from "../robots-for-item/robots-for-item";
 import { createCleanController } from "../start-clean/clean-controller";
@@ -11,7 +12,8 @@ const item: ItemRef = { kind: "area", imageEntityId: "image.robot_one_floor_plan
 function setup() {
   const hass = new FakeHass({ services: ["vacuum.clean_area"] });
   const controller = createCleanController({ hass, sources: () => [new FakeRoomSource()] });
-  const tracker = createProgressTracker(controller);
+  const tracker = createProgressTracker();
+  tracker.follow(controller);
   const intent = (): Intent => {
     const prepared = controller.prepare(item, "vacuum.robot_one");
     if (prepared.kind !== "intent") throw new Error(prepared.kind);
@@ -26,10 +28,10 @@ describe("progress with the clean controller", () => {
   it("shows sending as soon as confirm is called, then starting", async () => {
     const { hass, controller, tracker, intent } = setup();
     const answer = controller.confirm(intent());
-    expect(phases(tracker.forItem(item))).toEqual(["sending"]);
+    expect(phases(entriesOn(tracker, item))).toEqual(["sending"]);
     await answer;
     tracker.observe(hass);
-    expect(tracker.forItem(item)).toEqual([
+    expect(entriesOn(tracker, item)).toEqual([
       { vacuumEntityId: "vacuum.robot_one", item, phase: "starting", statusUnknown: false },
     ]);
   });
@@ -38,17 +40,17 @@ describe("progress with the clean controller", () => {
     const { controller, tracker, intent } = setup();
     const first = intent();
     const inFlight = controller.confirm(first);
-    const sending = tracker.forItem(item);
+    const sending = tracker.entries();
     const busy = controller.confirm(intent());
-    expect(tracker.forItem(item)).toBe(sending);
+    expect(tracker.entries()).toBe(sending);
     await expect(busy).resolves.toEqual({ kind: "busy" });
     await inFlight;
-    const starting = tracker.forItem(item);
+    const starting = tracker.entries();
     await expect(controller.confirm(first)).resolves.toEqual({ kind: "already_sent" });
     const dismissed = intent();
     controller.dismiss(dismissed);
     await expect(controller.confirm(dismissed)).resolves.toEqual({ kind: "discarded" });
-    expect(tracker.forItem(item)).toBe(starting);
+    expect(tracker.entries()).toBe(starting);
     expect(phases(starting)).toEqual(["starting"]);
   });
 
@@ -57,7 +59,7 @@ describe("progress with the clean controller", () => {
     await controller.confirm(intent());
     tracker.dismiss("vacuum.robot_one");
     expect(controller.outcomeOf("vacuum.robot_one")).toBeUndefined();
-    expect(tracker.forItem(item)).toEqual([]);
+    expect(entriesOn(tracker, item)).toEqual([]);
   });
 
   it("leaves no stored outcome for a start dismissed while sending", async () => {
@@ -66,6 +68,6 @@ describe("progress with the clean controller", () => {
     tracker.dismiss("vacuum.robot_one");
     await answer;
     expect(controller.outcomeOf("vacuum.robot_one")).toBeUndefined();
-    expect(tracker.forItem(item)).toEqual([]);
+    expect(entriesOn(tracker, item)).toEqual([]);
   });
 });

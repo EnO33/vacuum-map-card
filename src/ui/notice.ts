@@ -72,9 +72,23 @@ export function notice(kind: NoticeKind, content: TemplateResult): TemplateResul
 
 /** The kind's icon, decorative: the text next to it says what it means. */
 export function noticeIcon(kind: NoticeKind): TemplateResult {
-  return html`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+  return circleIcon(ICON_MARKS[kind]);
+}
+
+/** The card's icons: a mark in a 24 px circle, decorative, drawn in the current colour. */
+export function circleIcon(mark: TemplateResult, className?: string): TemplateResult {
+  return html`<svg
+    class=${className ?? ""}
+    viewBox="0 0 24 24"
+    aria-hidden="true"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
     <circle cx="12" cy="12" r="9" />
-    ${ICON_MARKS[kind]}
+    ${mark}
   </svg>`;
 }
 

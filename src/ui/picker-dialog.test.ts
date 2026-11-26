@@ -2,7 +2,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { shadowOf, stylesText } from "../../test/helpers/shadow";
 import type { Candidate } from "../app/robots-for-item/choice";
-import type { PickedItem } from "./card-session";
+import type { PickedItem } from "./card-view";
 import { deepActiveElement } from "./focus";
 import { NARROW_QUERY, PICKER_CLOSED_EVENT, PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
 import { POPOVER_GAP_PX } from "./popover-place";

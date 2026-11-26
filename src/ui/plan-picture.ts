@@ -1,9 +1,13 @@
 import { css, html, LitElement, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
+import type { ProgressEntry } from "../app/progress/progress-tracker";
 import { type PictureSize, type PlanNavigation, planNavigation, roomAtTap } from "../domain/plan/plan-navigation";
 import type { RoomsPlan } from "../domain/plan/rooms-plan";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
+import { type ItemProgress, roomsProgress, sameEntries } from "./item-progress";
+import { type RobotNames, robotNameIn } from "./plan-display";
+import { progressToneStyles } from "./progress-marks";
 import { picturePoint, roomKeyAction, selectsOnKeyUp, TAP_TARGET_HALF_PX } from "./room-input";
 import { type RoomLayerListeners, roomElementAt, roomIndexOf, roomLayer } from "./room-layer";
 import { roomLayerStyles } from "./room-layer.styles";
@@ -40,6 +44,7 @@ export class PlanPicture extends LitElement {
   static override styles = [
     planMessageStyles,
     roomLayerStyles,
+    progressToneStyles,
     css`
       :host {
         display: block;
@@ -70,6 +75,9 @@ export class PlanPicture extends LitElement {
     imageEntityId: { attribute: false },
     label: { attribute: false },
     selected: { attribute: false },
+    // The same entries in a new array (another plan's progress changed) are no change for this plan.
+    progress: { attribute: false, hasChanged: (next: unknown, last: unknown) => !sameEntries(next, last) },
+    robotNames: { attribute: false },
   };
 
   declare src: string;
@@ -83,6 +91,10 @@ export class PlanPicture extends LitElement {
   declare label: string;
   /** The region id of the room drawn as selected, if any. */
   declare selected: string | undefined;
+  /** The progress of the robots sent to a room of this plan (ADR 0003 « Progress on a room »). */
+  declare progress: readonly ProgressEntry[];
+  /** Every robot's name, for the rooms' progress. */
+  declare robotNames: RobotNames;
 
   /** The loaded picture's natural size. */
   #size: PictureSize | undefined;
@@ -90,6 +102,8 @@ export class PlanPicture extends LitElement {
   #navigation: PlanNavigation | undefined;
   /** The room that takes Tab: the last one focused, while it is still drawn. */
   #tabStop: string | undefined;
+  /** The rooms' progress and what it was worked out from, so a render for the focus or the selection reuses it. */
+  #roomProgress: { readonly from: readonly unknown[]; readonly value: ReadonlyMap<string, ItemProgress> } | undefined;
 
   constructor() {
     super();
@@ -98,6 +112,8 @@ export class PlanPicture extends LitElement {
     this.locale = "en";
     this.imageEntityId = "";
     this.label = "";
+    this.progress = [];
+    this.robotNames = new Map();
   }
 
   protected override willUpdate(changed: PropertyValues<this>): void {
@@ -143,7 +159,18 @@ export class PlanPicture extends LitElement {
     const { rooms } = navigation;
     const tabStop = rooms.some((room) => room.regionId === this.#tabStop) ? this.#tabStop : rooms[0]?.regionId;
     const name = localize(this.locale, "plan.rooms", { name: this.label });
-    return roomLayer({ navigation, tabStop, selected: this.selected, name }, this.#listeners);
+    const progress = this.#progressOf(navigation);
+    return roomLayer({ navigation, tabStop, selected: this.selected, name, progress }, this.#listeners);
+  }
+
+  /** Each drawn room a robot was sent to, by region id; worked out again only when one of its inputs changed. */
+  #progressOf(navigation: PlanNavigation): ReadonlyMap<string, ItemProgress> {
+    const from = [navigation, this.progress, this.robotNames, this.locale];
+    const cached = this.#roomProgress;
+    if (cached?.from.every((input, i) => input === from[i])) return cached.value;
+    const value = roomsProgress(this.locale, navigation.rooms, this.progress, (id) => robotNameIn(this.robotNames, id));
+    this.#roomProgress = { from, value };
+    return value;
   }
 
   /** The reading order and anchors, worked out again only for a new plan or picture size. */
@@ -203,6 +230,11 @@ export class PlanPicture extends LitElement {
   }
 
   /** Focuses a drawn room, which the layer's `focusin` listener makes the tab stop, and returns it. */
+  /** Focuses a drawn room, as a key or the dismiss of its progress does; `false` while it is not drawn. */
+  focusRoom(regionId: string): boolean {
+    return this.#focusRoom(regionId) !== undefined;
+  }
+
   #focusRoom(regionId: string): SVGElement | undefined {
     const index = this.#navigation?.rooms.findIndex((room) => room.regionId === regionId) ?? -1;
     const room = roomElementAt(this.renderRoot, index);

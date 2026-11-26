@@ -5,16 +5,11 @@ import type { ConfirmOutcome } from "../app/start-clean/outcomes";
 import type { Answer } from "./ask-confirmation";
 import type { RobotChosen } from "./robot-picker";
 
-/** A notice about one robot's start, by what the status line says. */
-export type RobotNoticeKind =
-  | "sending"
-  | "sent"
-  | "may_have_started"
-  | "failed"
-  | "not_started"
-  | "busy"
-  | "nothing_sent"
-  | "not_asked";
+/**
+ * A notice about one robot's start, by what the status line says. A sent start is told by its progress instead (ADR
+ * 0003 « Progress on a room »): sending, then the outcome, on the room, under its plan and in the status line.
+ */
+export type RobotNoticeKind = "not_started" | "busy" | "nothing_sent" | "not_asked";
 
 /** What the status line says after a choice (ADR 0003 « Amendment (2026-11-24) », « Where the result shows »). */
 export type StartNotice =
@@ -61,18 +56,17 @@ export async function startFlow(
     controller.dismiss(intent);
     return answer === "unasked" ? { kind: "not_asked", vacuumEntityId } : undefined;
   }
-  return { kind: noticeKind(await controller.confirm(intent)), vacuumEntityId };
+  const kind = noticeKind(await controller.confirm(intent));
+  return kind === undefined ? undefined : { kind, vacuumEntityId };
 }
 
-function noticeKind(outcome: ConfirmOutcome): RobotNoticeKind {
+/** An outcome the controller stored is told by the robot's progress; one that sent nothing gets a notice. */
+function noticeKind(outcome: ConfirmOutcome): RobotNoticeKind | undefined {
   switch (outcome.kind) {
     case "accepted":
-      return "sent";
     case "error":
-      // ADR 0003 « Errors »: a robot that may be moving is never told « not started ».
-      return outcome.error.mayHaveStarted === "no" ? "failed" : "may_have_started";
     case "changed":
-      return "not_started";
+      return undefined;
     case "busy":
       return "busy";
     case "already_sent":

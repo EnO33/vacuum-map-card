@@ -1,16 +1,17 @@
 import { css, html, nothing, type TemplateResult } from "lit";
 import type { Plan } from "../app/floor-model/floor-model";
+import type { ProgressEntry } from "../app/progress/progress-tracker";
 import { type RoomsPlan, undrawableRooms } from "../domain/plan/rooms-plan";
 import { registryNameKey } from "../domain/text/registry-name";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
-import type { CardView } from "./card-session";
+import type { ReadyView } from "./card-view";
 import { disabledPlan } from "./disabled-plan";
+import { entriesOnPlan } from "./item-progress";
 import { planNote, roomList } from "./plan-content";
 import { robotNameIn } from "./plan-display";
 import { planMessage } from "./plan-picture";
-
-type ReadyView = Extract<CardView, { kind: "ready" }>;
+import { type ProgressContext, progressContext, progressList } from "./progress-list";
 
 /**
  * The plans' layout follows the card's own width (container query), never the viewport's: a card can be narrow on a
@@ -57,7 +58,8 @@ export const layoutStyles = css`
 /** Each floor's section in model order, then the « no floor » group when it has plans. Every value is text. */
 export function floorLayout(view: ReadyView, locale: Locale): TemplateResult {
   const { floors, noFloor } = view.model;
-  const figure = (plan: Plan, floorName?: string) => planFigure(plan, view, locale, floorName);
+  const context = progressContext(view, locale);
+  const figure = (plan: Plan, floorName?: string) => planFigure(plan, view, context, floorName);
   return html`${
     floors.length === 0
       ? nothing
@@ -92,7 +94,8 @@ function mapLabel(plan: Plan, locale: Locale): string {
  * maps can be told apart. The picture's alt names its floor, or its map and robot in the « no floor » group. Under it
  * come its room list or why it has none, and why it is on no floor.
  */
-function planFigure(plan: Plan, view: ReadyView, locale: Locale, floorName?: string): TemplateResult {
+function planFigure(plan: Plan, view: ReadyView, context: ProgressContext, floorName?: string): TemplateResult {
+  const { locale } = context;
   const map = mapLabel(plan, locale);
   const robot = robotNameIn(view.robotNames, plan.robot);
   const url = view.plans.get(plan.imageEntityId)?.url;
@@ -107,13 +110,14 @@ function planFigure(plan: Plan, view: ReadyView, locale: Locale, floorName?: str
       : localize(locale, "plan.alt", { name: floorName });
   const sameAsFloor = floorName !== undefined && registryNameKey(map) === registryNameKey(floorName);
   const label = floorName ?? `${map}, ${robot}`;
+  const progress = entriesOnPlan(view.progress, plan.imageEntityId);
   return html`<div class="plan">
     <figure>
-      ${picture(plan, url, { alt, label }, { rooms, selected }, view.isAdmin, locale)}
+      ${picture(plan, url, { alt, label }, { rooms, selected, progress }, view, locale)}
       <figcaption>${sameAsFloor ? nothing : html`${map} <span aria-hidden="true">·</span> `}${robot}</figcaption>
     </figure>
-    ${shown ? notDrawn(rooms, locale) : nothing} ${roomList(plan, label, locale)}
-    ${planNote(plan, label, view.isAdmin, locale)}
+    ${shown ? notDrawn(rooms, locale) : nothing} ${roomList(plan, label, progress, context)}
+    ${planNote(plan, label, view.isAdmin, locale)} ${progressList(progress, localize(locale, "progress.list", { name: label }), context)}
   </div>`;
 }
 
@@ -125,11 +129,15 @@ function picture(
   plan: Plan,
   url: string | undefined,
   names: { readonly alt: string; readonly label: string },
-  layer: { readonly rooms: RoomsPlan | undefined; readonly selected: string | undefined },
-  isAdmin: boolean,
+  layer: {
+    readonly rooms: RoomsPlan | undefined;
+    readonly selected: string | undefined;
+    readonly progress: readonly ProgressEntry[];
+  },
+  view: ReadyView,
   locale: Locale,
 ): TemplateResult {
-  if (plan.pictureState === "disabled") return disabledPlan(plan.imageEntityId, isAdmin, names.label, locale);
+  if (plan.pictureState === "disabled") return disabledPlan(plan.imageEntityId, view.isAdmin, names.label, locale);
   if (plan.pictureState !== "available") return planMessage(localize(locale, `plan.${plan.pictureState}`));
   if (url === undefined) return planMessage(localize(locale, "plan.no_picture"));
   return html`<vmc-plan-picture
@@ -140,6 +148,8 @@ function picture(
     .selected=${layer.selected}
     .imageEntityId=${plan.imageEntityId}
     .label=${names.label}
+    .progress=${layer.progress}
+    .robotNames=${view.robotNames}
   ></vmc-plan-picture>`;
 }
 
