@@ -147,7 +147,6 @@ describe("VacuumMapCard layout", () => {
   it.each<[PictureState, string]>([
     ["unavailable", "This floor plan is unavailable."],
     ["unknown", "This floor plan has no picture yet."],
-    ["disabled", "This floor plan is disabled in Home Assistant."],
   ])("shows a readable message in place of a %s picture", async (pictureState, message) => {
     fakePictures();
     withFirstFloorPlan({ pictureState });

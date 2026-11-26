@@ -19,7 +19,6 @@ const NO_FLOOR: Readonly<Record<NoFloorNote, { readonly key: MessageKey; readonl
   assign_area_to_floor_plan: { key: "no_floor.assign_area_to_floor_plan", role: "fix" },
   assign_floor_to_area: { key: "no_floor.assign_floor_to_area", role: "fix" },
   add_floor_alias: { key: "no_floor.add_floor_alias", role: "fix" },
-  enable_floor_plan: { key: "no_floor.enable_floor_plan", role: "fact" },
   cannot_tell_shown_map: { key: "no_floor.cannot_tell_shown_map", role: "fact" },
 };
 
@@ -29,15 +28,22 @@ const ROOMS_MAP_ISSUE: Readonly<Record<RoomsMapIssue["kind"], MessageKey>> = {
   unsupported: "robot.outlines_unreadable",
 };
 
+export interface PictureOnlyNotes {
+  readonly lines: readonly string[];
+  /** `true` when an administrator is told to map the segments in the vacuum's settings, which the card can open. */
+  readonly vacuumSettings: boolean;
+}
+
 /**
  * Why a plan without outlines shows its picture only (ADR 0005 « Room lists » item 2), then, when the segment mapping
  * is the fix, where an administrator makes it, or that a non-administrator asks one (ADR 0003 « Permissions »).
  */
-export function pictureOnlyNotes(reason: PictureOnlyReason, isAdmin: boolean, locale: Locale): string[] {
+export function pictureOnlyNotes(reason: PictureOnlyReason, isAdmin: boolean, locale: Locale): PictureOnlyNotes {
   const { key, mapping } = PICTURE_ONLY[reason];
   const why = localize(locale, key);
-  if (!mapping) return [why];
-  return [why, localize(locale, isAdmin ? "picture_only.map_segments" : "picture_only.ask_admin")];
+  if (!mapping) return { lines: [why], vacuumSettings: false };
+  const where = localize(locale, isAdmin ? "picture_only.map_segments" : "picture_only.ask_admin");
+  return { lines: [why, where], vacuumSettings: isAdmin };
 }
 
 export interface NoFloorNotes {

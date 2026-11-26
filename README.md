@@ -32,8 +32,9 @@ Vacuum map cards usually show one robot on one map. Homes have several floors an
 
 The card says on the plan what is missing and what you can change in Home Assistant:
 
+- **« This floor plan is turned off in Home Assistant »**: Roomba+ creates its floor plan entities disabled. To enable one, go to Settings › Devices & services › Entities, set the Status filter to Disabled, search for the floor plan entity and open it, open its Settings, then select Enable under « This entity is disabled. ». Administrators get an « Open entity settings » button that opens these settings directly; the card itself never changes them.
 - **A plan is under « Plans without a floor »**: assign the floor plan entity to an area that is on a floor, assign a floor to that area, or add the map's name as an alias of a floor. A disabled floor plan also needs to be enabled to show its picture.
-- **A plan shows its picture but no room**: the robot has no area cleaning (a mop robot, for example), so its rooms can only be chosen on the plan where the card draws them, or its segments are not mapped to areas yet. An administrator maps them in the vacuum entity's settings; other users are asked to ask an administrator.
+- **A plan shows its picture but no room**: the robot has no area cleaning (a mop robot, for example), so its rooms can only be chosen on the plan where the card draws them, or its segments are not mapped to areas yet. An administrator maps them in the vacuum entity's settings, which the card's « Open vacuum settings » button opens; other users are asked to ask an administrator.
 - **« no room outlines yet »** under the plans: the robot's rooms map has no outlines (no cloud map loaded yet), or the robot has no rooms map entity (missing or disabled). **« room outlines could not be read »** comes with a short code to quote in a bug report.
 
 ## Supported integrations

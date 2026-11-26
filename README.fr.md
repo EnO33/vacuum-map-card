@@ -32,8 +32,9 @@ Les cartes d'aspirateur montrent en général un robot sur un plan. Une maison a
 
 La carte indique sur le plan ce qui manque et ce que vous pouvez changer dans Home Assistant :
 
+- **« Ce plan est désactivé dans Home Assistant »** : Roomba+ crée ses entités de plan désactivées. Pour en activer une, dans Paramètres › Appareils et services › Entités, réglez le filtre État sur Désactivée, recherchez l'entité du plan et ouvrez-la, ouvrez ses Paramètres, puis choisissez Activer sous « Cette entité est désactivée. ». Les administrateurs ont un bouton « Ouvrir les paramètres de l'entité » qui ouvre directement ces paramètres ; la carte elle-même ne les modifie jamais.
 - **Un plan est sous « Plans sans étage »** : associez l'entité du plan à une pièce située sur un étage, attribuez un étage à cette pièce, ou ajoutez le nom du plan comme alias d'un étage. Un plan désactivé doit aussi être activé pour afficher son image.
-- **Un plan affiche son image mais aucune pièce** : le robot n'a pas le nettoyage par pièce (un robot laveur, par exemple), donc ses pièces ne se choisissent que sur le plan où la carte les dessine ; ou ses segments ne sont pas encore associés aux pièces. Un administrateur les associe dans les paramètres de l'entité de l'aspirateur ; les autres utilisateurs sont invités à le demander à un administrateur.
+- **Un plan affiche son image mais aucune pièce** : le robot n'a pas le nettoyage par pièce (un robot laveur, par exemple), donc ses pièces ne se choisissent que sur le plan où la carte les dessine ; ou ses segments ne sont pas encore associés aux pièces. Un administrateur les associe dans les paramètres de l'entité de l'aspirateur, qu'ouvre le bouton « Ouvrir les paramètres de l'aspirateur » de la carte ; les autres utilisateurs sont invités à le demander à un administrateur.
 - **« pas encore de contours de pièces »** sous les plans : le plan des pièces du robot n'a pas de contours (aucun plan cloud chargé), ou le robot n'a pas d'entité de plan des pièces (absente ou désactivée). **« les contours des pièces n'ont pas pu être lus »** est suivi d'un code court à citer dans un rapport de bug.
 
 ## Intégrations prises en charge

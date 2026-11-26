@@ -156,11 +156,11 @@ describe("floorOfStoredMap, source 4: no floor", () => {
     expect(floorOfStoredMap(mapD, mopContext)).toEqual(NO_FLOOR);
   });
 
-  it("adds « enable this floor plan » for a disabled floor plan", () => {
+  it("gives a disabled floor plan the same fixes, its picture saying how to enable it", () => {
     const disabled: StoredMap = { ...mapD, pictureState: "disabled", mapName: undefined };
     expect(floorOfStoredMap(disabled, mopContext)).toEqual({
       kind: "no_floor",
-      reasons: ["assign_area_to_floor_plan", "add_floor_alias", "enable_floor_plan"],
+      reasons: ["assign_area_to_floor_plan", "add_floor_alias"],
     });
   });
 

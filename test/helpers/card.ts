@@ -117,6 +117,20 @@ export function fixtureHass(): FakeFrontendHass {
   return adaptersHarness().hass;
 }
 
+/** {@link fixtureHass} for an administrator or not, in `language` (`hass.language` and `hass.locale`, set together). */
+export function hassAs(isAdmin: boolean, language = "en"): FakeFrontendHass {
+  const hass = fixtureHass();
+  hass.user = { is_admin: isAdmin };
+  hass.language = language;
+  hass.locale = { language };
+  return hass;
+}
+
+/** The first floor's plan: its figure, room list and note. */
+export function firstPlan(card: VacuumMapCard): Element | null {
+  return shadowOf(card).querySelector("section .plan");
+}
+
 /** The captures without any registry entry, so no Roomba+ robot. */
 export function noRobotHarness(): AdaptersHarness {
   const harness = adaptersHarness();
