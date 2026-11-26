@@ -4,6 +4,8 @@ import { type FrontendHass, isFrontendHass } from "../adapters/hass/frontend-has
 import type { FloorModel } from "../app/floor-model/floor-model";
 import type { FloorModelBuilder } from "../app/floor-model/memo";
 import { sameValue } from "../app/floor-model/same-value";
+import type { Candidate } from "../app/robots-for-item/choice";
+import { type ItemRef, itemName, robotsForItem } from "../app/robots-for-item/robots-for-item";
 import type { Locale } from "../i18n/catalogs";
 import { resolveLocale } from "../i18n/locale";
 import { type PlanDisplays, planDisplaysOf, type RobotNames, robotNamesOf } from "./plan-display";
@@ -32,7 +34,16 @@ export type CardView =
       readonly robotNames: RobotNames;
       /** `HassPort.isAdmin()`: a non-administrator is told to ask one (ADR 0003 « Permissions »). */
       readonly isAdmin: boolean;
+      /** The selected item with its robots, read on every refresh so their states stay current; `undefined` when none. */
+      readonly picked: PickedItem | undefined;
     };
+
+/** A selected item with its name and its robots, read once at selection. */
+export interface PickedItem {
+  readonly item: ItemRef;
+  readonly name: string;
+  readonly candidates: readonly Candidate[];
+}
 
 export interface CardState {
   readonly locale: Locale;
@@ -57,6 +68,11 @@ function attempt(action: () => void): void {
   }
 }
 
+/** The shown value when `next` equals it, so an element given it sees no change when another part of the view does. */
+function kept<T>(shown: T | undefined, next: T): T {
+  return shown !== undefined && sameValue(shown, next) ? shown : next;
+}
+
 function sameView(a: CardView, b: CardView): boolean {
   if (a.kind !== "ready" || b.kind !== "ready") return a.kind === b.kind;
   return (
@@ -64,7 +80,8 @@ function sameView(a: CardView, b: CardView): boolean {
     a.integrations === b.integrations &&
     a.isAdmin === b.isAdmin &&
     sameValue(a.plans, b.plans) &&
-    sameValue(a.robotNames, b.robotNames)
+    sameValue(a.robotNames, b.robotNames) &&
+    sameValue(a.picked, b.picked)
   );
 }
 
@@ -86,6 +103,7 @@ export class CardSession {
   /** `failed` when the adapters could not start: shown until they are stopped (detached or an invalid `hass`). */
   #running: Running | "failed" | undefined;
   #state: CardState = { locale: "en", view: LOADING };
+  #selected: ItemRef | undefined;
   /** The language of the last accepted `hass`, read without the adapters, so every state speaks it. */
   readonly #display = createDisplay(() => this.#hass);
 
@@ -96,6 +114,12 @@ export class CardSession {
 
   get state(): CardState {
     return this.#state;
+  }
+
+  /** Selects a room or area: the view then carries it with its robots while the model has it. Nothing is sent. */
+  select(item: ItemRef): void {
+    this.#selected = item;
+    this.#refresh();
   }
 
   /** A value that fails the boundary check stops the adapters and shows the loading state. */
@@ -172,16 +196,30 @@ export class CardSession {
       const { adapters } = running;
       const model = running.build(adapters.hass, adapters.sources());
       if (model.loading) return model.loadFailed ? LOAD_FAILED : LOADING;
+      const shown = this.#state.view.kind === "ready" ? this.#state.view : undefined;
       return {
         kind: "ready",
         model,
         integrations: adapters.integrations,
         plans: planDisplaysOf(model, adapters),
-        robotNames: robotNamesOf(model.robots, adapters),
+        robotNames: kept(shown?.robotNames, robotNamesOf(model.robots, adapters)),
         isAdmin: adapters.hass.isAdmin(),
+        picked: kept(shown?.picked, this.#picked(model, adapters)),
       };
     } catch {
       return FAILED;
+    }
+  }
+
+  /** The selected item with its robots (`robotsForItem`); `undefined` when the model has no such item or the read fails. */
+  #picked(model: FloorModel, adapters: Adapters): PickedItem | undefined {
+    const item = this.#selected;
+    const name = item && itemName(model, item);
+    if (item === undefined || name === undefined) return undefined;
+    try {
+      return { item, name, candidates: robotsForItem(model, item, adapters.hass, adapters.sources()) };
+    } catch {
+      return undefined;
     }
   }
 }

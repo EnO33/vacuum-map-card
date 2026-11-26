@@ -6,8 +6,9 @@ import { pixelPlan, pixelSquare } from "../../test/helpers/rooms-snapshot";
 import { stylesText } from "../../test/helpers/shadow";
 import type { ItemRef } from "../app/robots-for-item/robots-for-item";
 import { deepActiveElement } from "./focus";
-import { PLAN_PICTURE_ELEMENT, PlanPicture, ROOM_SELECTED_EVENT } from "./plan-picture";
+import { PLAN_PICTURE_ELEMENT, PlanPicture } from "./plan-picture";
 import { defineOnce } from "./register";
+import { ROOM_SELECTED_EVENT } from "./room-selected";
 
 const IMAGE = "image.robot_rooms_map";
 

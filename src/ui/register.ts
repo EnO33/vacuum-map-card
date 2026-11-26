@@ -2,6 +2,7 @@ import { CARD_VERSION } from "../version";
 import { CARD_DOCUMENTATION_URL, CARD_ELEMENT, CARD_NAME } from "./card-meta";
 import { CONFIRM_DIALOG_ELEMENT, ConfirmDialog } from "./confirm-dialog";
 import { PLAN_PICTURE_ELEMENT, PlanPicture } from "./plan-picture";
+import { ROBOT_PICKER_ELEMENT, RobotPicker } from "./robot-picker";
 import { VacuumMapCard } from "./vacuum-map-card";
 
 /** Entry of `window.customCards`, read by the Home Assistant card picker (frontend 20261028.6). */
@@ -47,6 +48,7 @@ export function registerCard(): void {
   }
   defineOnce(customElements, CONFIRM_DIALOG_ELEMENT, ConfirmDialog);
   defineOnce(customElements, PLAN_PICTURE_ELEMENT, PlanPicture);
+  defineOnce(customElements, ROBOT_PICKER_ELEMENT, RobotPicker);
   window.customCards = withCustomCard(window.customCards, {
     type: CARD_ELEMENT,
     name: CARD_NAME,

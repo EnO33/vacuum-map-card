@@ -1,6 +1,5 @@
 import { css, html, LitElement, nothing, type PropertyValues, type TemplateResult } from "lit";
 import { styleMap } from "lit/directives/style-map.js";
-import type { ItemRef } from "../app/robots-for-item/robots-for-item";
 import { type PictureSize, type PlanNavigation, planNavigation, roomAtTap } from "../domain/plan/plan-navigation";
 import type { RoomsPlan } from "../domain/plan/rooms-plan";
 import type { Locale } from "../i18n/catalogs";
@@ -8,20 +7,10 @@ import { localize } from "../i18n/localize";
 import { picturePoint, roomKeyAction, selectsOnKeyUp, TAP_TARGET_HALF_PX } from "./room-input";
 import { type RoomLayerListeners, roomElementAt, roomIndexOf, roomLayer } from "./room-layer";
 import { roomLayerStyles } from "./room-layer.styles";
+import { roomSelectedEvent } from "./room-selected";
 
 /** Custom element name of one plan's picture. */
 export const PLAN_PICTURE_ELEMENT = "vmc-plan-picture";
-
-/**
- * Fired by a plan picture when a room is chosen with Enter, Space or a tap; `detail` is the room's `ItemRef`. It
- * bubbles inside the card's shadow tree and never leaves the card (`composed: false`).
- */
-export const ROOM_SELECTED_EVENT = "room-selected";
-
-/** The one way to build {@link ROOM_SELECTED_EVENT}, for a drawn room and for a listed area alike. */
-export function roomSelectedEvent(detail: ItemRef): CustomEvent<ItemRef> {
-  return new CustomEvent(ROOM_SELECTED_EVENT, { detail, bubbles: true, composed: false });
-}
 
 /** A readable state shown in place of a plan picture: the card's and the picture element's. */
 export const planMessageStyles = css`

@@ -1,7 +1,8 @@
 import { decideAreaItemPath, decideRoomPath } from "../../domain/eligibility/decide-path";
 import { decideJoinPath, linksArea } from "../../domain/eligibility/join-path";
+import type { ShadowIndex } from "../../domain/eligibility/path-two";
 import { compareCodeUnits } from "../../domain/text/compare";
-import type { FloorModel, Plan, RobotModel } from "../floor-model/floor-model";
+import type { FloorModel, Plan, RobotModel, RoomView } from "../floor-model/floor-model";
 import type { HassPort } from "../ports/hass-port";
 import type { RoomSource, SourceRobot } from "../ports/room-source";
 import { areaItemChoice, type Candidate, type Choice, guardedCandidate, joinChoice, roomChoice } from "./choice";
@@ -26,13 +27,12 @@ export function robotsForItem(
   sources: readonly RoomSource[],
 ): readonly Candidate[] {
   const sourceOf = uniqueSourceRobots(sources);
-  const owner = model.robots.find((robot) => robot.plans.some((plan) => plan.imageEntityId === item.imageEntityId));
-  const plan = owner?.plans.find((p) => p.imageEntityId === item.imageEntityId);
+  const { owner, plan } = planOf(model, item.imageEntityId) ?? {};
   const ownerSource = owner && sourceOf.get(owner.vacuumEntityId);
-  if (!owner || !plan || !ownerSource) return [];
+  const found = plan && itemOn(plan, item);
+  if (!owner || !plan || !found || !ownerSource) return [];
   const ownerContext = robotContextOf(owner, ownerSource, hass);
-  const own = ownChoice(ownerContext, plan, item);
-  if (!own) return [];
+  const own = ownChoice(ownerContext, found);
   const first = candidateOf(ownerContext, own.choice);
   const { areaId } = own;
   if (areaId === undefined) return [guardedCandidate(first)];
@@ -79,24 +79,48 @@ function joiningCandidate(
   return { vacuumEntityId: robot.vacuumEntityId, action: robot.action, state: vacuum?.state, choice };
 }
 
-/** The plan's own robot's choice, and the item's area (its link on that plan, or the area item's area). */
-function ownChoice(
-  robot: RobotContext,
-  plan: Plan,
-  item: ItemRef,
-): { readonly choice: Choice; readonly areaId: string | undefined } | undefined {
-  const { content } = plan;
+/** The name of an item of the model, as the picker heads it; `undefined` when the model has no such item. */
+export function itemName(model: FloorModel, item: ItemRef): string | undefined {
+  const plan = planOf(model, item.imageEntityId)?.plan;
+  const found = plan && itemOn(plan, item);
+  return found?.kind === "room" ? found.view.room.name : found?.name;
+}
+
+/** The plan with this picture, and its robot. */
+function planOf(model: FloorModel, imageEntityId: string): { owner: RobotModel; plan: Plan } | undefined {
+  for (const owner of model.robots) {
+    const plan = owner.plans.find((p) => p.imageEntityId === imageEntityId);
+    if (plan) return { owner, plan };
+  }
+  return undefined;
+}
+
+/** An item as its plan has it: a room of the plan's outlines, or an area item of its room list. */
+type FoundItem =
+  | { readonly kind: "room"; readonly view: RoomView; readonly shadows: ShadowIndex }
+  | { readonly kind: "area"; readonly areaId: string; readonly name: string };
+
+function itemOn({ content }: Plan, item: ItemRef): FoundItem | undefined {
   if (item.kind === "area") {
-    if (content.kind !== "areas" || !content.items.some((i) => i.areaId === item.areaId)) return undefined;
-    return {
-      choice: areaItemChoice(decideAreaItemPath(robot.vacuum, item.areaId, robot.pathOne)),
-      areaId: item.areaId,
-    };
+    const found = content.kind === "areas" ? content.items.find((i) => i.areaId === item.areaId) : undefined;
+    return found && { kind: "area", areaId: found.areaId, name: found.name };
   }
   if (content.kind !== "outlines") return undefined;
   const view = content.rooms.find((r) => r.room.regionId === item.regionId);
-  if (!view) return undefined;
-  const context = { vacuum: robot.vacuum, pathOne: robot.pathOne, shadows: content.shadows };
+  return view && { kind: "room", view, shadows: content.shadows };
+}
+
+/** The plan's own robot's choice, and the item's area (its link on that plan, or the area item's area). */
+function ownChoice(
+  robot: RobotContext,
+  found: FoundItem,
+): { readonly choice: Choice; readonly areaId: string | undefined } {
+  if (found.kind === "area") {
+    const { areaId } = found;
+    return { choice: areaItemChoice(decideAreaItemPath(robot.vacuum, areaId, robot.pathOne)), areaId };
+  }
+  const { view, shadows } = found;
+  const context = { vacuum: robot.vacuum, pathOne: robot.pathOne, shadows };
   const choice = roomChoice(decideRoomPath(robot.source, view.room, context), view.room.name);
   return { choice, areaId: view.area.kind === "none" ? undefined : view.area.areaId };
 }

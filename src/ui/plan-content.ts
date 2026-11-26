@@ -5,7 +5,7 @@ import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
 import { notice } from "./notice";
 import { noFloorNotes, pictureOnlyNotes } from "./plan-notes";
-import { roomSelectedEvent } from "./plan-picture";
+import { roomSelectedEvent } from "./room-selected";
 import { settingsButton } from "./settings-button";
 
 /** The room list: its buttons (`outlinedButtonStyles`) wrap on a narrow card. */

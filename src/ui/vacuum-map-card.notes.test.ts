@@ -17,7 +17,7 @@ import { expectNoConsoleOutput } from "../../test/helpers/no-console";
 import { stylesText } from "../../test/helpers/shadow";
 import type { Plan, RoomsMapIssue } from "../app/floor-model/floor-model";
 import type { ItemRef } from "../app/robots-for-item/robots-for-item";
-import { ROOM_SELECTED_EVENT } from "./plan-picture";
+import { ROOM_SELECTED_EVENT } from "./room-selected";
 import { VacuumMapCard } from "./vacuum-map-card";
 
 useTestCard();

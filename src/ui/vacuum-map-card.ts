@@ -1,4 +1,4 @@
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { createAdapters } from "../adapters/create-adapters";
 import { createFloorModelBuilder } from "../app/floor-model/memo";
 import { bodyStyles, cardBody } from "./card-body";
@@ -11,6 +11,7 @@ import { noticeStyles } from "./notice";
 import { outlinedButtonStyles } from "./outlined-button";
 import { roomListStyles } from "./plan-content";
 import { planMessageStyles } from "./plan-picture";
+import { RoomSelectedEvent } from "./room-selected";
 
 const FAILED: CardView = Object.freeze({ kind: "failed" });
 
@@ -41,6 +42,9 @@ export class VacuumMapCard extends LitElement {
         flex: 1;
         min-height: 0;
         overflow: auto;
+      }
+      .picker {
+        margin-top: var(--ha-space-4, 16px);
       }
     `,
     bodyStyles,
@@ -122,8 +126,33 @@ export class VacuumMapCard extends LitElement {
   // The title is a light-DOM child of ha-card, so it stays readable when ha-card is not defined.
   // Do not style `.card-header` or `h1` here: these styles would override ha-card's native slotted header style.
   protected override render(): TemplateResult {
-    return html`<ha-card><h1 class="card-header">${CARD_NAME}</h1><div class="content">${this.#body()}</div></ha-card>`;
+    return html`<ha-card
+      ><h1 class="card-header">${CARD_NAME}</h1>
+      <div class="content" @room-selected=${this.#onRoomSelected}>${this.#body()}${this.#picker()}</div></ha-card
+    >`;
   }
+
+  /**
+   * `vmc-robot-picker` (`ROBOT_PICKER_ELEMENT`), shown under the plans for now: placing it next to the room, and its focus, come with #110. Choosing a robot does
+   * nothing yet (the confirmation issues).
+   */
+  #picker(): TemplateResult | typeof nothing {
+    const { locale, view } = this.#session.state;
+    if (view.kind !== "ready" || view.picked === undefined) return nothing;
+    const { picked } = view;
+    return html`<vmc-robot-picker
+      class="picker"
+      .locale=${locale}
+      .item=${picked.item}
+      .itemName=${picked.name}
+      .candidates=${picked.candidates}
+      .robotNames=${view.robotNames}
+    ></vmc-robot-picker>`;
+  }
+
+  readonly #onRoomSelected = (event: Event): void => {
+    if (event instanceof RoomSelectedEvent) this.#session.select(event.detail);
+  };
 
   #body(): TemplateResult {
     const { locale, view } = this.#session.state;
