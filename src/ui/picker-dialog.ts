@@ -205,6 +205,14 @@ export class PickerDialog extends LitElement {
    * Space repeats nothing, so a key held on a room never goes on to choose a robot.
    */
   readonly #onKeydown = (event: KeyboardEvent): void => {
+    if (event.key === "Escape") {
+      // Its own, not the browser's `cancel` alone: Home Assistant's dialogs listen to Escape on the page, and the card's
+      // editor preview is one of them, so the key stops here and closes only the picker.
+      event.preventDefault();
+      event.stopPropagation();
+      this.#close();
+      return;
+    }
     if (event.repeat && (event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
       return;
