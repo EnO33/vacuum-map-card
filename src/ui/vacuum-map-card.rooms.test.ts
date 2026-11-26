@@ -21,7 +21,7 @@ function withOutlines(plan: RoomsPlan): void {
 }
 
 function note(card: HTMLElement): string | undefined {
-  return shadowOf(card).querySelector("figure .not-drawn")?.textContent?.trim();
+  return shadowOf(card).querySelector(".plan .not-drawn")?.textContent?.trim();
 }
 
 describe("VacuumMapCard rooms", () => {
@@ -61,10 +61,12 @@ describe("VacuumMapCard rooms", () => {
     expect(note(card)).toBe(`Pièces non dessinées : ${undrawn.name} et Attic`);
   });
 
-  it("puts the note after the caption, so the caption stays next to its picture", async () => {
+  it("puts the note right after the figure, so the caption stays next to its picture", async () => {
     withOutlines(planOf(snapshotOf(snapshotFixtures.withoutOutline)));
     const card = await mount(fixtureHass());
-    expect(shadowOf(card).querySelector(".not-drawn")?.previousElementSibling?.localName).toBe("figcaption");
+    const note = shadowOf(card).querySelector(".not-drawn");
+    expect(note?.previousElementSibling?.localName).toBe("figure");
+    expect(note?.previousElementSibling?.lastElementChild?.localName).toBe("figcaption");
   });
 
   it("adds no note when the plan shows no picture", async () => {

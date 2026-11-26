@@ -6,7 +6,7 @@ import type { FloorModelBuilder } from "../app/floor-model/memo";
 import { sameValue } from "../app/floor-model/same-value";
 import type { Locale } from "../i18n/catalogs";
 import { resolveLocale } from "../i18n/locale";
-import { type PlanDisplays, planDisplaysOf } from "./plan-display";
+import { type PlanDisplays, planDisplaysOf, type RobotNames, robotNamesOf } from "./plan-display";
 
 /** What the session makes for each attachment of the card; the card passes the real ones, tests pass fakes. */
 export interface SessionDependencies {
@@ -28,6 +28,10 @@ export type CardView =
       readonly integrations: readonly string[];
       /** Read again on every refresh, so a new image state gives a new picture URL (ADR 0005 « Plan pictures »). */
       readonly plans: PlanDisplays;
+      /** Every robot's name, for its plans' labels and the notes on robots whose rooms map adds no plan. */
+      readonly robotNames: RobotNames;
+      /** `HassPort.isAdmin()`: a non-administrator is told to ask one (ADR 0003 « Permissions »). */
+      readonly isAdmin: boolean;
     };
 
 export interface CardState {
@@ -55,7 +59,13 @@ function attempt(action: () => void): void {
 
 function sameView(a: CardView, b: CardView): boolean {
   if (a.kind !== "ready" || b.kind !== "ready") return a.kind === b.kind;
-  return a.model === b.model && a.integrations === b.integrations && sameValue(a.plans, b.plans);
+  return (
+    a.model === b.model &&
+    a.integrations === b.integrations &&
+    a.isAdmin === b.isAdmin &&
+    sameValue(a.plans, b.plans) &&
+    sameValue(a.robotNames, b.robotNames)
+  );
 }
 
 /**
@@ -162,7 +172,14 @@ export class CardSession {
       const { adapters } = running;
       const model = running.build(adapters.hass, adapters.sources());
       if (model.loading) return model.loadFailed ? LOAD_FAILED : LOADING;
-      return { kind: "ready", model, integrations: adapters.integrations, plans: planDisplaysOf(model, adapters) };
+      return {
+        kind: "ready",
+        model,
+        integrations: adapters.integrations,
+        plans: planDisplaysOf(model, adapters),
+        robotNames: robotNamesOf(model.robots, adapters),
+        isAdmin: adapters.hass.isAdmin(),
+      };
     } catch {
       return FAILED;
     }

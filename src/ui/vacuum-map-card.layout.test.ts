@@ -11,12 +11,13 @@ import {
   settle,
   shadowOf,
   useTestCard,
+  withFirstFloorPlan,
 } from "../../test/helpers/card";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
 import { roombaPlusStates } from "../../test/helpers/roomba-plus-states";
 import { stylesText } from "../../test/helpers/shadow";
 import { createAdapters } from "../adapters/create-adapters";
-import type { Plan } from "../app/floor-model/floor-model";
+import type { FloorModel } from "../app/floor-model/floor-model";
 import type { PictureState } from "../domain/robot/stored-map";
 import { VacuumMapCard } from "./vacuum-map-card";
 
@@ -29,15 +30,6 @@ function fakePictures(token = "t1"): void {
     ...createAdapters(getHass),
     pictureUrl: (entityId) => `https://pictures.example.invalid/${entityId}?token=${token}`,
   });
-}
-
-function withFirstFloorPlan(change: Partial<Plan>): void {
-  changeModel((model) => ({
-    ...model,
-    floors: model.floors.map((floor, index) =>
-      index === 0 ? { ...floor, plan: { ...floor.plan, ...change } } : floor,
-    ),
-  }));
 }
 
 function headings(card: VacuumMapCard): string[] {
@@ -192,11 +184,32 @@ describe("VacuumMapCard sizing", () => {
     expect(card.getGridOptions()).not.toBe(options);
   });
 
-  it("estimates its size synchronously from the number of plans", async () => {
+  /** The plans that show a room list or a note under their picture. */
+  function withExtras(card: VacuumMapCard): number {
+    return [...shadowOf(card).querySelectorAll(".plan")].filter((plan) =>
+      plan.querySelector('.room-list, [role="note"]'),
+    ).length;
+  }
+
+  it("estimates its size synchronously from the number of plans and their lists or notes", async () => {
     const card = await mount(fixtureHass());
-    expect(card.getCardSize()).toBe(1 + 5 * 7 + 1);
+    expect(withExtras(card)).toBeGreaterThan(0);
+    expect(card.getCardSize()).toBe(1 + 5 * 7 + 2 * withExtras(card) + 1);
     changeModel((model) => ({ ...model, floors: model.floors.slice(0, 1), noFloor: [] }));
-    expect((await mount(fixtureHass())).getCardSize()).toBe(1 + 7);
+    const one = await mount(fixtureHass());
+    expect(one.getCardSize()).toBe(1 + 7 + 2 * withExtras(one));
+  });
+
+  it("counts the robots' notes, with or without plans", async () => {
+    const issues = (model: FloorModel): FloorModel => ({
+      ...model,
+      robots: model.robots.map((robot) => ({ ...robot, roomsMapIssue: { kind: "no_outlines" } })),
+    });
+    changeModel((model) => issues({ ...model, floors: model.floors.slice(0, 1), noFloor: [] }));
+    const one = await mount(fixtureHass());
+    expect(one.getCardSize()).toBe(1 + 7 + 2 * withExtras(one) + 2);
+    changeModel((model) => issues({ ...model, floors: [], noFloor: [] }));
+    expect((await mount(fixtureHass())).getCardSize()).toBe(2 + 2);
   });
 
   it("estimates a small size before the plans are read, and when there is none", async () => {

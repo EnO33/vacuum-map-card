@@ -18,6 +18,11 @@ export const PLAN_PICTURE_ELEMENT = "vmc-plan-picture";
  */
 export const ROOM_SELECTED_EVENT = "room-selected";
 
+/** The one way to build {@link ROOM_SELECTED_EVENT}, for a drawn room and for a listed area alike. */
+export function roomSelectedEvent(detail: ItemRef): CustomEvent<ItemRef> {
+  return new CustomEvent(ROOM_SELECTED_EVENT, { detail, bubbles: true, composed: false });
+}
+
 /** A readable state shown in place of a plan picture: the card's and the picture element's. */
 export const planMessageStyles = css`
   .plan-message {
@@ -216,7 +221,6 @@ export class PlanPicture extends LitElement {
   }
 
   #select(regionId: string): void {
-    const detail: ItemRef = { kind: "room", imageEntityId: this.imageEntityId, regionId };
-    this.dispatchEvent(new CustomEvent(ROOM_SELECTED_EVENT, { detail, bubbles: true, composed: false }));
+    this.dispatchEvent(roomSelectedEvent({ kind: "room", imageEntityId: this.imageEntityId, regionId }));
   }
 }

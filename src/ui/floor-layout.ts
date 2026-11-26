@@ -5,7 +5,8 @@ import { registryNameKey } from "../domain/text/registry-name";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
 import type { CardView } from "./card-session";
-import type { PlanDisplay } from "./plan-display";
+import { planNote, roomList } from "./plan-content";
+import { robotNameIn } from "./plan-display";
 import { planMessage } from "./plan-picture";
 
 type ReadyView = Extract<CardView, { kind: "ready" }>;
@@ -29,7 +30,8 @@ export const layoutStyles = css`
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     }
   }
-  .plans + .no-floor {
+  .plans + .no-floor,
+  .robot-notes {
     margin-top: var(--ha-space-6, 24px);
   }
   h2 {
@@ -54,8 +56,7 @@ export const layoutStyles = css`
 /** Each floor's section in model order, then the « no floor » group when it has plans. Every value is text. */
 export function floorLayout(view: ReadyView, locale: Locale): TemplateResult {
   const { floors, noFloor } = view.model;
-  const figure = (plan: Plan, floorName?: string) =>
-    planFigure(plan, view.plans.get(plan.imageEntityId), locale, floorName);
+  const figure = (plan: Plan, floorName?: string) => planFigure(plan, view, locale, floorName);
   return html`${
     floors.length === 0
       ? nothing
@@ -87,24 +88,30 @@ function mapLabel(plan: Plan, locale: Locale): string {
 
 /**
  * A plan with its label: the map, left out on its floor when it has the floor's name, and the robot, so two robots'
- * maps can be told apart. The picture's alt names its floor, or its map and robot in the « no floor » group.
+ * maps can be told apart. The picture's alt names its floor, or its map and robot in the « no floor » group. Under it
+ * come its room list or why it has none, and why it is on no floor.
  */
-function planFigure(plan: Plan, display: PlanDisplay | undefined, locale: Locale, floorName?: string): TemplateResult {
+function planFigure(plan: Plan, view: ReadyView, locale: Locale, floorName?: string): TemplateResult {
   const map = mapLabel(plan, locale);
-  const robot = display?.robotName ?? plan.robot;
+  const robot = robotNameIn(view.robotNames, plan.robot);
+  const url = view.plans.get(plan.imageEntityId)?.url;
   const rooms = plan.content.kind === "outlines" ? plan.content.plan : undefined;
   // The note speaks of the picture's rooms: only under a picture that is shown.
-  const shown = plan.pictureState === "available" && display?.url !== undefined;
+  const shown = plan.pictureState === "available" && url !== undefined;
   const alt =
     floorName === undefined
       ? localize(locale, "plan.alt_no_floor", { map, robot })
       : localize(locale, "plan.alt", { name: floorName });
   const sameAsFloor = floorName !== undefined && registryNameKey(map) === registryNameKey(floorName);
-  return html`<figure>
-    ${picture(plan, display?.url, { alt, label: floorName ?? `${map}, ${robot}` }, rooms, locale)}
-    <figcaption>${sameAsFloor ? nothing : html`${map} <span aria-hidden="true">·</span> `}${robot}</figcaption>
-    ${shown ? notDrawn(rooms, locale) : nothing}
-  </figure>`;
+  const label = floorName ?? `${map}, ${robot}`;
+  return html`<div class="plan">
+    <figure>
+      ${picture(plan, url, { alt, label }, rooms, locale)}
+      <figcaption>${sameAsFloor ? nothing : html`${map} <span aria-hidden="true">·</span> `}${robot}</figcaption>
+    </figure>
+    ${shown ? notDrawn(rooms, locale) : nothing} ${roomList(plan, label, locale)}
+    ${planNote(plan, view.isAdmin, locale)}
+  </div>`;
 }
 
 /** The picture, or a readable message for each state that has none (ADR 0005 « Plan pictures » item 3). */

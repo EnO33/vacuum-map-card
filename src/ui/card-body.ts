@@ -4,6 +4,7 @@ import { localize } from "../i18n/localize";
 import type { CardView } from "./card-session";
 import { floorLayout } from "./floor-layout";
 import { planCount } from "./plan-display";
+import { robotNotes } from "./robot-notes";
 
 /** Styles of the card's body; the title keeps `ha-card`'s own header style. */
 export const bodyStyles = css`
@@ -34,11 +35,17 @@ export const bodyStyles = css`
 /**
  * The card's body for a view. The status region is the same element in every view, so a screen reader announces each
  * message that replaces the previous one (loading or « could not load », then no robot, error or no plan); the plans
- * stay outside it. Every value inserted is text, never markup.
+ * stay outside it, followed by the notes on robots whose rooms map adds no plan. Every value inserted is text, never
+ * markup.
  */
 export function cardBody(view: CardView, locale: Locale): TemplateResult {
   return html`<div role="status">${message(view, locale)}</div>
-    ${view.kind === "ready" && planCount(view.model) > 0 ? floorLayout(view, locale) : nothing}`;
+    ${
+      view.kind === "ready"
+        ? html`${planCount(view.model) > 0 ? floorLayout(view, locale) : nothing}
+          ${robotNotes(view.model.robots, view.robotNames, locale)}`
+        : nothing
+    }`;
 }
 
 function message(view: CardView, locale: Locale): TemplateResult | typeof nothing {

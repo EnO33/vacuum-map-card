@@ -98,10 +98,9 @@ describe("VacuumMapCard states", () => {
     expect(bodyText(card)).toContain("No supported robot found");
   });
 
-  it("keeps the title and has nothing focusable", async () => {
+  it("keeps the title", async () => {
     const card = await mount(fixtureHass());
     expect(shadowOf(card).querySelector("ha-card > .card-header")?.textContent?.trim()).toBe("Vacuum Map Card");
-    expect(shadowOf(card).querySelectorAll("a, button, input, select, textarea, [tabindex]")).toHaveLength(0);
   });
 });
 
