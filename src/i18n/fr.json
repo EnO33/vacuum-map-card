@@ -145,7 +145,7 @@
   "editor.title": "Titre",
   "editor.title_helper": "Affiché en en-tête de la carte. Laissez vide pour ne pas afficher d'en-tête.",
   "editor.robots": "Robots",
-  "editor.robots_helper": "Seuls les plans de ces robots sont affichés et proposés. Laissez vide pour utiliser tous les robots compatibles.",
+  "editor.robots_helper": "Seuls ces robots et leurs plans sont affichés. Laissez vide pour utiliser tous les robots compatibles.",
   "editor.floors": "Étages",
   "editor.floors_helper": "Seuls ces étages sont affichés, dans l'ordre de Home Assistant. Laissez vide pour afficher tous les étages et les plans sans étage."
 }

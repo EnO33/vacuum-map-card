@@ -53,7 +53,7 @@ describe("configForm", () => {
     labels: ["Title", "Robots", "Floors"],
     helpers: [
       "Shown as the card's header. Leave empty for no header.",
-      "Only these robots' plans are shown and offered. Leave empty to use every supported robot.",
+      "Only these robots and their plans are shown. Leave empty to use every supported robot.",
       "Only these floors are shown, in Home Assistant's order. Leave empty to show every floor and the plans not assigned to one.",
     ],
   };
@@ -61,7 +61,7 @@ describe("configForm", () => {
     labels: ["Titre", "Robots", "Étages"],
     helpers: [
       "Affiché en en-tête de la carte. Laissez vide pour ne pas afficher d'en-tête.",
-      "Seuls les plans de ces robots sont affichés et proposés. Laissez vide pour utiliser tous les robots compatibles.",
+      "Seuls ces robots et leurs plans sont affichés. Laissez vide pour utiliser tous les robots compatibles.",
       "Seuls ces étages sont affichés, dans l'ordre de Home Assistant. Laissez vide pour afficher tous les étages et les plans sans étage.",
     ],
   };

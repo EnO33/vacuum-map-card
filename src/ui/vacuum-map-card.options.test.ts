@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   bodyText,
   fixtureHass,
@@ -157,10 +157,21 @@ describe("VacuumMapCard options", () => {
     expect(form.computeLabel({ name: "floors" })).toBe("Floors");
   });
 
-  it("creates and loads no Home Assistant element for its editor: Home Assistant renders the form itself", () => {
-    VacuumMapCard.getConfigForm().computeLabel({ name: "title" });
-    expect([...document.querySelectorAll("*")].filter((element) => /^(ha|hui)-/.test(element.localName))).toEqual([]);
-    expect(customElements.get("ha-form")).toBeUndefined();
+  it("creates and defines no element for its editor: Home Assistant renders the form itself", () => {
+    const created = vi.spyOn(document, "createElement");
+    const defined = vi.spyOn(customElements, "define");
+    try {
+      const form = VacuumMapCard.getConfigForm();
+      for (const { name } of form.schema) {
+        form.computeLabel({ name });
+        form.computeHelper({ name });
+      }
+      expect(created).not.toHaveBeenCalled();
+      expect(defined).not.toHaveBeenCalled();
+    } finally {
+      created.mockRestore();
+      defined.mockRestore();
+    }
   });
 
   it("in the editor preview, follows each option picked in the form and still starts nothing", async () => {

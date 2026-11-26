@@ -145,7 +145,7 @@
   "editor.title": "Title",
   "editor.title_helper": "Shown as the card's header. Leave empty for no header.",
   "editor.robots": "Robots",
-  "editor.robots_helper": "Only these robots' plans are shown and offered. Leave empty to use every supported robot.",
+  "editor.robots_helper": "Only these robots and their plans are shown. Leave empty to use every supported robot.",
   "editor.floors": "Floors",
   "editor.floors_helper": "Only these floors are shown, in Home Assistant's order. Leave empty to show every floor and the plans not assigned to one."
 }
