@@ -33,8 +33,11 @@ export function roomList(plan: Plan, label: string, locale: Locale): TemplateRes
 }
 
 function roomButton(imageEntityId: string, { areaId, name }: RoomListItem): TemplateResult {
-  const select = (event: Event) =>
-    event.currentTarget?.dispatchEvent(roomSelectedEvent({ kind: "area", imageEntityId, areaId }));
+  const select = (event: Event) => {
+    const button = event.currentTarget;
+    if (button instanceof HTMLElement)
+      button.dispatchEvent(roomSelectedEvent({ kind: "area", imageEntityId, areaId }, button));
+  };
   return html`<button type="button" class="outlined-button" @click=${select}>${name}</button>`;
 }
 

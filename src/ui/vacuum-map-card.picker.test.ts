@@ -4,17 +4,22 @@ import {
   collapsedText,
   fixtureHass,
   hassAs,
+  injected,
   mount,
   nextHass,
   pictures,
   settle,
   shadowOf,
+  statusText,
   type TestCard,
   useTestCard,
+  wrapBuilder,
 } from "../../test/helpers/card";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
 import { roombaPlusStates } from "../../test/helpers/roomba-plus-states";
 import type { ItemRef } from "../app/robots-for-item/robots-for-item";
+import { deepActiveElement } from "./focus";
+import { PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
 import { defineOnce } from "./register";
 import { ROBOT_PICKER_ELEMENT, RobotPicker } from "./robot-picker";
 import { roomSelectedEvent } from "./room-selected";
@@ -24,22 +29,60 @@ expectNoConsoleOutput();
 
 beforeAll(() => {
   defineOnce(customElements, ROBOT_PICKER_ELEMENT, RobotPicker);
+  defineOnce(customElements, PICKER_DIALOG_ELEMENT, PickerDialog);
 });
 
+function pickerDialog(card: TestCard): PickerDialog | undefined {
+  const found = shadowOf(card).querySelector(PICKER_DIALOG_ELEMENT);
+  return found instanceof PickerDialog ? found : undefined;
+}
+
+function dialogOf(card: TestCard): HTMLDialogElement | null {
+  const host = pickerDialog(card);
+  return host ? shadowOf(host).querySelector("dialog") : null;
+}
+
+/** The robot list of the open picker; `undefined` while it is closed. */
 function picker(card: TestCard): RobotPicker | undefined {
-  const found = shadowOf(card).querySelector(ROBOT_PICKER_ELEMENT);
+  const host = pickerDialog(card);
+  if (!host || !dialogOf(card)?.open) return undefined;
+  const found = shadowOf(host).querySelector(ROBOT_PICKER_ELEMENT);
   return found instanceof RobotPicker ? found : undefined;
 }
 
-/** The first drawn room of the card's first outlines plan, selected from its picture. */
-async function selectFirstRoom(card: TestCard): Promise<{ item: ItemRef; name: string }> {
+/** The fixture states with a rooms map that lists no room: the plan loses every room it had (re-mapping). */
+function withoutRooms(imageEntityId: string): Record<string, unknown> {
+  const states = roombaPlusStates();
+  const map = Object(states[imageEntityId]);
+  states[imageEntityId] = { ...map, attributes: { ...Object(map.attributes), rooms: {} } };
+  return states;
+}
+
+/** Waits for the card, then its picker window and the robot list in it. */
+async function settlePicker(card: TestCard): Promise<void> {
+  await card.updateComplete;
+  const host = pickerDialog(card);
+  await host?.updateComplete;
+  const list = host && shadowOf(host).querySelector(ROBOT_PICKER_ELEMENT);
+  if (list instanceof RobotPicker) await list.updateComplete;
+  await host?.updateComplete;
+}
+
+/**
+ * The first room of the card's first outlines plan, selected from its picture as a tap does. The picture has no size
+ * here, so it draws no room: a focused button on the page stands for the drawn room.
+ */
+async function selectFirstRoom(card: TestCard): Promise<{ item: ItemRef; name: string; opener: HTMLElement }> {
   const picture = pictures(card).find((p) => p.rooms !== undefined && p.rooms.rooms.size > 0);
   const [room] = picture?.rooms?.rooms.values() ?? [];
-  if (!picture || !room) throw new Error("no drawn room");
+  if (!picture || !room) throw new Error("no room");
   const item: ItemRef = { kind: "room", imageEntityId: picture.imageEntityId, regionId: room.regionId };
-  picture.dispatchEvent(roomSelectedEvent(item));
-  await card.updateComplete;
-  return { item, name: room.name };
+  const opener = document.createElement("button");
+  document.body.append(opener);
+  opener.focus();
+  picture.dispatchEvent(roomSelectedEvent(item, opener));
+  await settlePicker(card);
+  return { item, name: room.name, opener };
 }
 
 describe("VacuumMapCard robot picker", () => {
@@ -48,7 +91,7 @@ describe("VacuumMapCard robot picker", () => {
     expect(picker(card)).toBeUndefined();
   });
 
-  it("lists the robots for a selected room under the plans, headed by its name", async () => {
+  it("opens the picker for a selected room, headed by its name", async () => {
     const card = await mount(fixtureHass());
     const { item, name } = await selectFirstRoom(card);
     const shown = picker(card);
@@ -65,9 +108,54 @@ describe("VacuumMapCard robot picker", () => {
     const button = shadowOf(card).querySelector(".room-list button");
     if (!(button instanceof HTMLButtonElement)) throw new Error("no room list");
     button.click();
-    await card.updateComplete;
+    await settlePicker(card);
     expect(picker(card)?.item?.kind).toBe("area");
     expect(picker(card)?.itemName).toBe(collapsedText(button));
+    expect(pickerDialog(card)?.opener).toBe(button);
+  });
+
+  it("anchors the picker to the room that opened it and gives it the focus back on close", async () => {
+    const card = await mount(fixtureHass());
+    const { opener } = await selectFirstRoom(card);
+    expect(pickerDialog(card)?.opener).toBe(opener);
+    dialogOf(card)?.dispatchEvent(new Event("cancel", { cancelable: true }));
+    await settlePicker(card);
+    expect(picker(card)).toBeUndefined();
+    expect(deepActiveElement()).toBe(opener);
+  });
+
+  it("keeps the picker closed after the user closed it, through later updates", async () => {
+    const hass = fixtureHass();
+    const card = await mount(hass);
+    await selectFirstRoom(card);
+    dialogOf(card)?.dispatchEvent(new Event("cancel", { cancelable: true }));
+    await settlePicker(card);
+    card.hass = nextHass(hass, { user: { is_admin: true } });
+    await settlePicker(card);
+    expect(picker(card)).toBeUndefined();
+  });
+
+  it("closes the picker and says so when its room leaves the plans", async () => {
+    const hass = fixtureHass();
+    const card = await mount(hass);
+    const { item, name } = await selectFirstRoom(card);
+    card.hass = nextHass(hass, { states: withoutRooms(item.imageEntityId) });
+    await settle(card);
+    await settlePicker(card);
+    expect(picker(card)).toBeUndefined();
+    expect(statusText(card)).toContain(`${name} is no longer on the plans`);
+  });
+
+  it("clears that message on the next selection", async () => {
+    const hass = fixtureHass();
+    const card = await mount(hass);
+    const { item } = await selectFirstRoom(card);
+    card.hass = nextHass(hass, { states: withoutRooms(item.imageEntityId) });
+    await settle(card);
+    card.hass = nextHass(hass, { states: roombaPlusStates() });
+    await settle(card);
+    await selectFirstRoom(card);
+    expect(statusText(card)).not.toContain("no longer on the plans");
   });
 
   it("keeps the picker's robot names when another part of the view changes", async () => {
@@ -94,12 +182,53 @@ describe("VacuumMapCard robot picker", () => {
     expect(picker(card)?.candidates[0]?.state).toBe("cleaning");
   });
 
+  it("marks the selected room on its plan while the picker is open", async () => {
+    const card = await mount(fixtureHass());
+    const { item } = await selectFirstRoom(card);
+    const onPlan = pictures(card).find((p) => p.imageEntityId === item.imageEntityId);
+    expect(onPlan?.selected).toBe(item.kind === "room" ? item.regionId : undefined);
+    expect(pictures(card).filter((p) => p.selected !== undefined)).toHaveLength(1);
+    dialogOf(card)?.dispatchEvent(new Event("cancel", { cancelable: true }));
+    await settlePicker(card);
+    expect(onPlan?.selected).toBeUndefined();
+  });
+
+  it("does not reopen the picker by itself when the card comes back on the page", async () => {
+    const card = await mount(fixtureHass());
+    await selectFirstRoom(card);
+    card.remove();
+    document.body.append(card);
+    await settle(card);
+    await settlePicker(card);
+    expect(picker(card)).toBeUndefined();
+  });
+
+  it("does not reopen the picker by itself after the plans were loading again", async () => {
+    let loading = false;
+    injected.current.createModelBuilder = wrapBuilder((build) => (h, s) => {
+      const model = build(h, s);
+      return loading ? { ...model, loading: true } : model;
+    });
+    const hass = fixtureHass();
+    const card = await mount(hass);
+    await selectFirstRoom(card);
+    loading = true;
+    card.hass = nextHass(hass, {});
+    await settlePicker(card);
+    loading = false;
+    card.hass = nextHass(hass, {});
+    await settle(card);
+    await settlePicker(card);
+    expect(picker(card)).toBeUndefined();
+  });
+
   it("ignores a selection of an item the model does not have", async () => {
     const card = await mount(fixtureHass());
     const picture = pictures(card)[0];
     picture?.dispatchEvent(roomSelectedEvent({ kind: "room", imageEntityId: "image.nothing", regionId: "1" }));
-    await card.updateComplete;
+    await settlePicker(card);
     expect(picker(card)).toBeUndefined();
+    expect(statusText(card)).toBe("");
   });
 
   it("ignores a room-selected event the card did not build", async () => {

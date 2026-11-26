@@ -46,6 +46,8 @@
   "picker.details": "Détails de {robot}",
   "picker.empty": "Aucun robot ne peut nettoyer cette pièce",
   "picker.cannot_start": "Ne peut pas nettoyer cette pièce",
+  "picker.close": "Fermer",
+  "picker.gone": "{name} n'est plus sur les plans : la liste des robots a été fermée.",
   "action.vacuum": "Aspirer",
   "action.mop": "Laver le sol",
   "action.vacuum_and_mop": "Aspirer et laver le sol",

@@ -189,6 +189,30 @@ describe("RobotPicker", () => {
     expect(fired).toBe(0);
   });
 
+  it("puts the focus on the first robot that can start", async () => {
+    const element = await mount({ candidates: [REFUSED, PATH2, PATH1] });
+    element.focusFirst();
+    expect(root(element).activeElement).toBe(buttonIn(rows(element)[1], "choose"));
+  });
+
+  it("puts the focus on the heading when no robot can start", async () => {
+    const element = await mount({ candidates: [REFUSED] });
+    element.focusFirst();
+    const heading = root(element).querySelector("h2");
+    expect(root(element).activeElement).toBe(heading);
+    expect(heading?.getAttribute("tabindex")).toBe("-1");
+  });
+
+  it("lists its controls in focus order: each row's choice, then its details", async () => {
+    const element = await mount({ candidates: [PATH2, REFUSED] });
+    const [first, second] = rows(element);
+    expect(element.controls()).toEqual([
+      buttonIn(first, "choose"),
+      buttonIn(first, "details"),
+      buttonIn(second, "details"),
+    ]);
+  });
+
   it("says when no robot can clean the room", async () => {
     const en = await mount({ candidates: [] });
     expect(root(en).querySelector("ul")).toBeNull();
@@ -233,7 +257,7 @@ describe("RobotPicker", () => {
   it("gives every control a 44 px touch target", () => {
     const rules = stylesText(RobotPicker).replace(/\s+/g, " ");
     expect(rules).toMatch(/\.robot \{[^}]*min-height: 44px/);
-    expect(rules).toMatch(/button\.details \{[^}]*width: 44px;[^}]*height: 44px/);
+    expect(rules).toMatch(/\.icon-button \{[^}]*width: 44px;[^}]*height: 44px/);
   });
 
   it.each([
