@@ -14,7 +14,7 @@ Local details (URL, Pi host, config mount, test dashboard, robots): `CLAUDE.loca
 
 ## 2. Deploy (needs the owner)
 
-1. Ask the owner for the temporary SSH password of the Pi (rotated; never reuse one from an earlier session, never write it anywhere).
+1. Connect to the Pi with the owner's SSH key, held by the Windows ssh-agent: use Windows OpenSSH (`C:\Windows\System32\OpenSSH\ssh.exe` and `scp.exe`, with `-o BatchMode=yes`), not Git Bash `ssh`. Host in `CLAUDE.local.md`. Never ask for a password.
 2. Write a helper script in the scratchpad directory, never in the repo. It finds the `/config` mount (`docker inspect homeassistant`), uploads `dist/vacuum-map-card.js` by SFTP to a temporary path, copies it with `sudo` to `<config>/www/vacuum-map-card/vacuum-map-card.js`, and prints its size and SHA-256.
 3. Delete the helper script, even on failure.
 4. Dashboard resource: `/local/vacuum-map-card/vacuum-map-card.js?v=<build hash>` (module). Create or update it through the Home Assistant UI or the `lovelace/resources/*` websocket commands in the browser, with the owner's agreement; never touch other resources.
