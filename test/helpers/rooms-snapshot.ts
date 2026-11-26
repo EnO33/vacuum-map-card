@@ -48,13 +48,13 @@ function toSnapshotRoom(room: FixtureRoom): SnapshotRoom {
   };
 }
 
-/** A square of `size` outline units at the origin. */
-export function squareOutline(size = 1000): Point[] {
+/** A square of `size` outline units with its first corner at `x`, `y` (the origin by default). */
+export function squareOutline(size = 1000, x = 0, y = 0): Point[] {
   return toPoints([
-    [0, 0],
-    [size, 0],
-    [size, size],
-    [0, size],
+    [x, y],
+    [x + size, y],
+    [x + size, y + size],
+    [x, y + size],
   ]);
 }
 
@@ -68,4 +68,21 @@ export function planOf(snapshot: RoomsMapSnapshot): RoomsPlan {
   const result = buildRoomsPlan(snapshot);
   if (result.kind !== "plan") throw new Error(`expected a plan, got ${JSON.stringify(result)}`);
   return result;
+}
+
+/** A calibration that maps outline units to the same picture pixels, for tests that place rooms by pixel. */
+const identityCalibration = [
+  { vacuum: { x: 0, y: 0 }, map: { x: 0, y: 0 } },
+  { vacuum: { x: 1000, y: 0 }, map: { x: 1000, y: 0 } },
+  { vacuum: { x: 0, y: 1000 }, map: { x: 0, y: 1000 } },
+];
+
+/** A square room of `size` picture pixels with its top left corner at `x`, `y`, named after its region id. */
+export function pixelSquare(regionId: string, x: number, y: number, size: number): SnapshotRoom {
+  return { regionId, name: regionId, roomId: regionId, outline: squareOutline(size, x, y) };
+}
+
+/** The plan of rooms placed in picture pixels. */
+export function pixelPlan(rooms: readonly SnapshotRoom[]): RoomsPlan {
+  return planOf({ state: "2026-01-01T09:30:00+00:00", calibration: identityCalibration, rooms: [...rooms] });
 }

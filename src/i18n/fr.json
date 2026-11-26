@@ -16,6 +16,7 @@
   "plan.unknown": "Ce plan n'a pas encore d'image.",
   "plan.no_picture": "L'image de ce plan ne peut pas être affichée pour le moment.",
   "plan.load_failed": "L'image du plan n'a pas pu être chargée. La carte réessaiera quand le plan changera.",
+  "plan.rooms": "Pièces, {name}",
   "plan.not_drawn": "Pièces non dessinées : {names}",
   "confirm.cancel": "Annuler",
   "confirm.ok": "OK"

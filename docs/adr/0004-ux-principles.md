@@ -112,3 +112,11 @@ These are left to the UI issue that builds each part. Any public choice among th
 
 1. Focus ring contrast: it fails in the light theme, and is unknown over plan pictures (« Focus »).
 2. How a room smaller than 44 px stays reachable, for example a larger hit area or the room list (« Touch targets »).
+
+## Amendment (2026-11-25): focus ring, small rooms, arrow keys
+
+Owner decisions of 2026-11-25, taken while building the room controls (#106). They close « Open points » 1 and 2 of the 2026-11-24 amendment.
+
+1. **Focus ring.** Focus on a room is a two-tone ring of three bands, each 2 px, around the room's outline and drawn under its own stroke: a `--card-background-color` halo, then `--ha-color-focus` (fallback `--primary-color`), then a `--primary-text-color` line. One of the bands reaches 3:1 on a light theme, a dark theme or a picture. The ring is drawn only on the room that takes Tab, the one room that can hold the focus.
+2. **Small rooms.** A room that cannot hold a 44 px target (its label anchor is less than 22 screen pixels from its edge) also takes a tap within 22 screen pixels of its anchor, horizontally and vertically, even when that point lies in a larger room next to it. When two such targets hold the point, the nearest anchor wins. Elsewhere, the room under the tap wins, and where shapes overlap the smallest one does.
+3. **Arrow keys.** Left and Right move to the previous and next room in reading order (rows top to bottom, each row left to right), so every room is reachable from the keyboard. Up and Down move to the nearest room in that direction, weighting the distance across the arrow's axis twice. A purely spatial rule for all four arrows was rejected: on some layouts it leaves a room that no arrow reaches. Home and End go to the first and last room. Enter selects on key down (not when the key repeats), Space on key up, as a button does.

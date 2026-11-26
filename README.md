@@ -20,7 +20,7 @@ Vacuum map cards usually show one robot on one map. Homes have several floors an
 - **Every floor at once.** One plan per floor, side by side, in your Home Assistant floor order.
 - **Tap a room, pick a robot.** The card lists the robots able to clean that room; you choose one and confirm: « Send Roomba S9+ to vacuum the bedroom? »
 - **No coordinates to maintain.** Rooms, outlines and floors come from your integrations and from Home Assistant. Re-map a floor in the vendor app, add a room or a floor: the card follows.
-- **Looks like Home Assistant.** Native components, your theme's colours in light and dark mode, keyboard and screen-reader friendly.
+- **Looks like Home Assistant.** Your theme's colours in light and dark mode, keyboard and screen-reader friendly: Tab reaches a plan, Left and Right go through its rooms in reading order, Up and Down to the nearest room that way, Home and End go to the first and last room, Enter or Space chooses one. A room too small for a finger can be tapped just next to its name.
 
 ## How it works
 

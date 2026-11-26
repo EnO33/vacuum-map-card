@@ -101,7 +101,7 @@ function planFigure(plan: Plan, display: PlanDisplay | undefined, locale: Locale
       : localize(locale, "plan.alt", { name: floorName });
   const sameAsFloor = floorName !== undefined && registryNameKey(map) === registryNameKey(floorName);
   return html`<figure>
-    ${picture(plan, display?.url, alt, rooms, locale)}
+    ${picture(plan, display?.url, { alt, label: floorName ?? `${map}, ${robot}` }, rooms, locale)}
     <figcaption>${sameAsFloor ? nothing : html`${map} <span aria-hidden="true">·</span> `}${robot}</figcaption>
     ${shown ? notDrawn(rooms, locale) : nothing}
   </figure>`;
@@ -111,13 +111,20 @@ function planFigure(plan: Plan, display: PlanDisplay | undefined, locale: Locale
 function picture(
   plan: Plan,
   url: string | undefined,
-  alt: string,
+  names: { readonly alt: string; readonly label: string },
   rooms: RoomsPlan | undefined,
   locale: Locale,
 ): TemplateResult {
   if (plan.pictureState !== "available") return planMessage(localize(locale, `plan.${plan.pictureState}`));
   if (url === undefined) return planMessage(localize(locale, "plan.no_picture"));
-  return html`<vmc-plan-picture .src=${url} .alt=${alt} .locale=${locale} .rooms=${rooms}></vmc-plan-picture>`;
+  return html`<vmc-plan-picture
+    .src=${url}
+    .alt=${names.alt}
+    .locale=${locale}
+    .rooms=${rooms}
+    .imageEntityId=${plan.imageEntityId}
+    .label=${names.label}
+  ></vmc-plan-picture>`;
 }
 
 /** The rooms of an outlines plan that cannot be drawn, named so none silently disappears. */

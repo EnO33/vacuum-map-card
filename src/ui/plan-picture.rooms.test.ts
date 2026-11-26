@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
-import { img, loaded, mountPicture } from "../../test/helpers/plan-picture";
+import { img, layer, loaded, mountPicture } from "../../test/helpers/plan-picture";
 import { planOf, snapshotFixtures, snapshotOf, squareRoom } from "../../test/helpers/rooms-snapshot";
 import { shadowOf, stylesText } from "../../test/helpers/shadow";
 import { drawableRooms, type RoomsPlan } from "../domain/plan/rooms-plan";
@@ -28,12 +28,6 @@ function picture(rooms: RoomsPlan | undefined): Promise<PlanPicture> {
 async function load(element: PlanPicture, width: number, height: number): Promise<void> {
   loaded(img(element), width, height);
   await element.updateComplete;
-}
-
-function layer(element: PlanPicture, name: "rooms" | "labels" = "rooms"): SVGSVGElement {
-  const found = shadowOf(element).querySelector(`svg.${name}`);
-  if (!(found instanceof SVGSVGElement)) throw new Error(`no ${name} svg`);
-  return found;
 }
 
 function labels(element: PlanPicture): string[] {
@@ -76,8 +70,9 @@ describe("PlanPicture room layer", () => {
     await load(element, 600, 400);
     const drawable = drawableRooms(plan);
     expect(drawable.length).toBeLessThan(plan.rooms.size);
-    expect([...layer(element).querySelectorAll("path")].map((p) => p.getAttribute("d"))).toEqual(
-      drawable.map((room) => room.shape.path),
+    // Drawn in reading order, not plan order.
+    expect([...layer(element).querySelectorAll("path.shape")].map((p) => p.getAttribute("d")).sort()).toEqual(
+      drawable.map((room) => room.shape.path).sort(),
     );
     const texts = [...layer(element, "labels").querySelectorAll("text")].map((t) => ({
       name: t.textContent,
@@ -85,12 +80,15 @@ describe("PlanPicture room layer", () => {
       y: t.getAttribute("y"),
     }));
     expect(texts).toEqual(
-      drawable.map(({ name, shape }) => ({
-        name,
-        x: `${(shape.anchor.point.x / 600) * 100}%`,
-        y: `${(shape.anchor.point.y / 400) * 100}%`,
-      })),
+      expect.arrayContaining(
+        drawable.map(({ name, shape }) => ({
+          name,
+          x: `${(shape.anchor.point.x / 600) * 100}%`,
+          y: `${(shape.anchor.point.y / 400) * 100}%`,
+        })),
+      ),
     );
+    expect(texts).toHaveLength(drawable.length);
   });
 
   it("renders a name as text, never as markup", async () => {
@@ -107,7 +105,7 @@ describe("PlanPicture room layer", () => {
     const shape = { ...room.shape, anchor: { point: { x: 0, y: 0 }, distance: 0 } };
     const element = await picture({ ...plan, rooms: new Map([["1", { ...room, shape }]]) });
     await load(element, 600, 600);
-    expect(layer(element).querySelectorAll("path")).toHaveLength(1);
+    expect(layer(element).querySelectorAll("path.shape")).toHaveLength(1);
     expect(labels(element)).toEqual([]);
   });
 
@@ -141,7 +139,7 @@ describe("PlanPicture room layer", () => {
     await element.updateComplete;
     expect(shadowOf(element).querySelector("svg")).toBeNull();
     await load(element, 600, 600);
-    expect(layer(element).querySelectorAll("path")).toHaveLength(1);
+    expect(layer(element).querySelectorAll("path.shape")).toHaveLength(1);
   });
 
   it("keeps drawing the same plan while its picture reloads with a new token", async () => {
@@ -161,9 +159,9 @@ describe("PlanPicture room layer", () => {
     expect(layer(element).querySelector("path")).toBe(first);
   });
 
-  it("draws resting rooms in neutral theme colours, leaving the accent to selection", () => {
+  it("draws resting rooms in neutral theme colours, leaving the accent to hover, focus and selection", () => {
     const rules = stylesText(PlanPicture);
-    expect(rules).toMatch(/\.room\s*\{[^}]*fill:\s*none;[^}]*stroke:\s*var\(--divider-color,/);
-    expect(rules).not.toMatch(/primary-color/);
+    expect(rules).toMatch(/\.room \.shape\s*\{[^}]*fill-opacity:\s*0;[^}]*stroke:\s*var\(--divider-color,/);
+    expect(rules).toMatch(/\.room\.selected \.shape\s*\{[^}]*stroke:\s*var\(--primary-color[^}]*stroke-width:\s*4px/);
   });
 });
