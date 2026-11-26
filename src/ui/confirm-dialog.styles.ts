@@ -22,15 +22,16 @@ export const confirmDialogStyles = [
   }
 
   h2 {
-    margin: 0 0 var(--ha-space-4, 16px);
+    margin: 0;
     color: var(--ha-dialog-header-title-color, var(--primary-text-color));
     font-size: var(--ha-dialog-header-title-font-size, var(--ha-font-size-2xl, 24px));
     font-weight: var(--ha-dialog-header-title-font-weight, var(--ha-font-weight-normal, 400));
     line-height: var(--ha-dialog-header-title-line-height, var(--ha-line-height-condensed, 1.2));
   }
 
+  /* Only present with a text: a title-only question keeps the actions' own gap. */
   p {
-    margin: 0;
+    margin: var(--ha-space-4, 16px) 0 0;
     font-size: var(--ha-font-size-m, 14px);
     line-height: var(--ha-line-height-normal, 1.6);
   }

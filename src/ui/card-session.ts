@@ -6,6 +6,7 @@ import type { FloorModelBuilder } from "../app/floor-model/memo";
 import { sameValue } from "../app/floor-model/same-value";
 import type { Candidate } from "../app/robots-for-item/choice";
 import { type ItemRef, robotsForItem } from "../app/robots-for-item/robots-for-item";
+import { type CleanController, createCleanController } from "../app/start-clean/clean-controller";
 import type { Locale } from "../i18n/catalogs";
 import { resolveLocale } from "../i18n/locale";
 import { followModel, NO_SELECTION, type Selection } from "./card-selection";
@@ -60,6 +61,8 @@ const LOAD_FAILED: CardView = Object.freeze({ kind: "load_failed" });
 interface Running {
   readonly adapters: Adapters;
   readonly build: FloorModelBuilder;
+  /** One per attachment: its outcomes stay while the card is attached, whatever happens to the dialogs. */
+  readonly controller: CleanController;
   readonly unsubscribe: () => void;
 }
 
@@ -132,6 +135,11 @@ export class CardSession {
     this.#refresh();
   }
 
+  /** The clean controller of the running adapters; `undefined` while they are not running. */
+  get controller(): CleanController | undefined {
+    return typeof this.#running === "object" ? this.#running.controller : undefined;
+  }
+
   /** A value that fails the boundary check stops the adapters and shows the loading state. */
   setHass(value: unknown): void {
     this.#accepted = false;
@@ -165,7 +173,8 @@ export class CardSession {
       const dependencies = this.#dependencies();
       const build = dependencies.createModelBuilder();
       const adapters = dependencies.createAdapters(() => this.#latestHass());
-      this.#running = { adapters, build, unsubscribe: adapters.hass.subscribe(() => this.#refresh()) };
+      const controller = createCleanController({ hass: adapters.hass, sources: () => adapters.sources() });
+      this.#running = { adapters, build, controller, unsubscribe: adapters.hass.subscribe(() => this.#refresh()) };
       adapters.start();
     } catch {
       this.#stop();

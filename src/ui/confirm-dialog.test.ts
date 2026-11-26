@@ -42,6 +42,23 @@ describe("ConfirmDialog", () => {
     expect(shadowOf(element).getElementById(descriptionId)?.textContent?.trim()).toBe(PARAMS.text);
   });
 
+  it("shows no empty paragraph, and is described by nothing, when the text is empty", async () => {
+    const element = await renderDialog();
+    await open(element, { ...PARAMS, text: "" });
+    expect(textOf(element)).toBeUndefined();
+    expect(dialogOf(element).hasAttribute("aria-describedby")).toBe(false);
+  });
+
+  it.each([["Enter"], [" "]])("drops a held %j key, so only a new press confirms", async (key) => {
+    const element = await renderDialog();
+    await open(element);
+    const repeated = new KeyboardEvent("keydown", { key, repeat: true, bubbles: true, cancelable: true });
+    buttonNamed(element, "Start").dispatchEvent(repeated);
+    const first = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+    buttonNamed(element, "Start").dispatchEvent(first);
+    expect([repeated.defaultPrevented, first.defaultPrevented]).toEqual([true, false]);
+  });
+
   it("opens as a modal dialog", async () => {
     const element = await renderDialog();
     const dialog = dialogOf(element);

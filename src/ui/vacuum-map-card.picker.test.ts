@@ -16,8 +16,8 @@ import {
   wrapBuilder,
 } from "../../test/helpers/card";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
+import { pickerDialog, selectFirstRoom, settlePicker } from "../../test/helpers/picker";
 import { roombaPlusStates } from "../../test/helpers/roomba-plus-states";
-import type { ItemRef } from "../app/robots-for-item/robots-for-item";
 import { deepActiveElement } from "./focus";
 import { PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
 import { defineOnce } from "./register";
@@ -31,11 +31,6 @@ beforeAll(() => {
   defineOnce(customElements, ROBOT_PICKER_ELEMENT, RobotPicker);
   defineOnce(customElements, PICKER_DIALOG_ELEMENT, PickerDialog);
 });
-
-function pickerDialog(card: TestCard): PickerDialog | undefined {
-  const found = shadowOf(card).querySelector(PICKER_DIALOG_ELEMENT);
-  return found instanceof PickerDialog ? found : undefined;
-}
 
 function dialogOf(card: TestCard): HTMLDialogElement | null {
   const host = pickerDialog(card);
@@ -56,33 +51,6 @@ function withoutRooms(imageEntityId: string): Record<string, unknown> {
   const map = Object(states[imageEntityId]);
   states[imageEntityId] = { ...map, attributes: { ...Object(map.attributes), rooms: {} } };
   return states;
-}
-
-/** Waits for the card, then its picker window and the robot list in it. */
-async function settlePicker(card: TestCard): Promise<void> {
-  await card.updateComplete;
-  const host = pickerDialog(card);
-  await host?.updateComplete;
-  const list = host && shadowOf(host).querySelector(ROBOT_PICKER_ELEMENT);
-  if (list instanceof RobotPicker) await list.updateComplete;
-  await host?.updateComplete;
-}
-
-/**
- * The first room of the card's first outlines plan, selected from its picture as a tap does. The picture has no size
- * here, so it draws no room: a focused button on the page stands for the drawn room.
- */
-async function selectFirstRoom(card: TestCard): Promise<{ item: ItemRef; name: string; opener: HTMLElement }> {
-  const picture = pictures(card).find((p) => p.rooms !== undefined && p.rooms.rooms.size > 0);
-  const [room] = picture?.rooms?.rooms.values() ?? [];
-  if (!picture || !room) throw new Error("no room");
-  const item: ItemRef = { kind: "room", imageEntityId: picture.imageEntityId, regionId: room.regionId };
-  const opener = document.createElement("button");
-  document.body.append(opener);
-  opener.focus();
-  picture.dispatchEvent(roomSelectedEvent(item, opener));
-  await settlePicker(card);
-  return { item, name: room.name, opener };
 }
 
 describe("VacuumMapCard robot picker", () => {

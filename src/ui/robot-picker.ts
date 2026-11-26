@@ -21,6 +21,16 @@ export interface RobotChosen {
 }
 
 /**
+ * {@link ROBOT_CHOSEN_EVENT}. The class is its proof: only the card's own code builds one, so its `detail` needs no
+ * parsing. It neither bubbles nor leaves a shadow root: each host passes it on with a new one.
+ */
+export class RobotChosenEvent extends CustomEvent<RobotChosen> {
+  constructor(detail: RobotChosen) {
+    super(ROBOT_CHOSEN_EVENT, { detail });
+  }
+}
+
+/**
  * The robots for one room or area (`docs/product.md` « Core flow » 3): each robot with what it would do and its state,
  * as a button when it can start, else as a disabled row that says why (« Honest state »). Every value shown is text.
  * Where it sits on screen belongs to its host (`vmc-picker-dialog`).
@@ -132,8 +142,7 @@ export class RobotPicker extends LitElement {
   #choose(vacuumEntityId: string): void {
     const { item } = this;
     if (!this.isConnected || item === undefined) return;
-    const detail: RobotChosen = { item, vacuumEntityId };
-    this.dispatchEvent(new CustomEvent(ROBOT_CHOSEN_EVENT, { detail }));
+    this.dispatchEvent(new RobotChosenEvent({ item, vacuumEntityId }));
   }
 
   /** From the picker itself, which is connected, so the event crosses the shadow roots up to Home Assistant (§ 11). */

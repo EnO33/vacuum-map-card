@@ -5,14 +5,21 @@ import { bodyStyles, cardBody } from "./card-body";
 import { CARD_NAME } from "./card-meta";
 import { CardSession, type CardView, type SessionDependencies } from "./card-session";
 import { cardSize } from "./card-size";
+import { CardStart } from "./card-start";
+import { CONFIRM_DIALOG_ELEMENT, ConfirmDialog } from "./confirm-dialog";
 import { disabledPlanStyles } from "./disabled-plan";
 import { layoutStyles } from "./floor-layout";
 import type { Focusable } from "./focus";
 import { noticeStyles } from "./notice";
 import { outlinedButtonStyles } from "./outlined-button";
+import { PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
 import { roomListStyles } from "./plan-content";
+import { robotNameIn } from "./plan-display";
 import { planMessageStyles } from "./plan-picture";
+import { RobotChosenEvent } from "./robot-picker";
 import { RoomSelectedEvent } from "./room-selected";
+import type { StartNotice } from "./start-flow";
+import { startNoticeView } from "./start-notice";
 
 const FAILED: CardView = Object.freeze({ kind: "failed" });
 
@@ -62,14 +69,38 @@ export class VacuumMapCard extends LitElement {
    */
   declare layout: string | undefined;
 
+  /**
+   * Set by Home Assistant to `true` while the card is shown in the card editor (`docs/research/ha-frontend.md` § 7):
+   * the card then never starts a robot (ADR 0003 « Amendment (2026-11-24) », item 6).
+   */
+  preview: unknown = false;
+
   #hass: unknown;
   #config: unknown;
   /** The room or list button of the last selection: the picker's anchor and focus return. */
   #opener: Focusable | undefined;
+  /** The last start's notice, in the status line until another replaces it. */
+  #notice: StartNotice | undefined;
   readonly #session = new CardSession(
     () => this.sessionDependencies(),
     () => this.requestUpdate(),
   );
+  readonly #start = new CardStart({
+    element: this,
+    locale: () => this.#session.state.locale,
+    robotName: (id) => this.#robotName(id),
+    preview: () => this.preview === true,
+    controller: () => this.#session.controller,
+    ownDialog: () => {
+      const found = this.renderRoot.querySelector(CONFIRM_DIALOG_ELEMENT);
+      return found instanceof ConfirmDialog ? found : undefined;
+    },
+    closePicker: () => this.#closePicker(),
+    show: (notice) => {
+      this.#notice = notice;
+      this.requestUpdate();
+    },
+  });
 
   /**
    * Home Assistant state, set on every change in the home (`docs/research/ha-frontend.md` « Facts the card relies
@@ -115,6 +146,7 @@ export class VacuumMapCard extends LitElement {
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
+    this.#start.abort();
     this.#session.disconnect();
   }
 
@@ -129,13 +161,13 @@ export class VacuumMapCard extends LitElement {
     return html`<ha-card
       ><h1 class="card-header">${CARD_NAME}</h1>
       <div class="content" @room-selected=${this.#onRoomSelected}>${this.#body()}</div>
-      ${this.#picker()}</ha-card
+      ${this.#picker()}<vmc-confirm-dialog .locale=${this.#session.state.locale}></vmc-confirm-dialog></ha-card
     >`;
   }
 
   /**
    * `vmc-picker-dialog` (`PICKER_DIALOG_ELEMENT`), open while an item is selected: a popover next to the room or a
-   * bottom sheet (ADR 0004 « Robot picker »). Choosing a robot does nothing yet (the confirmation issues).
+   * bottom sheet (ADR 0004 « Robot picker »). Choosing a robot closes it and asks for confirmation.
    */
   #picker(): TemplateResult | typeof nothing {
     const { locale, view } = this.#session.state;
@@ -146,6 +178,7 @@ export class VacuumMapCard extends LitElement {
       .robotNames=${view.robotNames}
       .opener=${this.#opener}
       @picker-closed=${this.#onPickerClosed}
+      @robot-chosen=${this.#onRobotChosen}
     ></vmc-picker-dialog>`;
   }
 
@@ -155,6 +188,34 @@ export class VacuumMapCard extends LitElement {
     this.#session.select(event.detail);
   };
 
+  readonly #onRobotChosen = (event: Event): void => {
+    if (!(event instanceof RobotChosenEvent)) return;
+    const { view } = this.#session.state;
+    const itemName = view.kind === "ready" ? (view.picked?.name ?? "") : "";
+    void this.#start.choose(event.detail, itemName, this.#opener);
+  };
+
+  /** Ends the selection and waits for the picker to close, so one Escape never closes two layers. */
+  async #closePicker(): Promise<void> {
+    this.#session.deselect();
+    await this.updateComplete;
+    const picker = this.renderRoot.querySelector(PICKER_DIALOG_ELEMENT);
+    if (picker instanceof PickerDialog) await picker.updateComplete;
+  }
+
+  /** A robot's name as the card shows it. */
+  #robotName(vacuumEntityId: string): string {
+    const { view } = this.#session.state;
+    return view.kind === "ready" ? robotNameIn(view.robotNames, vacuumEntityId) : vacuumEntityId;
+  }
+
+  #noticeView(): TemplateResult | typeof nothing {
+    const notice = this.#notice;
+    return notice === undefined
+      ? nothing
+      : startNoticeView(this.#session.state.locale, notice, (id) => this.#robotName(id));
+  }
+
   readonly #onPickerClosed = (): void => {
     this.#session.deselect();
   };
@@ -162,7 +223,7 @@ export class VacuumMapCard extends LitElement {
   #body(): TemplateResult {
     const { locale, view } = this.#session.state;
     try {
-      return cardBody(view, locale);
+      return cardBody(view, locale, this.#noticeView());
     } catch {
       // The same template, so the status region stays the same element and announces the error.
       return cardBody(FAILED, locale);

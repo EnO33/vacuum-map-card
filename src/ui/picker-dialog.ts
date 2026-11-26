@@ -4,10 +4,11 @@ import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
 import type { PickedItem } from "./card-session";
 import { deepActiveElement, type Focusable } from "./focus";
+import { isRepeatedActivation } from "./key-repeat";
 import { pickerDialogStyles } from "./picker-dialog.styles";
 import type { RobotNames } from "./plan-display";
 import { popoverPlace } from "./popover-place";
-import { RobotPicker } from "./robot-picker";
+import { RobotChosenEvent, RobotPicker } from "./robot-picker";
 
 /** Custom element name of the robot picker's window. */
 export const PICKER_DIALOG_ELEMENT = "vmc-picker-dialog";
@@ -168,6 +169,11 @@ export class PickerDialog extends LitElement {
     this.#closed();
   };
 
+  /** Passes the choice on from this element, which the card listens to; the card then closes the picker. */
+  readonly #onChosen = (event: Event): void => {
+    if (event instanceof RobotChosenEvent) this.dispatchEvent(new RobotChosenEvent(event.detail));
+  };
+
   /** The browser fires `cancel` on Escape; closing here keeps one path, through `close`. */
   readonly #onCancel = (event: Event): void => {
     event.preventDefault();
@@ -213,7 +219,7 @@ export class PickerDialog extends LitElement {
       this.#close();
       return;
     }
-    if (event.repeat && (event.key === "Enter" || event.key === " ")) {
+    if (isRepeatedActivation(event)) {
       event.preventDefault();
       return;
     }
@@ -248,6 +254,7 @@ export class PickerDialog extends LitElement {
           .itemName=${this.picked?.name ?? ""}
           .candidates=${this.picked?.candidates ?? []}
           .robotNames=${this.robotNames}
+          @robot-chosen=${this.#onChosen}
         ></vmc-robot-picker>
         <button type="button" class="close icon-button" aria-label=${label} title=${label} @click=${this.#close}>
           ${CLOSE_ICON}

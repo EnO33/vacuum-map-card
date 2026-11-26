@@ -18,6 +18,8 @@ export type PathIntent =
   | {
       readonly path: 1;
       readonly areaId: string;
+      /** The area's name as Home Assistant lists it, for the confirmation; absent when the area list has no name. */
+      readonly areaName?: string;
       readonly roomNames: readonly string[];
       /** A value for linking only; never shown. */
       readonly mapId: string;
@@ -69,7 +71,7 @@ export function intentOf(
   if (!candidate || !sender) return { kind: "not_listed" };
   const { choice } = candidate;
   if (choice.kind === "not_startable") return { kind: "not_startable", reasons: choice.reasons };
-  const path = pathIntentOf(choice, sender, model);
+  const path = pathIntentOf(choice, sender, model, hass);
   if (!path) return { kind: "not_startable", reasons: ["shadow_check_impossible"] };
 
   const owner = model.robots.find((r) => r.plans.some((p) => p.imageEntityId === item.imageEntityId));
@@ -100,10 +102,12 @@ function pathIntentOf(
   choice: Exclude<Choice, { kind: "not_startable" }>,
   sender: SourceRobot,
   model: FloorModel,
+  hass: HassPort,
 ): PathIntent | undefined {
   if (choice.kind === "path1") {
     const { areaId, roomNames, mapId, segments } = choice;
-    return { path: 1, areaId, roomNames, mapId, segments };
+    const areaName = hass.areas().get(areaId)?.name;
+    return { path: 1, areaId, ...(areaName === undefined ? {} : { areaName }), roomNames, mapId, segments };
   }
   const roomsMap = projectionOf(sender);
   if (!roomsMap || !targetsRobot(choice.call, sender.vacuumEntityId)) return undefined;

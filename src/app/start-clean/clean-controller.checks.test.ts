@@ -94,6 +94,20 @@ describe("real path and area changes", () => {
     expect(state.hass.calls).toEqual([]);
   });
 
+  it("sends nothing when the area was renamed after the question showed its name", async () => {
+    const options = { ...clean, vacuumOptions: new Map([["vacuum.robot_one", libraryOnA]]) };
+    const { state, controller } = harness(new FakeHass(options), [paired()]);
+    const intent = intentOf(controller.prepare(vacuumRoom, "vacuum.robot_one"));
+    expect(intent.path).toMatchObject({ path: 1, areaName: "Library" });
+    const renamed = new Map(state.hass.areas());
+    const library = renamed.get("library");
+    if (!library) throw new Error("no library area");
+    renamed.set("library", { ...library, name: "Reading room" });
+    state.hass = new FakeHass({ ...options, areas: renamed });
+    await expect(controller.confirm(intent)).resolves.toEqual({ kind: "changed" });
+    expect(state.hass.calls).toEqual([]);
+  });
+
   it("sends nothing when the room's segment moved to another area", async () => {
     const hass = new FakeHass({ ...clean, vacuumOptions: new Map([["vacuum.robot_one", libraryOnA]]) });
     const { state, controller } = harness(hass, [paired()]);

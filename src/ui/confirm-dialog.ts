@@ -1,8 +1,9 @@
-import { html, LitElement } from "lit";
+import { html, LitElement, nothing } from "lit";
 import type { Locale } from "../i18n/catalogs";
 import { localize } from "../i18n/localize";
 import { confirmDialogStyles } from "./confirm-dialog.styles";
 import { deepActiveElement, type Focusable } from "./focus";
+import { isRepeatedActivation } from "./key-repeat";
 
 /** Custom element name of the card's own confirmation. */
 export const CONFIRM_DIALOG_ELEMENT = "vmc-confirm-dialog";
@@ -107,6 +108,11 @@ export class ConfirmDialog extends LitElement {
     this.#dialog?.close();
   };
 
+  /** A held Enter or Space repeats nothing: only a new key press confirms. */
+  readonly #onKeydown = (event: KeyboardEvent): void => {
+    if (isRepeatedActivation(event)) event.preventDefault();
+  };
+
   /** The browser fires `cancel` on Escape; closing here keeps one path to the result, through `close`. */
   readonly #onCancel = (event: Event): void => {
     event.preventDefault();
@@ -134,12 +140,13 @@ export class ConfirmDialog extends LitElement {
     return html`
       <dialog
         aria-labelledby="title"
-        aria-describedby="text"
+        aria-describedby=${params?.text ? "text" : nothing}
         @cancel=${this.#onCancel}
         @close=${this.#onClose}
+        @keydown=${this.#onKeydown}
       >
         <h2 id="title">${params?.title}</h2>
-        <p id="text">${params?.text}</p>
+        ${params?.text ? html`<p id="text">${params.text}</p>` : nothing}
         <div class="actions">
           <button type="button" class="dismiss" @click=${this.#onDismiss}>
             ${params?.dismissText ?? localize(this.locale, "confirm.cancel")}

@@ -7,7 +7,7 @@ import { deepActiveElement } from "./focus";
 import { NARROW_QUERY, PICKER_CLOSED_EVENT, PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
 import { POPOVER_GAP_PX } from "./popover-place";
 import { defineOnce } from "./register";
-import { ROBOT_PICKER_ELEMENT, RobotPicker } from "./robot-picker";
+import { ROBOT_CHOSEN_EVENT, ROBOT_PICKER_ELEMENT, RobotChosenEvent, RobotPicker } from "./robot-picker";
 
 const STARTABLE: Candidate = {
   vacuumEntityId: "vacuum.robot_one",
@@ -142,6 +142,19 @@ function pressTab(element: PickerDialog, shiftKey = false): KeyboardEvent {
 }
 
 describe("PickerDialog", () => {
+  it("passes a chosen robot on to the card from its own element", async () => {
+    const element = await mount(HALL, opener());
+    const seen: unknown[] = [];
+    element.addEventListener(ROBOT_CHOSEN_EVENT, (event) => {
+      if (event instanceof RobotChosenEvent && event.target === element) seen.push(event.detail);
+    });
+    const choose = pickerOf(element)?.shadowRoot?.querySelector("button.choose");
+    if (!(choose instanceof HTMLButtonElement)) throw new Error("no choose button");
+    choose.click();
+    pickerOf(element)?.dispatchEvent(new CustomEvent(ROBOT_CHOSEN_EVENT, { detail: { forged: true } }));
+    expect(seen).toEqual([{ item: HALL.item, vacuumEntityId: "vacuum.robot_one" }]);
+  });
+
   it("stays closed while nothing is picked", async () => {
     const element = await mount(undefined);
     expect(dialogOf(element).open).toBe(false);
