@@ -65,12 +65,17 @@ export const noticeStyles = css`
  */
 export function notice(kind: NoticeKind, content: TemplateResult): TemplateResult {
   return html`<div class="notice notice-${kind}" role="note">
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-      <circle cx="12" cy="12" r="9" />
-      ${ICON_MARKS[kind]}
-    </svg>
+    ${noticeIcon(kind)}
     <div>${content}</div>
   </div>`;
+}
+
+/** The kind's icon, decorative: the text next to it says what it means. */
+export function noticeIcon(kind: NoticeKind): TemplateResult {
+  return html`<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="9" />
+    ${ICON_MARKS[kind]}
+  </svg>`;
 }
 
 /** Lines as one paragraph, or as a list when there are several. */

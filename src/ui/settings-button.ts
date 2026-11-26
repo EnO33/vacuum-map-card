@@ -4,6 +4,15 @@ import { html, type TemplateResult } from "lit";
 export const MORE_INFO_EVENT = "hass-more-info";
 
 /**
+ * The frontend's `fireEvent` shape for « more info » (§ 11): it bubbles and crosses the shadow roots up to the app root.
+ * Dispatch it from a connected element.
+ */
+export function moreInfoEvent(entityId: string, view?: "settings"): CustomEvent {
+  const detail = view === undefined ? { entityId } : { entityId, view };
+  return new CustomEvent(MORE_INFO_EVENT, { detail, bubbles: true, composed: true });
+}
+
+/**
  * A button that opens an entity's settings in Home Assistant's own dialog: `hass-more-info` with `view: "settings"`,
  * as the built-in map card does, for an enabled or a disabled entity (`docs/research/ha-frontend.md` § 14,
  * undocumented). The caller renders it for an administrator only (ADR 0003 « Permissions », ADR 0005 « Plan pictures »
@@ -13,10 +22,7 @@ export const MORE_INFO_EVENT = "hass-more-info";
  * apart.
  */
 export function settingsButton(entityId: string, label: string, planName: string): TemplateResult {
-  const open = (event: Event) =>
-    event.currentTarget?.dispatchEvent(
-      new CustomEvent(MORE_INFO_EVENT, { detail: { entityId, view: "settings" }, bubbles: true, composed: true }),
-    );
+  const open = (event: Event) => event.currentTarget?.dispatchEvent(moreInfoEvent(entityId, "settings"));
   return html`<button
     type="button"
     class="outlined-button settings-button"

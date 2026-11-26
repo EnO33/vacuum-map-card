@@ -1,3 +1,4 @@
+import { isVacuumState } from "../robot/vacuum-state";
 import type { CleanError } from "./clean-error";
 import type { StoredOutcome } from "./outcome";
 
@@ -40,7 +41,7 @@ export const SENDING: Progress = Object.freeze({ phase: "sending", statusUnknown
 export function nextProgress(progress: Progress, event: ProgressEvent): Progress {
   switch (event.kind) {
     case "confirm_started":
-      return isKnown(event.state) ? SENDING : { ...SENDING, statusUnknown: true };
+      return isVacuumState(event.state) ? SENDING : { ...SENDING, statusUnknown: true };
     case "outcome":
       return progress.phase === "sending" ? afterOutcome(progress, event.outcome) : progress;
     case "vacuum_state":
@@ -67,8 +68,6 @@ function replay(progress: Progress, held: Progress["held"]): Progress {
   return held ? afterState(progress, held.state) : progress;
 }
 
-const KNOWN_STATES = new Set(["cleaning", "docked", "idle", "paused", "returning", "error"]);
-
 function afterState(progress: Progress, state: string | undefined): Progress {
   const { phase, held } = progress;
   switch (phase) {
@@ -78,17 +77,13 @@ function afterState(progress: Progress, state: string | undefined): Progress {
       return progress;
     case "sending":
       if (held && held.state === state) return progress;
-      return { phase, statusUnknown: !isKnown(state), held: { state } };
+      return { phase, statusUnknown: !isVacuumState(state), held: { state } };
     case "starting":
     case "cleaning":
     case "paused":
     case "may_have_started":
-      return isKnown(state) ? moved(progress, phaseOn(progress, phase, state)) : flagged(progress);
+      return isVacuumState(state) ? moved(progress, phaseOn(progress, phase, state)) : flagged(progress);
   }
-}
-
-function isKnown(state: string | undefined): state is string {
-  return state !== undefined && KNOWN_STATES.has(state);
 }
 
 function flagged(progress: Progress): Progress {
