@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   collapsedText,
   fixtureHass,
@@ -16,21 +16,16 @@ import {
   wrapBuilder,
 } from "../../test/helpers/card";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
-import { pickerDialog, selectFirstRoom, settlePicker } from "../../test/helpers/picker";
+import { pickerDialog, selectFirstRoom, settlePicker, usePickerElements } from "../../test/helpers/picker";
 import { roombaPlusStates } from "../../test/helpers/roomba-plus-states";
 import { deepActiveElement } from "./focus";
-import { PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
-import { defineOnce } from "./register";
 import { ROBOT_PICKER_ELEMENT, RobotPicker } from "./robot-picker";
 import { roomSelectedEvent } from "./room-selected";
 
 useTestCard();
 expectNoConsoleOutput();
 
-beforeAll(() => {
-  defineOnce(customElements, ROBOT_PICKER_ELEMENT, RobotPicker);
-  defineOnce(customElements, PICKER_DIALOG_ELEMENT, PickerDialog);
-});
+usePickerElements();
 
 function dialogOf(card: TestCard): HTMLDialogElement | null {
   const host = pickerDialog(card);

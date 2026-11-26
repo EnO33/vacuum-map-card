@@ -141,5 +141,11 @@
   "progress.list_unplaced": "Avancement des nettoyages, pièces qui ne sont plus sur les plans",
   "progress.unknown_room": "une pièce qui n'est plus sur les plans",
   "progress.dismiss": "Masquer",
-  "progress.room_name": "« {name} »"
+  "progress.room_name": "« {name} »",
+  "editor.title": "Titre",
+  "editor.title_helper": "Affiché en en-tête de la carte. Laissez vide pour ne pas avoir d'en-tête.",
+  "editor.robots": "Robots",
+  "editor.robots_helper": "Laissez vide pour utiliser tous les robots trouvés.",
+  "editor.floors": "Étages",
+  "editor.floors_helper": "Laissez vide pour afficher tous les étages et les plans sans étage."
 }

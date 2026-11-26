@@ -85,7 +85,7 @@ Une option vide (`title:` sans valeur, une liste vide) revient à ne pas la mett
 
 `robots` et `floors` choisissent seulement ce que cette carte affiche et propose. Ce ne sont pas des permissions : elles n'empêchent personne de commander un robot ailleurs dans Home Assistant.
 
-Un éditeur visuel est prévu.
+Les trois options se règlent aussi dans l'éditeur visuel de la carte : un champ de texte pour le titre, un choix de robots limité aux aspirateurs et un choix d'étages, libellés en français ou en anglais selon la langue de Home Assistant. Une configuration que l'éditeur ne peut pas afficher, par exemple une option inconnue, le fait passer en YAML avec le même message que la carte.
 
 ## Prérequis
 

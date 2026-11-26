@@ -85,7 +85,7 @@ An empty option (`title:` with no value, an empty list) is the same as leaving i
 
 `robots` and `floors` only choose what this card shows and offers. They are not permissions: they do not stop anyone from controlling a robot elsewhere in Home Assistant.
 
-A visual editor is planned.
+The three options can also be set in the card's visual editor: a text field for the title, a robot picker limited to vacuums and a floor picker, labelled in English or French after your Home Assistant language. A configuration the editor cannot show, such as an unknown option, switches it to YAML with the same message as the card.
 
 ## Requirements
 

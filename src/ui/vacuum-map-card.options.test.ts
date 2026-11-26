@@ -8,13 +8,17 @@ import {
   nextHass,
   settle,
   shadowOf,
+  statusText,
   useTestCard,
 } from "../../test/helpers/card";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
+import { chooseFirstRobot, selectFirstRoom, usePickerElements } from "../../test/helpers/picker";
 import { VacuumMapCard } from "./vacuum-map-card";
 
 useTestCard();
 expectNoConsoleOutput();
+
+usePickerElements();
 
 function header(card: VacuumMapCard): Element | null {
   return shadowOf(card).querySelector("ha-card > .card-header");
@@ -140,5 +144,30 @@ describe("VacuumMapCard options", () => {
     card.hass = nextHass(hass, {});
     await settle(card);
     expect(card.renders).toBe(renders);
+  });
+
+  it("labels Home Assistant's visual editor in the page's language, which Home Assistant keeps on <html lang>", () => {
+    const form = VacuumMapCard.getConfigForm();
+    try {
+      document.documentElement.lang = "fr";
+      expect(form.computeLabel({ name: "floors" })).toBe("Étages");
+    } finally {
+      document.documentElement.lang = "";
+    }
+    expect(form.computeLabel({ name: "floors" })).toBe("Floors");
+  });
+
+  it("in the editor preview, follows each option picked in the form and still starts nothing", async () => {
+    const hass = fixtureHass();
+    const card = await mount(hass);
+    card.preview = true;
+    card.setConfig({ type: "custom:vacuum-map-card", robots: ["vacuum.robot_two"] });
+    await card.updateComplete;
+    expect(captions(card).every((caption) => caption.endsWith("Robot Two"))).toBe(true);
+    await selectFirstRoom(card);
+    await chooseFirstRobot(card);
+    await settle(card);
+    expect(hass.calls).toEqual([]);
+    expect(statusText(card)).toBe("Starting is turned off in the editor preview.");
   });
 });

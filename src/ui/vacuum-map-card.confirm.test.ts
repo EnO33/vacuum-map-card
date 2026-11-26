@@ -14,31 +14,23 @@ import {
 import { setCardHelpers, useCardHelpers } from "../../test/helpers/card-helpers";
 import { buttonNamed, dialogOf, titleOf } from "../../test/helpers/confirm-dialog";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
-import { pickerDialog, selectFirstRoom } from "../../test/helpers/picker";
+import { chooseFirstRobot, openPicker, selectFirstRoom, usePickerElements } from "../../test/helpers/picker";
 import { roombaPlusStates } from "../../test/helpers/roomba-plus-states";
 import { CONFIRM_DIALOG_ELEMENT, ConfirmDialog } from "./confirm-dialog";
 import { deepActiveElement } from "./focus";
-import { PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
 import { defineOnce } from "./register";
-import { ROBOT_PICKER_ELEMENT, RobotChosenEvent, RobotPicker } from "./robot-picker";
+import { RobotChosenEvent } from "./robot-picker";
 
 useTestCard();
 expectNoConsoleOutput();
 
+usePickerElements();
+
 beforeAll(() => {
-  defineOnce(customElements, ROBOT_PICKER_ELEMENT, RobotPicker);
-  defineOnce(customElements, PICKER_DIALOG_ELEMENT, PickerDialog);
   defineOnce(customElements, CONFIRM_DIALOG_ELEMENT, ConfirmDialog);
 });
 
 useCardHelpers();
-
-/** The open picker window. */
-function picker(card: TestCard): PickerDialog {
-  const found = pickerDialog(card);
-  if (!found) throw new Error("no picker window");
-  return found;
-}
 
 function ownDialog(card: TestCard): ConfirmDialog {
   const found = shadowOf(card).querySelector(CONFIRM_DIALOG_ELEMENT);
@@ -53,15 +45,6 @@ function standardConfirmation(answer: boolean | (() => Promise<boolean>)) {
   );
   setCardHelpers(() => Promise.resolve({ showConfirmationDialog: show }));
   return show;
-}
-
-/** The first robot that can start, chosen in the open picker; its entity id. */
-async function chooseFirstRobot(card: TestCard): Promise<string> {
-  const picked = picker(card).picked;
-  const startable = picked?.candidates.find((c) => c.choice.kind !== "not_startable");
-  if (!picked || !startable) throw new Error("no startable robot");
-  picker(card).dispatchEvent(new RobotChosenEvent({ item: picked.item, vacuumEntityId: startable.vacuumEntityId }));
-  return startable.vacuumEntityId;
 }
 
 /** A held Enter dispatched on the page; `true` when something dropped it. */
@@ -105,7 +88,7 @@ describe("VacuumMapCard confirmation and start", () => {
     const card = await mount(hass, { robots: ["vacuum.robot_two"] });
     await selectFirstRoom(card);
     const theirs = { kind: "room", imageEntityId: "image.robot_one_rooms_map", regionId: "1" } as const;
-    picker(card).dispatchEvent(new RobotChosenEvent({ item: theirs, vacuumEntityId: "vacuum.robot_one" }));
+    openPicker(card).dispatchEvent(new RobotChosenEvent({ item: theirs, vacuumEntityId: "vacuum.robot_one" }));
     await flush(card);
     expect(hass.calls).toEqual([]);
   });
@@ -114,7 +97,7 @@ describe("VacuumMapCard confirmation and start", () => {
     let pickerOpenWhenAsked: boolean | undefined;
     const card = await mount(fixtureHass());
     standardConfirmation(() => {
-      pickerOpenWhenAsked = shadowOf(picker(card)).querySelector("dialog")?.open;
+      pickerOpenWhenAsked = shadowOf(openPicker(card)).querySelector("dialog")?.open;
       return Promise.resolve(false);
     });
     await selectFirstRoom(card);
@@ -140,10 +123,10 @@ describe("VacuumMapCard confirmation and start", () => {
     const hass = fixtureHass();
     const card = await mount(hass);
     await selectFirstRoom(card);
-    const picked = picker(card).picked;
+    const picked = openPicker(card).picked;
     await chooseFirstRobot(card);
     if (picked)
-      picker(card).dispatchEvent(
+      openPicker(card).dispatchEvent(
         new RobotChosenEvent({ item: picked.item, vacuumEntityId: picked.candidates[0]?.vacuumEntityId ?? "" }),
       );
     await flush(card);
@@ -187,12 +170,12 @@ describe("VacuumMapCard confirmation and start", () => {
     const hass = fixtureHass();
     const card = await mount(hass);
     const { item } = await selectFirstRoom(card);
-    const robot = picker(card).picked?.candidates.find((c) => c.choice.kind !== "not_startable");
+    const robot = openPicker(card).picked?.candidates.find((c) => c.choice.kind !== "not_startable");
     if (!robot) throw new Error("no startable robot");
     const states = roombaPlusStates();
     states[robot.vacuumEntityId] = { ...Object(states[robot.vacuumEntityId]), state: "unavailable" };
     card.hass = nextHass(hass, { states });
-    picker(card).dispatchEvent(new RobotChosenEvent({ item, vacuumEntityId: robot.vacuumEntityId }));
+    openPicker(card).dispatchEvent(new RobotChosenEvent({ item, vacuumEntityId: robot.vacuumEntityId }));
     await flush(card);
     expect(show).not.toHaveBeenCalled();
     expect(hass.calls).toEqual([]);
@@ -271,14 +254,14 @@ describe("VacuumMapCard confirmation and start", () => {
     const card = await mount(hass);
     card.preview = preview;
     const { item } = await selectFirstRoom(card);
-    const robot = picker(card).picked?.candidates.find((c) => c.choice.kind !== "not_startable");
+    const robot = openPicker(card).picked?.candidates.find((c) => c.choice.kind !== "not_startable");
     if (!robot) throw new Error("no startable robot");
     const states = roombaPlusStates();
     if (!preview) {
       states[robot.vacuumEntityId] = { ...Object(states[robot.vacuumEntityId]), state: "unavailable" };
       card.hass = nextHass(hass, { states });
     }
-    picker(card).dispatchEvent(new RobotChosenEvent({ item, vacuumEntityId: robot.vacuumEntityId }));
+    openPicker(card).dispatchEvent(new RobotChosenEvent({ item, vacuumEntityId: robot.vacuumEntityId }));
     await flush(card);
     expect(show).not.toHaveBeenCalled();
     expect(repeatPrevented()).toBe(false);
@@ -323,8 +306,8 @@ describe("VacuumMapCard confirmation and start", () => {
     expect(deepActiveElement()).toBe(opener);
     expect(statusText(card)).toMatch(/^Sending the start to Robot (One|Two) for .+…$/);
     await selectFirstRoom(card);
-    picker(card).dispatchEvent(
-      new RobotChosenEvent({ item: picker(card).picked?.item ?? fail(), vacuumEntityId: robot }),
+    openPicker(card).dispatchEvent(
+      new RobotChosenEvent({ item: openPicker(card).picked?.item ?? fail(), vacuumEntityId: robot }),
     );
     await flush(card);
     expect(show).toHaveBeenCalledTimes(2);

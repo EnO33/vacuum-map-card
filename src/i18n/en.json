@@ -141,5 +141,11 @@
   "progress.list_unplaced": "Cleaning progress, rooms no longer on the plans",
   "progress.unknown_room": "a room no longer on the plans",
   "progress.dismiss": "Dismiss",
-  "progress.room_name": "{name}"
+  "progress.room_name": "{name}",
+  "editor.title": "Title",
+  "editor.title_helper": "Shown as the card's header. Leave empty for no header.",
+  "editor.robots": "Robots",
+  "editor.robots_helper": "Leave empty to use every robot found.",
+  "editor.floors": "Floors",
+  "editor.floors_helper": "Leave empty to show every floor and the plans without a floor."
 }

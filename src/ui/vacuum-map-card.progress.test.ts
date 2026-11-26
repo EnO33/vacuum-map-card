@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { FakeFrontendHass } from "../../test/fakes/frontend-hass";
 import serviceErrors from "../../test/fixtures/ha-core/synthetic/service_errors.json" with { type: "json" };
 import {
@@ -18,22 +18,16 @@ import {
 } from "../../test/helpers/card";
 import { setCardHelpers, useCardHelpers } from "../../test/helpers/card-helpers";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
-import { pickerDialog, selectFirstRoom } from "../../test/helpers/picker";
+import { chooseFirstRobot, selectFirstRoom, usePickerElements } from "../../test/helpers/picker";
 import { img, loaded } from "../../test/helpers/plan-picture";
 import { roombaPlusStates } from "../../test/helpers/roomba-plus-states";
 import { deepActiveElement } from "./focus";
-import { PICKER_DIALOG_ELEMENT, PickerDialog } from "./picker-dialog";
-import { defineOnce } from "./register";
-import { ROBOT_PICKER_ELEMENT, RobotChosenEvent, RobotPicker } from "./robot-picker";
 
 useTestCard();
 expectNoConsoleOutput();
 useCardHelpers();
 
-beforeAll(() => {
-  defineOnce(customElements, ROBOT_PICKER_ELEMENT, RobotPicker);
-  defineOnce(customElements, PICKER_DIALOG_ELEMENT, PickerDialog);
-});
+usePickerElements();
 
 const NOT_LINKED = serviceErrors.find(
   ({ error }) => "translation_key" in error && error.translation_key === "area_mapping_not_configured",
@@ -47,15 +41,10 @@ function confirmAll(): void {
 /** Selects the first drawn room, chooses its first robot that can start, and lets the start run; that robot's id. */
 async function startFirstRoom(card: TestCard): Promise<{ robot: string; room: string }> {
   const { name } = await selectFirstRoom(card);
-  const picked = pickerDialog(card)?.picked;
-  const startable = picked?.candidates.find((c) => c.choice.kind !== "not_startable");
-  if (!picked || !startable) throw new Error("no startable robot");
-  pickerDialog(card)?.dispatchEvent(
-    new RobotChosenEvent({ item: picked.item, vacuumEntityId: startable.vacuumEntityId }),
-  );
+  const robot = await chooseFirstRobot(card);
   await settle(card);
   await settle(card);
-  return { robot: startable.vacuumEntityId, room: name };
+  return { robot, room: name };
 }
 
 /** A new `hass` where the robot reports `state`, as the frontend makes one on each state change. */
