@@ -35,11 +35,15 @@ export const bodyStyles = css`
 /**
  * The card's body for a view. The status region is the same element in every view, so a screen reader announces each
  * message that replaces the previous one (loading or « could not load », then no robot, error or no plan); the plans
- * stay outside it, followed by the notes on robots whose rooms map adds no plan. Every value inserted is text, never
- * markup.
+ * stay outside it, followed by the notes on robots whose rooms map adds no plan. `notice` is the result of the last
+ * start, in the same region so it is announced. Every value inserted is text, never markup.
  */
-export function cardBody(view: CardView, locale: Locale): TemplateResult {
-  return html`<div role="status">${message(view, locale)}</div>
+export function cardBody(
+  view: CardView,
+  locale: Locale,
+  notice: TemplateResult | typeof nothing = nothing,
+): TemplateResult {
+  return html`<div role="status">${message(view, locale)}${notice}</div>
     ${
       view.kind === "ready"
         ? html`${planCount(view.model) > 0 ? floorLayout(view, locale) : nothing}
