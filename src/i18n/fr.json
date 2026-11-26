@@ -7,9 +7,9 @@
   "card.no_robot_hint": "Cette carte fonctionne avec les robots de l'intégration {integration}.",
   "card.no_plan": "Aucun plan trouvé.",
   "card.no_listed_robot": "Aucun des robots listés n'a été trouvé",
-  "card.no_listed_robot_hint": "Vérifiez l'option robots de la carte : chaque entrée est l'identifiant d'entité d'un aspirateur de l'intégration {integration}.",
+  "card.no_listed_robot_hint": "Vérifiez l'option robots de la carte : seuls les aspirateurs de l'intégration {integration} peuvent être utilisés.",
   "card.no_listed_floor_plan": "Aucun plan sur les étages listés.",
-  "card.no_listed_floor_plan_hint": "Vérifiez l'option floors de la carte : chaque entrée est un identifiant d'étage Home Assistant. Les plans sans étage ne sont pas affichés tant qu'elle est définie.",
+  "card.no_listed_floor_plan_hint": "Vérifiez l'option floors de la carte. Les plans sans étage ne sont pas affichés tant qu'elle est définie.",
   "card.no_floor": "Plans sans étage",
   "plan.alt": "Plan : {name}",
   "plan.generic_name": "Plan {number}",
@@ -141,5 +141,11 @@
   "progress.list_unplaced": "Avancement des nettoyages, pièces qui ne sont plus sur les plans",
   "progress.unknown_room": "une pièce qui n'est plus sur les plans",
   "progress.dismiss": "Masquer",
-  "progress.room_name": "« {name} »"
+  "progress.room_name": "« {name} »",
+  "editor.title": "Titre",
+  "editor.title_helper": "Affiché en en-tête de la carte. Laissez vide pour ne pas afficher d'en-tête.",
+  "editor.robots": "Robots",
+  "editor.robots_helper": "Seuls ces robots et leurs plans sont affichés. Laissez vide pour utiliser tous les robots compatibles.",
+  "editor.floors": "Étages",
+  "editor.floors_helper": "Seuls ces étages sont affichés, dans l'ordre de Home Assistant. Laissez vide pour afficher tous les étages et les plans sans étage."
 }

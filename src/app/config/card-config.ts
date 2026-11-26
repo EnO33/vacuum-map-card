@@ -17,9 +17,18 @@ export interface CardConfig {
 /** No option set: everything discovered, no header. */
 export const NO_OPTIONS: CardConfig = Object.freeze({ title: undefined, robots: undefined, floors: undefined });
 
-/** The card's own keys, and the message that lists them: keep both in step. */
-const OPTION_KEYS: ReadonlySet<string> = new Set(["title", "robots", "floors"]);
-const OPTIONS = "The options are title, robots and floors.";
+export type OptionName = keyof CardConfig;
+
+/** The card's own keys, in the order the editor shows them; a test checks it lists every `CardConfig` key. */
+export const OPTION_NAMES = ["title", "robots", "floors"] as const satisfies readonly OptionName[];
+
+const OPTION_KEYS: ReadonlySet<string> = new Set(OPTION_NAMES);
+const OPTIONS = `The options are ${OPTION_NAMES.slice(0, -1).join(", ")} and ${OPTION_NAMES.at(-1)}.`;
+
+/** Whether `key` is one of the card's own options. */
+export function isOptionName(key: string): key is OptionName {
+  return OPTION_KEYS.has(key);
+}
 
 /**
  * Keys of every card's configuration that Home Assistant owns and passes to `setConfig` with the card's own
@@ -55,7 +64,7 @@ export function parseConfig(raw: unknown): CardConfig {
     throw new Error("The card's configuration must be options, such as title: Cleaning, not a list or a single value.");
   }
   for (const key of Object.keys(raw)) {
-    if (!OPTION_KEYS.has(key) && !HOME_ASSISTANT_KEYS.has(key)) {
+    if (!isOptionName(key) && !HOME_ASSISTANT_KEYS.has(key)) {
       const name = withinTextCap(key) ? JSON.stringify(key) : `(its name is longer than ${MAX_TEXT_LENGTH} characters)`;
       throw new Error(`Unknown option ${name}. ${OPTIONS}`);
     }

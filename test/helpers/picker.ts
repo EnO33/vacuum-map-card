@@ -1,9 +1,19 @@
 // Test helper: the card's robot picker window, and a room selected from a plan picture as a tap does.
+import { beforeAll } from "vitest";
 import type { ItemRef } from "../../src/app/robots-for-item/robots-for-item";
 import { PICKER_DIALOG_ELEMENT, PickerDialog } from "../../src/ui/picker-dialog";
-import { ROBOT_PICKER_ELEMENT, RobotPicker } from "../../src/ui/robot-picker";
+import { defineOnce } from "../../src/ui/register";
+import { ROBOT_PICKER_ELEMENT, RobotChosenEvent, RobotPicker } from "../../src/ui/robot-picker";
 import { roomSelectedEvent } from "../../src/ui/room-selected";
 import { pictures, shadowOf, type TestCard } from "./card";
+
+/** Defines the robot list and its window, which the card renders when a room is selected. */
+export function usePickerElements(): void {
+  beforeAll(() => {
+    defineOnce(customElements, ROBOT_PICKER_ELEMENT, RobotPicker);
+    defineOnce(customElements, PICKER_DIALOG_ELEMENT, PickerDialog);
+  });
+}
 
 export function pickerDialog(card: TestCard): PickerDialog | undefined {
   const found = shadowOf(card).querySelector(PICKER_DIALOG_ELEMENT);
@@ -35,4 +45,20 @@ export async function selectFirstRoom(card: TestCard): Promise<{ item: ItemRef; 
   picture.dispatchEvent(roomSelectedEvent(item, opener));
   await settlePicker(card);
   return { item, name: room.name, opener };
+}
+
+/** The open picker window. */
+export function openPicker(card: TestCard): PickerDialog {
+  const found = pickerDialog(card);
+  if (!found) throw new Error("no picker window");
+  return found;
+}
+
+/** The first robot that can start, chosen in the open picker; its entity id. */
+export async function chooseFirstRobot(card: TestCard): Promise<string> {
+  const picked = openPicker(card).picked;
+  const startable = picked?.candidates.find((c) => c.choice.kind !== "not_startable");
+  if (!picked || !startable) throw new Error("no startable robot");
+  openPicker(card).dispatchEvent(new RobotChosenEvent({ item: picked.item, vacuumEntityId: startable.vacuumEntityId }));
+  return startable.vacuumEntityId;
 }

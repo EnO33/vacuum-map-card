@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   bodyText,
   fixtureHass,
@@ -8,13 +8,17 @@ import {
   nextHass,
   settle,
   shadowOf,
+  statusText,
   useTestCard,
 } from "../../test/helpers/card";
 import { expectNoConsoleOutput } from "../../test/helpers/no-console";
+import { chooseFirstRobot, selectFirstRoom, usePickerElements } from "../../test/helpers/picker";
 import { VacuumMapCard } from "./vacuum-map-card";
 
 useTestCard();
 expectNoConsoleOutput();
+
+usePickerElements();
 
 function header(card: VacuumMapCard): Element | null {
   return shadowOf(card).querySelector("ha-card > .card-header");
@@ -99,16 +103,16 @@ describe("VacuumMapCard options", () => {
   it("says the floors option hides every plan when no listed floor has one", async () => {
     const card = await mount(fixtureHass(), { floors: ["deleted_floor"] });
     expect(bodyText(card)).toBe(
-      "No floor plan on the listed floors. Check the card's floors option: each entry is a Home Assistant floor id. " +
-        "Plans on no floor are not shown while it is set.",
+      "No floor plan on the listed floors. Check the card's floors option. " +
+        "Plans not assigned to a floor are not shown while it is set.",
     );
   });
 
   it("says the robots option leaves no robot when no listed robot exists", async () => {
     const card = await mount(fixtureHass(), { robots: ["vacuum.robot_three"] });
     expect(bodyText(card)).toBe(
-      "None of the listed robots was found Check the card's robots option: each entry is the entity id of a " +
-        "vacuum from the Roomba+ integration.",
+      "None of the listed robots was found Check the card's robots option: only vacuums from the Roomba+ " +
+        "integration can be used.",
     );
   });
 
@@ -140,5 +144,50 @@ describe("VacuumMapCard options", () => {
     card.hass = nextHass(hass, {});
     await settle(card);
     expect(card.renders).toBe(renders);
+  });
+
+  it("labels Home Assistant's visual editor in the page's language, which Home Assistant keeps on <html lang>", () => {
+    const form = VacuumMapCard.getConfigForm();
+    try {
+      document.documentElement.lang = "fr";
+      expect(form.computeLabel({ name: "floors" })).toBe("Étages");
+    } finally {
+      document.documentElement.lang = "";
+    }
+    expect(form.computeLabel({ name: "floors" })).toBe("Floors");
+  });
+
+  it("creates and defines no element for its editor: Home Assistant renders the form itself", () => {
+    const created = vi.spyOn(document, "createElement");
+    const defined = vi.spyOn(customElements, "define");
+    try {
+      const form = VacuumMapCard.getConfigForm();
+      for (const { name } of form.schema) {
+        form.computeLabel({ name });
+        form.computeHelper({ name });
+      }
+      expect(created).not.toHaveBeenCalled();
+      expect(defined).not.toHaveBeenCalled();
+    } finally {
+      created.mockRestore();
+      defined.mockRestore();
+    }
+  });
+
+  it("in the editor preview, follows each option picked in the form and still starts nothing", async () => {
+    const hass = fixtureHass();
+    const card = await mount(hass);
+    card.preview = true;
+    card.setConfig({ type: "custom:vacuum-map-card", floors: ["upper_floor"] });
+    await card.updateComplete;
+    expect(headings(card)).toStrictEqual(["Upper floor"]);
+    card.setConfig({ type: "custom:vacuum-map-card", robots: ["vacuum.robot_two"] });
+    await card.updateComplete;
+    expect(captions(card).every((caption) => caption.endsWith("Robot Two"))).toBe(true);
+    await selectFirstRoom(card);
+    await chooseFirstRobot(card);
+    await settle(card);
+    expect(hass.calls).toEqual([]);
+    expect(statusText(card)).toBe("Starting is turned off in the editor preview.");
   });
 });

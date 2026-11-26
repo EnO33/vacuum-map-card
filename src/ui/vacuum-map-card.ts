@@ -1,5 +1,5 @@
 import { css, html, LitElement, nothing, type TemplateResult } from "lit";
-import { createAdapters } from "../adapters/create-adapters";
+import { createAdapters, SOURCE_PLATFORMS } from "../adapters/create-adapters";
 import { type CardConfig, NO_OPTIONS, parseConfig } from "../app/config/card-config";
 import { createFloorModelBuilder } from "../app/floor-model/memo";
 import { bodyStyles, cardBody } from "./card-body";
@@ -7,6 +7,7 @@ import { CardSession, type SessionDependencies } from "./card-session";
 import { cardSize } from "./card-size";
 import { CardStart } from "./card-start";
 import { FAILED } from "./card-view";
+import { type ConfigForm, configForm } from "./config-form";
 import { CONFIRM_DIALOG_ELEMENT, ConfirmDialog } from "./confirm-dialog";
 import { disabledPlanStyles } from "./disabled-plan";
 import { layoutStyles } from "./floor-layout";
@@ -122,6 +123,15 @@ export class VacuumMapCard extends LitElement {
    */
   static getStubConfig(): Record<string, never> {
     return {};
+  }
+
+  /**
+   * Read by Home Assistant's visual editor (`docs/research/ha-frontend.md` § 8): a form for the options, which Home
+   * Assistant renders itself, offering only the supported integrations' robots. Its labels follow the page's language, which Home Assistant keeps on `<html lang>`
+   * (§ 2): a static method has no `hass`.
+   */
+  static getConfigForm(): ConfigForm {
+    return configForm(SOURCE_PLATFORMS, () => document.documentElement.lang);
   }
 
   /** The parsed options. */

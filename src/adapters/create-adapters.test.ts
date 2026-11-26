@@ -8,7 +8,7 @@ import type { Plan } from "../app/floor-model/floor-model";
 import type { DisplayPort } from "../app/ports/display-port";
 import type { HassPort } from "../app/ports/hass-port";
 import type { RoomSource } from "../app/ports/room-source";
-import { createAdapters } from "./create-adapters";
+import { createAdapters, SOURCE_PLATFORMS } from "./create-adapters";
 
 /** Each plan as `[robot, picture, floor or "none"]`. */
 const where = (plans: readonly Plan[]) =>
@@ -64,6 +64,11 @@ describe("createAdapters", () => {
     const { integrations } = harness.adapters;
     expect(integrations).toStrictEqual(["Roomba+"]);
     expect(Object.isFrozen(integrations)).toBe(true);
+  });
+
+  it("knows each source's registry platform before any hass, for the editor's robot filter", () => {
+    expect(SOURCE_PLATFORMS).toStrictEqual(harness.adapters.sources().map((source) => source.integration));
+    expect(Object.isFrozen(SOURCE_PLATFORMS)).toBe(true);
   });
 
   it("debounces updates on the injected timer", async () => {
