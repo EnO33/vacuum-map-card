@@ -37,6 +37,14 @@
   --ha-border-radius-pill: 9999px;
   --ha-border-radius-circle: 50%;
 
+  /*
+   * The shadow of Home Assistant's dialogs, which the card's dialogs read through `--wa-shadow-l`
+   * (`src/resources/theme/semantic.globals.ts` L12; `wa.globals.ts` L39, which comes after `color/wa.globals.ts` L66 in
+   * `theme.ts` L13-L22 and so wins over it).
+   */
+  --ha-box-shadow-l: 0 6px 12px -3px rgba(0, 0, 0, 0.12), 0 16px 32px -6px rgba(0, 0, 0, 0.2);
+  --wa-shadow-l: var(--ha-box-shadow-l);
+
   --ha-animation-duration-instant: 75ms;
   --ha-animation-duration-fast: 150ms;
   --ha-animation-duration-normal: 250ms;
@@ -44,6 +52,12 @@
 
   --primary-color: #009ac7;
   --rgb-primary-color: 0, 154, 199;
+  /*
+   * Text on the primary colour (`src/resources/theme/color/color.globals.ts` L10 and L30); the dark colours do not
+   * redefine it, so it holds in both themes.
+   */
+  --text-primary-color: #ffffff;
+  --rgb-text-primary-color: 255, 255, 255;
   --ha-color-focus: #989898;
   --error-color: #db4437;
   --warning-color: #ffa600;
@@ -76,6 +90,8 @@
   --secondary-text-color: #9b9b9b;
   --disabled-text-color: #6f6f6f;
   --divider-color: rgba(225, 225, 225, 0.12);
+  /* `semantic.globals.ts` L20, applied in dark mode by `src/common/dom/apply_themes_on_element.ts` L54-L57. */
+  --ha-box-shadow-l: 0 6px 12px -3px rgba(0, 0, 0, 0.4), 0 16px 32px -6px rgba(0, 0, 0, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {
