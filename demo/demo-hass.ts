@@ -74,11 +74,14 @@ function demoRegistry(): unknown[] {
     .map(demoEntry);
 }
 
-function demoFloors(): unknown[] {
+function demoFloors() {
   return structuredClone(floorRegistryList).map((floor) =>
     floor.floor_id === UPPER_FLOOR.floorId ? { ...floor, aliases: [UPPER_FLOOR.alias] } : floor,
   );
 }
+
+/** Every floor the demo serves, in its registry order. */
+export const DEMO_FLOOR_IDS: readonly string[] = demoFloors().map((floor) => floor.floor_id);
 
 /** The fixture states without the two plans above: Home Assistant leaves a disabled entity out of `hass.states`. */
 function demoStates(): Record<string, unknown> {
