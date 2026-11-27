@@ -8,10 +8,15 @@ Une carte de tableau de bord Home Assistant pour nettoyer n'importe quelle pièc
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/images/card-dark.png">
-  <img alt="Carte Home Assistant vide intitulée Vacuum Map Card" src="./docs/images/card-light.png" width="463">
+  <img alt="La carte avec deux plans côte à côte : Ground floor, avec sa pièce Library, et Upper floor, avec ses pièces Studio, Music corner et Gallery et, dessous, une note disant qu'elles se choisissent sur la carte actuelle de Robot Two" src="./docs/images/card-light.png" width="912">
 </picture>
 
-*La carte pour l'instant : seulement son titre. Les plans et les pièces arrivent ensuite.*
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/picker-dark.png">
+  <img alt="La même carte après un appui sur Library : la pièce est entourée et un panneau intitulé Library propose Robot One, un aspirateur à sa base" src="./docs/images/picker-light.png" width="912">
+</picture>
+
+*Une maison de démonstration aux plans et noms de pièces inventés : tous les étages côte à côte, puis le choix du robot après un appui sur une pièce.*
 
 ## Pourquoi
 

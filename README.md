@@ -8,10 +8,15 @@ A Home Assistant dashboard card to clean any room of your home with any of your 
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./docs/images/card-dark.png">
-  <img alt="Empty Home Assistant card titled Vacuum Map Card" src="./docs/images/card-light.png" width="463">
+  <img alt="The card with two floor plans side by side: Ground floor, with its Library room, and Upper floor, with its Studio, Music corner and Gallery rooms and a note below saying they are chosen on Robot Two's current map" src="./docs/images/card-light.png" width="912">
 </picture>
 
-*The card today: only its title. Floor plans and rooms come next.*
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/picker-dark.png">
+  <img alt="The same card after a tap on Library: the room is outlined and a panel titled Library offers Robot One, a docked vacuum" src="./docs/images/picker-light.png" width="912">
+</picture>
+
+*A demo home with invented plans and room names: every floor side by side, then the robot choice after a tap on a room.*
 
 ## Why
 
