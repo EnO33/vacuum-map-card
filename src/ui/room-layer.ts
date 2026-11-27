@@ -14,9 +14,11 @@ export interface RoomLayerState {
   readonly progress: ReadonlyMap<string, ItemProgress>;
 }
 
-/** The layer's listeners: stable functions, so a re-render never rebinds them. */
+/**
+ * The layer's listeners: stable functions, so a re-render never rebinds them. No focus listener: Chromium makes an SVG
+ * element with one a tab stop of its own, so the focus is followed from an HTML ancestor (#163).
+ */
 export interface RoomLayerListeners {
-  readonly focusin: (event: FocusEvent) => void;
   readonly keydown: (event: KeyboardEvent) => void;
   readonly keyup: (event: KeyboardEvent) => void;
   readonly click: (event: MouseEvent) => void;
@@ -43,7 +45,6 @@ export function roomLayer(state: RoomLayerState, on: RoomLayerListeners): Templa
       viewBox="0 0 ${width} ${height}"
       role="group"
       aria-label=${name}
-      @focusin=${on.focusin}
       @keydown=${on.keydown}
       @keyup=${on.keyup}
       @click=${on.click}
