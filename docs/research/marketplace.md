@@ -1,6 +1,6 @@
 # Home Assistant Marketplace: publishing a dashboard card
 
-Status: **verified** on 2026-11-20 against Home Assistant **2026.11.2** (Marketplace integration `marketplace`, tag `2026.11.2` = commit `ff5d56b825a0fb66b03d01bc297d49e206cdaba3`) and its frontend **20261028.6** (tag = commit `92bcd97390e7f684df4bf3738aec812ff427d46e`). Re-check when `/check-versions` moves the latest Home Assistant release, and before tagging the first release.
+Status: **verified** on 2026-11-20 against Home Assistant **2026.11.2** (Marketplace integration `marketplace`, tag `2026.11.2` = commit `ff5d56b825a0fb66b03d01bc297d49e206cdaba3`) and its frontend **20261028.6** (tag = commit `92bcd97390e7f684df4bf3738aec812ff427d46e`). **Re-verified** on 2026-11-27 (#147) at the stable **2026.11.3** (frontend 20261028.8) and the beta **2026.12.0b2** (frontend 20261125.1): see « Re-check on 2026-11-27 ». Line numbers in the sections before « Re-check on 2026-11-27 » are at the 2026-11-20 tags; the re-check gives where they moved and uses the new tags. Re-check when `/check-versions` moves the latest Home Assistant release, and before each release that goes to the catalog.
 
 Method: source read at the pinned tags with `gh api repos/<owner>/<repo>/contents/<path>?ref=<tag or sha>`; documentation read with a web fetch on 2026-11-20. No capture from a real installation was needed: nothing in this document comes from the owner's home.
 
@@ -48,7 +48,7 @@ From https://www.home-assistant.io/integrations/marketplace/ (read 2026-11-20):
 | `content_in_root` | bool | `false` | `true`: release assets are never looked at and `dist/` is never looked at; only root files. | `repositories/plugin.py` L231, L321, L340-350 |
 | `zip_release` | bool | `false` | With `filename` ending in `.zip`, the content comes from that ZIP release asset, extracted into the card folder. Catalog installs of such a repository fall back to the GitHub API path. Not needed for a single `.js`. | `repositories/base.py` L601-611, L728-753, L1262-1267, L2217-2220 |
 | `persistent_directory` | string | none | A sub-folder kept across updates (backed up and restored). | `repositories/base.py` L1376-1408 |
-| `hide_default_branch` | bool | `false` | Sent to the frontend in the repository info (`websocket/repository.py` L126) but not referenced by the frontend Marketplace files at tag `20261028.6`. Visible effect « à vérifier »: confirm by a grep of the frontend at a later tag or a test install. | as cited |
+| `hide_default_branch` | bool | `false` | Sent to the frontend in the repository info (`websocket/repository.py` L126) but not referenced by the frontend Marketplace files at tag `20261028.6`. Visible effect: none, settled on 2026-11-27 (see « Re-check on 2026-11-27 », « Frontend »). | as cited |
 | `hacs` | string | none | Read and kept, never compared (« names a version of the custom integration »). | `repositories/base.py` L386, L2057-2058 |
 | `render_readme` | — | — | **Not read** by the Marketplace (not in `REPOSITORY_MANIFEST_VALUES`). The README is always shown, see below. | `utils/validate.py` L61-70 |
 | `country` | — | — | **Not read** from `hacs.json`; accepted but ignored in catalog data (« Accepted for existing repositories, the Marketplace ignores it »). | `utils/validate.py` L61-70, L133-137 |
@@ -110,7 +110,7 @@ Facts from `hacs/default` at commit `d1d62ffd9ceba8320c6de4d49f9bc81a29e22dbd` (
 | PR template checklist: read the publishing docs (hacs.xyz); HACS action added to the repository and passing **without disabled checks**; link to the current release; link to the successful HACS action run (without `ignore`); a new release created after the actions passed. Template last changed 2025-12-15 (`ab3e23f`). | `.github/PULL_REQUEST_TEMPLATE.md` |
 | Checks on pull requests to `hacs/default`: **Editable PR** runs on every pull request; the others run on pull requests labelled « New default repository »: **Owner** (submitter is the repository owner, or a non-bot contributor with at least a third of the top contributor's commits); **Editable PR** (« Allow edits by maintainers » on, unless the branch is in `hacs/default`, see above); **Releases** (`/releases` not empty); **Removed** (not in the removed list); **Existing** (not already listed); **HACS action** (`hacs/action@main` with the detected category). Hassfest and core domain conflict run for integrations only. | `.github/workflows/checks.yml`; `scripts/check/owner.py`, `edits.py`, `releases.py`, `removed.py`, `existing.py` |
 
-How long reviews take, and whether Home Assistant staff now review submissions: « à vérifier » (no source 1 or 2 statement; confirm with an official publisher page or the `hacs/default` contributing rules).
+How long reviews take, and whether Home Assistant staff now review submissions: « à vérifier » (no source 1 or 2 statement; confirm with an official publisher page or the `hacs/default` contributing rules). Partly settled by observation on 2026-11-27, see « Re-check on 2026-11-27 », « `hacs/default` ».
 
 ### Validation action
 
@@ -146,15 +146,130 @@ Read 2026-11-20; every page carries the banner « HACS is built into Home Assist
 | https://www.hacs.xyz/docs/publish/plugin/ | `.js` in `dist/` or root, named after the repository (or without `lovelace-`); lookup `dist`, latest release, root; all `.js` files of the first matching location are downloaded; users pick from the last 5 releases or the default branch | Lookup is **release assets first**, then per name root before `dist/`; accepted names add `.umd.js` and `-bundle.js`; release installs take every asset; the version list is up to 30 releases |
 | https://www.hacs.xyz/docs/publish/include/ | Default repository requirements: works as a custom repository, public on GitHub, HACS action (no ignored checks), full GitHub release after the actions pass, owner or major contributor, description, issues, topics, README images for plugins, OSI licence, `hacs.json` with at least `name`, PR to `hacs/default` in alphabetical order from a personal account, editable | Matches the checks in `hacs/default` at `d1d62ff` listed above |
 
+## Re-check on 2026-11-27 (#147)
+
+Method: `gh api` on 2026-11-27. Core: blob SHAs of the 51 files of `homeassistant/components/marketplace/` compared between tags with the git trees API, changed files downloaded with `contents?ref=<tag>` and diffed, and every line range cited above mapped to the new tags with Python `difflib` (a range is « same text » when every line of it is matched). Frontend: blob SHAs of `src/panels/marketplace/`, `src/data/marketplace/` and `src/resources/markdown-worker.ts` compared, changed files diffed, and the whole `src/` of both tarballs searched with `grep`. Nothing comes from a real installation.
+
+### Versions read
+
+| What | Stable | Beta |
+|---|---|---|
+| Core tag (commit) | `2026.11.3` (`92da9f154079459b9e547126f9bd9fce726de16a`), released 2026-11-23 | `2026.12.0b2` (`78677c03648d72fb96e04fc7ea894502d3f0582c`), released 2026-11-26. The issue named 2026.12.0b1; b2 was the current beta at the time of work |
+| Frontend (`home-assistant-frontend` requirement of `frontend/manifest.json` at the core tag) | `20261028.8` | `20261125.1` |
+| `marketplace/manifest.json` (`aiogithubapi==26.0.0`) | unchanged | unchanged |
+| AwesomeVersion in `homeassistant/package_constraints.txt` | `25.8.0` | `25.8.0` |
+
+### Core `marketplace/` at the stable tag
+
+Two files changed since `2026.11.2`; neither changes a rule this card depends on.
+
+| File | Change | Effect for this card |
+|---|---|---|
+| `base.py` L590-591 | The `.gz` copy written next to an installed file now keeps the file's permissions (`shutil.copymode`). | None |
+| `repositories/base.py` L2199-2226 | A catalog install that fails while resolving its content restores the whole previous state (manifest, ref, remote path, single file mode, tree, tree ref, tree files), not only the manifest. | None: error handling only |
+
+Topic by topic: `hacs.json` keys, card file lookup, release and pre-release rules, README rendering and the update entity are **unchanged** (`utils/validate.py`, `repositories/plugin.py`, `update.py`, `utils/version.py`, `enums.py` identical; the README lookup L79-86, L961-976, L1911-1953 of `repositories/base.py` same text at the same lines).
+
+### Core `marketplace/` at the beta tag
+
+| Topic | At `2026.12.0b2` | Effect for this card |
+|---|---|---|
+| Card file: ZIP of the resource (new) | A dashboard resource may also ship as a release asset named after its file with `.zip` for `.js` (`vacuum-map-card.zip` here) (`repositories/plugin.py` L43-47). Name matching prefers the `.js` asset and uses the ZIP only when no `.js` matches (L500-510, used by `update_filenames` L513-545 and `release_contents` L485-498). When both are assets, the ZIP is the one downloaded and extracted (`_async_try_resource_archive` L121-149, called by `_async_download_files` L116-119 for release downloads and for catalog installs in `_async_download_release_assets` L453-469); the `.js` is used only if the ZIP is unusable. `_find_target_asset` (L101-113) only picks the asset whose download count is shown (`repositories/base.py` L1629-1639). The ZIP must hold the file at its root or in a single top folder (`_resource_folder` L221-233), else « {file} has no {resource} in its root or in a folder at its root. » (`strings.json` L278). Catalog installs probe the `.js` names first, then the ZIP names (L389-418). | None while the release carries only `vacuum-map-card.js` and its map: `release.yml` L148 refuses to publish any other asset set. Never attach an asset named `vacuum-map-card.zip`: from this version it would be installed instead of the `.js`. |
+| Catalog install probe | Each release asset probe is now limited to `MAX_DOWNLOAD_SIZE` (100 MiB, `const.py` L34) (`repositories/plugin.py` L420-430). | None (card about 16 kB) |
+| `hacs.json` parsing | The validated value is now the one kept (`repositories/base.py` L407). Booleans also accept the strings `"true"` and `"false"`; optional strings (`filename`, `hacs`, `persistent_directory`) read `false` or `null` as not set (`utils/validate.py` L60-86, L90-99). `render_readme` and `country` are still not read. | None: this card's three keys are plain strings |
+| Release and pre-release rules, README lookup, update entity | Same text (only line shifts, table below; `update.py` identical). | None |
+| Other changes | Mirrors renamed « relays » in text and code (`profiles.py`, `strings.json`); the download-source repair is tied to its config entry (`repairs.py`); a corrupt storage file is no longer taken as a first setup (`utils/data.py`, `utils/storage.py`); catalog repositories stay marked default until the catalog stops listing them (`base.py` L331-339). | None |
+
+### Moved line ranges
+
+Ranges cited in this document whose position changed; every other cited range is at the same lines. « Same text » unless stated.
+
+| File (at `2026.11.2`) | Stable `2026.11.3` | Beta `2026.12.0b2` |
+|---|---|---|
+| `const.py` L31-32, L34-36, L43-45 | unchanged | L29-30, L32-34, L41-43 |
+| `base.py` L797-836, L872-879, L1248-1251 | L799-838, L874-881, L1250-1253 | L808-847, L883-890, L1266-1269 |
+| `utils/validate.py` L60-70 (manifest keys), L133-137 | unchanged | L90-99 (text changed, see above), L163-167 |
+| `repositories/base.py` L398-416 | unchanged | same lines, L407 changed (see above) |
+| `repositories/base.py` L2131-2251 (catalog install), L2217-2220, L2304-2306, L2321-2329 | L2131-2267 (text changed, see above), L2233-2236, L2320-2322, L2337-2345 | same as stable |
+| `repositories/plugin.py` L47-56, L81-96, L99-118, L120-132, L140-152, L161-196 (L163-188, L190-196), L211-224 | unchanged | L74-83, L243-258, L261-280, L282-294, L302-314, L323-358 (L325-350, L352-358), L373-386 |
+| `repositories/plugin.py` L226-281 (catalog probe; L231, L248-281), L283-294 (accepted names) | unchanged | L388-469 (text changed: ZIP probe; L393 same), L471-482 |
+| `repositories/plugin.py` L313-350 (lookup; L321, L340-350), L352-463 (resource), L384-396 (`/` in `filename`) | unchanged | L512-545 (text changed: ZIP names; L520 and L535-545 same), L547-658, L579-591 |
+
+### Frontend
+
+| Fact | Stable `20261028.8` | Beta `20261125.1` |
+|---|---|---|
+| Marketplace files | The 29 files are identical to `20261028.6`: every frontend citation above holds. | Changed: discover, repositories, custom repositories, dashboard, repository dashboard, install dialog, panel, `tools/markdown.ts`, `data/marketplace/repository.ts`, `markdown-worker.ts`. |
+| Earlier versions offered when the latest needs a newer Home Assistant | `dialog-marketplace-install.ts` L126-132 | Same lines; the version list now shows a loading state instead of a « fetching » text (L436-451). |
+| README rendering | `ha-marketplace-repository-dashboard.ts` L462, L492, L543-547 | Same code at L507, L537, L588-592 |
+| Relative `src`/`srcset` kept only with `./` | `markdown-worker.ts` (`allowRelativeUrls`, `safeAttrValue`) | Same rule (L164-168); `data:` link addresses are now escaped and the `download` attribute list is copied (L110-113, L161) |
+| README sections hidden from the Marketplace (new) | — | Text between `<!-- ha-marketplace:exclude-start -->` and `<!-- ha-marketplace:exclude-end -->` (or to the end without an end marker) is left out of the repository page; markers inside code are text (`tools/markdown.ts` L300-327, applied in `markdownWithRepositoryContext` L332-362). Optional for this card: it could hide the README install steps the page header already covers. |
+| `hide_default_branch` | Not in any file of `src/` | Not in any file of `src/`. In core it is only parsed (`repositories/base.py` L387) and sent by `websocket/repository.py` L126 at both tags. |
+
+### Documentation (home-assistant.io and developers)
+
+| Fact | Source |
+|---|---|
+| The Marketplace page on the live branch `current` has not changed since `dc7a694` (2026-11-11). | `gh api repos/home-assistant/home-assistant.io/commits?path=source/_integrations/marketplace.markdown&sha=current` |
+| The 2026.11 release post says, in present tense: « Custom repositories require a GitHub connection. The Marketplace uses GitHub device sign-in [...] ». No « in the future ». | `source/_posts/2026-11-04-release-202611.markdown` L134 on `current`, last changed in `d6eccdb` (2026-11-23) |
+| **Translated READMEs (not released yet)**: the page on branch `next` (commit `3bbb4fe`, 2026-11-26) adds « If the repository has a README in the language of Home Assistant next to `README.md`, such as `README.de.md` or `README.pt-BR.md`, the page shows that one instead. » The core change is PR home-assistant/core#189842, merged into `dev` on 2026-11-26 (`9145f86`): `README.<language>.md` files at the root are matched to the language with `homeassistant.util.language.matches`, `README.md` is the fallback, nothing is declared in `hacs.json`. It is **not** in `2026.12.0b2`: `repositories/base.py` there has no language matching, only the fixed `README_FILENAMES` (L79-86) and its lookup (L961-976), and `9145f86` is not an ancestor of the tag (`compare/9145f86...2026.12.0b2`: diverged; a cherry-pick would have another SHA, so the code is the proof). A follow-up, home-assistant/core#194898 (cache per version), is open. | as cited |
+| Consequence for this card, once released: French users would see `README.fr.md` on the repository page, so it needs the same image block with `./docs/images/...` paths as `README.md` (it already has one). Not tested. | derived from the PR description |
+| No publisher guide: `developers.home-assistant` (`master`, `50b5188`) has no file named after the Marketplace or HACS, and GitHub code search finds neither « marketplace » nor « hacs.json » in it; on home-assistant.io the only page naming `hacs.json` is the Marketplace page. | `git/trees?recursive=1` on both repositories; `gh search code` (default branch only) |
+
+### `hacs/default` at `f6292f23e07d4dfaefbe60f8ec9bbcbd00114858` (`master`, 2026-11-27)
+
+| Fact | Source |
+|---|---|
+| 572 commits since `d1d62ff`; the changed files are the category lists (`plugin`, `integration`, `theme`, `appdaemon`), `removed`, `blacklist` and `scripts/helpers/integration_path.py` (integrations only). | `compare/d1d62ff...master` |
+| Unchanged: `plugin` is still one JSON array of `owner/repo`, sorted with `str.casefold` (1316 entries, sorted on read); `.github/PULL_REQUEST_TEMPLATE.md` (last change `ab3e23f`, 2025-12-15); `.github/workflows/checks.yml` (last change `e751d99`, 2026-11-05) and `scripts/check/*`; `lint.yml`; `scripts/is_sorted.py`. The rules in « Catalog submission » above hold. | as cited |
+| The template also says « DO NOT REQUEST REVIEWS [...] IF YOU DO THE PULL REQUEST WILL BE CLOSED » and « Do not open a pull request before you have completed all these ». | `.github/PULL_REQUEST_TEMPLATE.md` |
+| A bot adds the label of new pull requests; the checks read the labels from the API. | `checks.yml` L37-40 (comment) |
+| No entry named `vacuum-map-card`; nearest names: `PiotrMachowski/lovelace-xiaomi-vacuum-map-card`, `Igloczek/lovelace-better-xiaomi-vacuum-map-card`, `noambergauz/dreame-vacuum-map-card`. `EnO33/vacuum-map-card` is in neither `removed` nor `blacklist`. Its sorted place is between `EnkodoNL/tabbed-card-programmable` and `enricodeleo/candy-dishwasher-card`. | `plugin`, `removed`, `blacklist` at `f6292f2` |
+| Observed, not a rule: the last 40 merged pull requests labelled « New default repository » (merged 2026-11-26 and 27) were all merged by one account, `frenck`, 0 or 1 day after they were opened. From 2026-11-01 to 2026-11-27, 2069 such pull requests were merged and 214 closed without merge; 533 were open on 2026-11-27. | `gh pr list -R hacs/default --state merged --label "New default repository" --limit 40`; `gh api search/issues` |
+
+### Validation action
+
+`hacs/action` `main` is still `1ebf01c` (2026-06-08), latest release still `22.5.0`. `hacs/integration` `main` is still `8a54382` (2026-11-10, `compare` ahead by 0), so the image validates with the same code and the checks listed above are unchanged. Run `45887463575` of this repository's HACS workflow on `main` (2026-11-26) logs « All (8) checks passed » for `archived`, `description`, `topics`, `issues`, `information`, `images`, `hacsjson`, `license`.
+
+## Catalog submission checklist for this card
+
+State on 2026-11-27. #156 re-checks every row the day of the submission.
+
+| Requirement | Required by | How this card meets it | Still missing |
+|---|---|---|---|
+| Read the publishing documentation (`hacs.xyz/docs/publish/start`) | template (first checkbox) | — | The owner ticks it, at submission |
+| Public GitHub repository, not archived | template, `archived` check | `EnO33/vacuum-map-card`, public, not archived | — |
+| Submitter is the owner (or a major contributor) | `Owner` check | Owner account `EnO33` (a user, not an organisation) opens the pull request | At submission |
+| Description | `description` check | « Home Assistant dashboard card: every floor plan side by side, tap a room, pick a robot, confirm » | — |
+| At least one topic | `topics` check | 9 topics (`dashboard`, `floor-plan`, `hacs`, `home-assistant`, `lovelace`, `lovelace-card`, `robot-vacuum`, `roomba`, `vacuum`) | — |
+| Issues enabled | `issues` check | Enabled | — |
+| OSI licence | `license` check | MIT, detected by GitHub | — |
+| README with a non-badge image | `information`, `images` checks | `README.md` with a `<picture>`/`<img>` of the card; checks passed | #152 replaces the pictures; the check runs again on its pull request |
+| `hacs.json` at the root: `name`, no extra keys | `hacsjson` check, Marketplace | `name`, `filename: "vacuum-map-card.js"`, `homeassistant: "2026.3.0"` | — |
+| Card file found as a release asset | action registration, Marketplace lookup | `v0.1.0` assets `vacuum-map-card.js` (16149 bytes) and `vacuum-map-card.js.map`; no `vacuum-map-card.zip` | — |
+| At least one release | `Releases` check | `v0.1.0`, published, not a draft, not a pre-release | — |
+| HACS action in the repository, passing without disabled checks | template | `.github/workflows/hacs.yml`, `category: plugin`, no `ignore`; green on `main` since 2026-11-23 (run `45887463575`, 2026-11-26) | Link to a green run on the release commit, at submission |
+| A new release created **after** the actions passed | template | Not met by `v0.1.0`: published 2026-11-23 09:47:57 UTC, first green HACS run 09:54:17 UTC (`workflow_dispatch`) | The MVP release (#155), tagged from a `main` commit whose HACS run is green |
+| Link to the current release | template | — | The MVP release URL (#155) |
+| Not already listed, not removed | `Existing`, `Removed` checks | Absent from `plugin`, `removed`, `blacklist` at `f6292f2` | — |
+| One line `"EnO33/vacuum-map-card"` in `plugin`, sorted with `str.casefold` | `lint.yml`, `is_sorted.py` | Between `EnkodoNL/tabbed-card-programmable` and `enricodeleo/candy-dishwasher-card` at `f6292f2` | Recompute on the day: the list grows daily |
+| Pull request from the owner's fork with « Allow edits by maintainers » | `Editable PR` check, owner decision | — | The owner, at submission (#156) |
+| No review requested | template | — | The owner, at submission |
+| Hassfest | template | Integrations only: not applicable | — |
+
+No change to `hacs.json`, `release.yml` or the README is **required** by this re-check, so no task issue is filed. Optional, for the README work of this epic: the exclusion markers (beta frontend only) could hide install steps on the Marketplace page, and `README.fr.md` will matter on the repository page once translated READMEs ship.
+
 ## « à vérifier »
 
 | Item | What would confirm it |
 |---|---|
-| An official publisher guide for the Marketplace (home-assistant.io, developers, contributors) | A page on those sites; none found on 2026-11-20 |
-| Effect of `hide_default_branch` in the 2026.11 frontend | Frontend grep at a later tag, or an install of a repository that sets it |
-| Review time and reviewers of `hacs/default` submissions | Official statement or `hacs/default` contributing docs |
-| The release post's « a GitHub connection will be required in the future » for manually added repositories (secondary summary) versus the doc page's « Custom repositories require a GitHub connection » | Re-read the release post section in full |
+| An official publisher guide for the Marketplace (home-assistant.io, developers, contributors) | Still none on 2026-11-27 (see « Documentation »). A page on those sites |
+| Effect of `hide_default_branch` | **Settled 2026-11-27**: no visible effect at stable and beta; parsed and sent, never read by the frontend (see « Frontend »). This card does not set it |
+| Review time and reviewers of `hacs/default` submissions | Partly settled 2026-11-27 by observation only (see « `hacs/default` »). Still no official statement: a publisher page or `hacs/default` contributing rules |
+| The release post's GitHub connection wording | **Settled 2026-11-27**: the post says custom repositories require a GitHub connection, present tense, like the doc page (see « Documentation ») |
 | Minimum Home Assistant version of this card | Resolved 2026-11-23 (#28): 2026.3.0, see `docs/standards.md` |
+| Translated READMEs: the release that ships core#189842, and that `README.fr.md` and its `./docs/images/...` pictures show for a French Home Assistant | A core tag whose `repositories/base.py` matches `README.<language>.md` to the language (a 2026.12 beta may carry it as a cherry-pick), then a look at the repository page with French selected |
+| The README exclusion markers in a stable frontend | A stable frontend tag whose `tools/markdown.ts` has `EXCLUSION_MARKER` |
 
 ## Gaps for this card
 
