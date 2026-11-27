@@ -141,7 +141,7 @@ export class PlanPicture extends LitElement {
   protected override render(): TemplateResult {
     if (this.#failed) return planMessage(localize(this.locale, "plan.load_failed"));
     const size = this.#size;
-    return html`<div class="frame">
+    return html`<div class="frame" @focusin=${this.#onFocusIn}>
       <img
         src=${this.src}
         alt=${this.alt}
@@ -190,13 +190,15 @@ export class PlanPicture extends LitElement {
     return index === undefined ? undefined : this.#navigation?.rooms[index]?.regionId;
   }
 
+  /** The focused room becomes the tab stop. */
+  readonly #onFocusIn = (event: FocusEvent): void => {
+    const regionId = this.#roomOf(event.target);
+    if (regionId === undefined || regionId === this.#tabStop) return;
+    this.#tabStop = regionId;
+    this.requestUpdate();
+  };
+
   readonly #listeners: RoomLayerListeners = {
-    focusin: (event) => {
-      const regionId = this.#roomOf(event.target);
-      if (regionId === undefined || regionId === this.#tabStop) return;
-      this.#tabStop = regionId;
-      this.requestUpdate();
-    },
     // The room acted on is the one the key comes from: the one a screen reader announced.
     keydown: (event) => {
       const navigation = this.#navigation;
@@ -229,12 +231,12 @@ export class PlanPicture extends LitElement {
     return at && roomAtTap(navigation, at.point, TAP_TARGET_HALF_PX * at.scale);
   }
 
-  /** Focuses a drawn room, which the layer's `focusin` listener makes the tab stop, and returns it. */
   /** Focuses a drawn room, as a key or the dismiss of its progress does; `false` while it is not drawn. */
   focusRoom(regionId: string): boolean {
     return this.#focusRoom(regionId) !== undefined;
   }
 
+  /** Focuses a drawn room, which the frame's `focusin` listener makes the tab stop, and returns it. */
   #focusRoom(regionId: string): SVGElement | undefined {
     const index = this.#navigation?.rooms.findIndex((room) => room.regionId === regionId) ?? -1;
     const room = roomElementAt(this.renderRoot, index);

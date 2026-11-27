@@ -115,6 +115,28 @@ describe("PlanPicture rooms as controls", () => {
     expect(stops().map((r) => r.getAttribute("aria-label"))).toEqual(["bottom-right"]);
   });
 
+  it("binds no focus listener on an SVG element, which Chromium would make a tab stop of its own", async () => {
+    // Blink treats an SVG graphics element with a focus, blur, focusin or focusout listener as focusable (#163).
+    const focusTypes = new Set(["focus", "blur", "focusin", "focusout"]);
+    // Every event type bound on an SVG element, so the test also proves the spy sees the layer's own bindings.
+    const bound = new Set<string>();
+    // The DOM's own `EventTarget`, which the test's global one is not under happy-dom.
+    const target: EventTarget = Object.getPrototypeOf(Node.prototype);
+    const add = target.addEventListener;
+    const spy = vi.spyOn(target, "addEventListener").mockImplementation(function (this: unknown, ...args) {
+      if (this instanceof SVGElement) bound.add(args[0]);
+      add.apply(this, args);
+    });
+    try {
+      const element = await mounted();
+      expect(rooms(element)).toHaveLength(5);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(bound).toContain("keydown");
+    expect([...bound].filter((type) => focusTypes.has(type))).toEqual([]);
+  });
+
   it("draws the focus ring on the tab stop only, the one room that can hold the focus", async () => {
     const element = await mounted();
     const ringed = () =>
